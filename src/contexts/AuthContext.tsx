@@ -41,38 +41,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    let mounted = true;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, sess) => {
+      if (!mounted) return;
       setSession(sess);
       setUser(sess?.user ?? null);
 
       if (sess?.user) {
-        // If login() already set roles, skip this fetch
         if (skipNextRoleFetch.current) {
           skipNextRoleFetch.current = false;
           setLoading(false);
           return;
         }
-        const userRoles = await fetchRoles(sess.user.id);
-        setRoles(userRoles);
+        try {
+          const userRoles = await fetchRoles(sess.user.id);
+          if (mounted) setRoles(userRoles);
+        } catch {
+          // ignore fetch errors
+        }
       } else {
         setRoles([]);
       }
-      setLoading(false);
+      if (mounted) setLoading(false);
     });
 
-    // Then get initial session
     supabase.auth.getSession().then(async ({ data: { session: sess } }) => {
+      if (!mounted) return;
       setSession(sess);
       setUser(sess?.user ?? null);
       if (sess?.user) {
-        const userRoles = await fetchRoles(sess.user.id);
-        setRoles(userRoles);
+        try {
+          const userRoles = await fetchRoles(sess.user.id);
+          if (mounted) setRoles(userRoles);
+        } catch {
+          // ignore fetch errors
+        }
       }
-      setLoading(false);
+      if (mounted) setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (password: string): Promise<{ error?: string }> => {

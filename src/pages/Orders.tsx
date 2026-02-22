@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
+import AddOrderDialog from '@/components/AddOrderDialog';
 
 export default function Orders() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -34,6 +35,7 @@ export default function Orders() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">الأوردرات</h1>
+        <AddOrderDialog onOrderAdded={loadOrders} />
       </div>
 
       <div className="relative max-w-sm">

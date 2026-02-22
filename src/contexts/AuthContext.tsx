@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Session, User } from '@supabase/supabase-js';
 
@@ -30,37 +30,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
+  const skipNextRoleFetch = useRef(false);
+
+  const fetchRoles = async (userId: string): Promise<AppRole[]> => {
+    const { data } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId);
+    return (data?.map(r => r.role as AppRole)) || [];
+  };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, sess) => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, sess) => {
       setSession(sess);
       setUser(sess?.user ?? null);
 
       if (sess?.user) {
-        // Fetch roles
-        const { data } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', sess.user.id);
-        setRoles((data?.map(r => r.role as AppRole)) || []);
+        // If login() already set roles, skip this fetch
+        if (skipNextRoleFetch.current) {
+          skipNextRoleFetch.current = false;
+          setLoading(false);
+          return;
+        }
+        const userRoles = await fetchRoles(sess.user.id);
+        setRoles(userRoles);
       } else {
         setRoles([]);
       }
       setLoading(false);
     });
 
-    supabase.auth.getSession().then(({ data: { session: sess } }) => {
+    // Then get initial session
+    supabase.auth.getSession().then(async ({ data: { session: sess } }) => {
       setSession(sess);
       setUser(sess?.user ?? null);
       if (sess?.user) {
-        supabase.from('user_roles').select('role').eq('user_id', sess.user.id)
-          .then(({ data }) => {
-            setRoles((data?.map(r => r.role as AppRole)) || []);
-            setLoading(false);
-          });
-      } else {
-        setLoading(false);
+        const userRoles = await fetchRoles(sess.user.id);
+        setRoles(userRoles);
       }
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -83,13 +92,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json();
       if (!res.ok) return { error: data.error || 'خطأ في تسجيل الدخول' };
       
-      // Set session manually
       if (data.session) {
+        // Set roles BEFORE setting session to prevent race condition
+        const userRoles = (data.roles || []) as AppRole[];
+        setRoles(userRoles);
+        skipNextRoleFetch.current = true;
+        
         await supabase.auth.setSession({
           access_token: data.session.access_token,
           refresh_token: data.session.refresh_token,
         });
-        setRoles(data.roles || []);
       }
       return {};
     } catch {

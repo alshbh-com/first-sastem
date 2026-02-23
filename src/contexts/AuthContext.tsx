@@ -30,59 +30,92 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
+  const initializedRef = useRef(false);
   const skipNextRoleFetch = useRef(false);
 
   const fetchRoles = async (userId: string): Promise<AppRole[]> => {
-    const { data } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId);
-    return (data?.map(r => r.role as AppRole)) || [];
+    try {
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+      return (data?.map(r => r.role as AppRole)) || [];
+    } catch {
+      return [];
+    }
   };
 
   useEffect(() => {
     let mounted = true;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, sess) => {
+    // Set up listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, sess) => {
       if (!mounted) return;
-      setSession(sess);
-      setUser(sess?.user ?? null);
-
-      if (sess?.user) {
-        if (skipNextRoleFetch.current) {
-          skipNextRoleFetch.current = false;
-          setLoading(false);
-          return;
-        }
-        try {
-          const userRoles = await fetchRoles(sess.user.id);
-          if (mounted) setRoles(userRoles);
-        } catch {
-          // ignore fetch errors
-        }
-      } else {
+      
+      if (event === 'SIGNED_OUT') {
+        setSession(null);
+        setUser(null);
         setRoles([]);
+        setLoading(false);
+        return;
       }
-      if (mounted) setLoading(false);
-    });
 
-    supabase.auth.getSession().then(async ({ data: { session: sess } }) => {
-      if (!mounted) return;
-      setSession(sess);
-      setUser(sess?.user ?? null);
-      if (sess?.user) {
-        try {
-          const userRoles = await fetchRoles(sess.user.id);
-          if (mounted) setRoles(userRoles);
-        } catch {
-          // ignore fetch errors
+      if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+        setSession(sess);
+        setUser(sess?.user ?? null);
+
+        if (sess?.user) {
+          if (skipNextRoleFetch.current) {
+            skipNextRoleFetch.current = false;
+            setLoading(false);
+            return;
+          }
+          // Use setTimeout to avoid deadlock with Supabase auth
+          setTimeout(async () => {
+            if (!mounted) return;
+            const userRoles = await fetchRoles(sess.user.id);
+            if (mounted) {
+              setRoles(userRoles);
+              setLoading(false);
+            }
+          }, 0);
+        } else {
+          setRoles([]);
+          setLoading(false);
         }
       }
-      if (mounted) setLoading(false);
     });
+
+    // Then get initial session
+    supabase.auth.getSession().then(async ({ data: { session: sess }, error }) => {
+      if (!mounted) return;
+      
+      // If there's an error (e.g. invalid refresh token), sign out cleanly
+      if (error || !sess) {
+        setSession(null);
+        setUser(null);
+        setRoles([]);
+        setLoading(false);
+        // Clear bad session
+        if (error) {
+          await supabase.auth.signOut();
+        }
+        return;
+      }
+      
+      // onAuthStateChange INITIAL_SESSION will handle this
+    });
+
+    // Safety timeout - never stay loading forever
+    const timeout = setTimeout(() => {
+      if (mounted && loading) {
+        setLoading(false);
+      }
+    }, 5000);
 
     return () => {
       mounted = false;
+      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, []);
@@ -105,7 +138,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!res.ok) return { error: data.error || 'خطأ في تسجيل الدخول' };
       
       if (data.session) {
-        // Set roles BEFORE setting session to prevent race condition
         const userRoles = (data.roles || []) as AppRole[];
         setRoles(userRoles);
         skipNextRoleFetch.current = true;
@@ -122,8 +154,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
     setRoles([]);
+    setSession(null);
+    setUser(null);
+    await supabase.auth.signOut();
   };
 
   const isOwner = roles.includes('owner');

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface Props {
   onOrderAdded: () => void;
@@ -15,30 +15,29 @@ interface Props {
 export default function AddOrderDialog({ onOrderAdded }: Props) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
 
   const [companies, setCompanies] = useState<any[]>([]);
   const [offices, setOffices] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [statuses, setStatuses] = useState<any[]>([]);
 
-  const [form, setForm] = useState({
+  const emptyForm = {
     customer_name: '',
     customer_phone: '',
     product_name: '',
     product_id: '',
-    quantity: 1,
-    price: 0,
-    delivery_price: 0,
+    quantity: '',
+    price: '',
+    delivery_price: '',
     company_id: '',
     office_id: '',
     status_id: '',
     governorate: '',
     color: '',
     size: '',
-    barcode: '',
-    customer_code: '',
-  });
+  };
+
+  const [form, setForm] = useState(emptyForm);
 
   useEffect(() => {
     if (open) loadDropdowns();
@@ -57,12 +56,6 @@ export default function AddOrderDialog({ onOrderAdded }: Props) {
     setStatuses(s.data || []);
   };
 
-  const resetForm = () => setForm({
-    customer_name: '', customer_phone: '', product_name: '', product_id: '',
-    quantity: 1, price: 0, delivery_price: 0, company_id: '', office_id: '',
-    status_id: '', governorate: '', color: '', size: '', barcode: '', customer_code: '',
-  });
-
   const handleProductSelect = (productId: string) => {
     const product = products.find(p => p.id === productId);
     setForm(f => ({
@@ -75,25 +68,31 @@ export default function AddOrderDialog({ onOrderAdded }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.customer_name.trim() || !form.customer_phone.trim()) {
-      toast({ title: 'خطأ', description: 'اسم العميل ورقم الهاتف مطلوبين', variant: 'destructive' });
+      toast.error('اسم العميل ورقم الهاتف مطلوبين');
       return;
     }
 
     setLoading(true);
     try {
+      const qty = parseInt(form.quantity) || 1;
+      const price = parseFloat(form.price) || 0;
+      const deliveryPrice = parseFloat(form.delivery_price) || 0;
+
+      // Generate barcode automatically
+      const barcode = 'BC-' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substring(2, 5).toUpperCase();
+
       const orderData: any = {
         customer_name: form.customer_name,
         customer_phone: form.customer_phone,
-        product_name: form.product_name || 'بدون منتج',
-        quantity: form.quantity,
-        price: form.price,
-        delivery_price: form.delivery_price,
+        product_name: form.product_name || form.product_id ? form.product_name : 'بدون منتج',
+        quantity: qty,
+        price,
+        delivery_price: deliveryPrice,
         governorate: form.governorate,
         color: form.color,
         size: form.size,
-        barcode: form.barcode,
-        customer_code: form.customer_code,
-        tracking_id: 'temp', // trigger will replace
+        barcode,
+        tracking_id: 'temp',
       };
       if (form.company_id) orderData.company_id = form.company_id;
       if (form.office_id) orderData.office_id = form.office_id;
@@ -103,22 +102,22 @@ export default function AddOrderDialog({ onOrderAdded }: Props) {
       const { error } = await supabase.from('orders').insert(orderData);
       if (error) throw error;
 
-      // Deduct product stock if product selected
-      if (form.product_id && form.quantity > 0) {
+      // Deduct stock
+      if (form.product_id && qty > 0) {
         const product = products.find(p => p.id === form.product_id);
         if (product) {
           await supabase.from('products').update({
-            quantity: Math.max(0, product.quantity - form.quantity),
+            quantity: Math.max(0, product.quantity - qty),
           }).eq('id', form.product_id);
         }
       }
 
-      toast({ title: 'تم', description: 'تم إضافة الأوردر بنجاح' });
-      resetForm();
+      toast.success('تم إضافة الأوردر بنجاح');
+      setForm(emptyForm);
       setOpen(false);
       onOrderAdded();
     } catch (err: any) {
-      toast({ title: 'خطأ', description: err.message || 'حصل خطأ', variant: 'destructive' });
+      toast.error(err.message || 'حصل خطأ');
     } finally {
       setLoading(false);
     }
@@ -136,7 +135,6 @@ export default function AddOrderDialog({ onOrderAdded }: Props) {
           <DialogTitle>إضافة أوردر جديد</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Customer Info */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>اسم العميل *</Label>
@@ -150,10 +148,9 @@ export default function AddOrderDialog({ onOrderAdded }: Props) {
             </div>
           </div>
 
-          {/* Product */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>المنتج</Label>
+              <Label>المنتج (اختيار من القائمة)</Label>
               <Select value={form.product_id} onValueChange={handleProductSelect}>
                 <SelectTrigger className="bg-secondary border-border">
                   <SelectValue placeholder="اختر منتج" />
@@ -166,71 +163,64 @@ export default function AddOrderDialog({ onOrderAdded }: Props) {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>الكمية</Label>
-              <Input type="number" min={1} value={form.quantity}
-                onChange={e => set('quantity', parseInt(e.target.value) || 1)}
-                className="bg-secondary border-border" />
+              <Label>أو اكتب اسم المنتج</Label>
+              <Input value={form.product_name} onChange={e => set('product_name', e.target.value)}
+                className="bg-secondary border-border" placeholder="اسم المنتج يدوي" />
             </div>
           </div>
 
-          {/* Price */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>الكمية</Label>
+              <Input type="number" min={1} value={form.quantity}
+                onChange={e => set('quantity', e.target.value)}
+                onFocus={e => { if (e.target.value === '1' || e.target.value === '0') set('quantity', ''); }}
+                className="bg-secondary border-border" placeholder="1" />
+            </div>
             <div className="space-y-2">
               <Label>السعر (ج.م)</Label>
               <Input type="number" min={0} value={form.price}
-                onChange={e => set('price', parseFloat(e.target.value) || 0)}
-                className="bg-secondary border-border" />
+                onChange={e => set('price', e.target.value)}
+                onFocus={e => { if (e.target.value === '0') set('price', ''); }}
+                className="bg-secondary border-border" placeholder="0" />
             </div>
             <div className="space-y-2">
               <Label>سعر التوصيل (ج.م)</Label>
               <Input type="number" min={0} value={form.delivery_price}
-                onChange={e => set('delivery_price', parseFloat(e.target.value) || 0)}
-                className="bg-secondary border-border" />
+                onChange={e => set('delivery_price', e.target.value)}
+                onFocus={e => { if (e.target.value === '0') set('delivery_price', ''); }}
+                className="bg-secondary border-border" placeholder="0" />
             </div>
           </div>
 
-          {/* Company & Office */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>الشركة</Label>
               <Select value={form.company_id} onValueChange={v => set('company_id', v)}>
-                <SelectTrigger className="bg-secondary border-border">
-                  <SelectValue placeholder="اختر شركة" />
-                </SelectTrigger>
+                <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder="اختر شركة" /></SelectTrigger>
                 <SelectContent>
-                  {companies.map(c => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
+                  {companies.map(c => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
               <Label>المكتب</Label>
               <Select value={form.office_id} onValueChange={v => set('office_id', v)}>
-                <SelectTrigger className="bg-secondary border-border">
-                  <SelectValue placeholder="اختر مكتب" />
-                </SelectTrigger>
+                <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder="اختر مكتب" /></SelectTrigger>
                 <SelectContent>
-                  {offices.map(o => (
-                    <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
-                  ))}
+                  {offices.map(o => (<SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>))}
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          {/* Status & Governorate */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>الحالة</Label>
               <Select value={form.status_id} onValueChange={v => set('status_id', v)}>
-                <SelectTrigger className="bg-secondary border-border">
-                  <SelectValue placeholder="اختر حالة" />
-                </SelectTrigger>
+                <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder="اختر حالة" /></SelectTrigger>
                 <SelectContent>
-                  {statuses.map(s => (
-                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                  ))}
+                  {statuses.map(s => (<SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>))}
                 </SelectContent>
               </Select>
             </div>
@@ -241,24 +231,18 @@ export default function AddOrderDialog({ onOrderAdded }: Props) {
             </div>
           </div>
 
-          {/* Extra details */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>اللون</Label>
-              <Input value={form.color} onChange={e => set('color', e.target.value)}
-                className="bg-secondary border-border" />
+              <Input value={form.color} onChange={e => set('color', e.target.value)} className="bg-secondary border-border" />
             </div>
             <div className="space-y-2">
               <Label>المقاس</Label>
-              <Input value={form.size} onChange={e => set('size', e.target.value)}
-                className="bg-secondary border-border" />
-            </div>
-            <div className="space-y-2">
-              <Label>الباركود</Label>
-              <Input value={form.barcode} onChange={e => set('barcode', e.target.value)}
-                className="bg-secondary border-border" dir="ltr" />
+              <Input value={form.size} onChange={e => set('size', e.target.value)} className="bg-secondary border-border" />
             </div>
           </div>
+
+          <p className="text-xs text-muted-foreground">* الباركود يتم توليده تلقائياً</p>
 
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'إضافة الأوردر'}

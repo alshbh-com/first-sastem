@@ -9,13 +9,15 @@ import AppLayout from "@/components/AppLayout";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import Orders from "@/pages/Orders";
+import ClosedOrders from "@/pages/ClosedOrders";
 import Offices from "@/pages/Offices";
 import Customers from "@/pages/Customers";
 import Companies from "@/pages/Companies";
 import Products from "@/pages/Products";
 import Couriers from "@/pages/Couriers";
-import Collections from "@/pages/Collections";
+import CourierCollections from "@/pages/CourierCollections";
 import CompanyAccounts from "@/pages/CompanyAccounts";
+import OfficeAccounts from "@/pages/OfficeAccounts";
 import ActivityLogs from "@/pages/ActivityLogs";
 import Settings from "@/pages/Settings";
 import CourierOrders from "@/pages/CourierOrders";
@@ -47,13 +49,16 @@ const App = () => (
             }>
               <Route path="/" element={<Dashboard />} />
               <Route path="/orders" element={<Orders />} />
+              <Route path="/closed-orders" element={<ClosedOrders />} />
               <Route path="/offices" element={<Offices />} />
               <Route path="/customers" element={<Customers />} />
               <Route path="/companies" element={<Companies />} />
               <Route path="/products" element={<Products />} />
               <Route path="/couriers" element={<Couriers />} />
-              <Route path="/collections" element={<Collections />} />
+              <Route path="/courier-collections" element={<CourierCollections />} />
+              <Route path="/collections" element={<Navigate to="/courier-collections" replace />} />
               <Route path="/company-accounts" element={<CompanyAccounts />} />
+              <Route path="/office-accounts" element={<OfficeAccounts />} />
               <Route path="/logs" element={<ActivityLogs />} />
               <Route path="/settings" element={<Settings />} />
             </Route>

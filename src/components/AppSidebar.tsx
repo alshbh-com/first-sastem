@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Package, Building2, Users, Factory, Box,
-  Truck, Wallet, CreditCard, ScrollText, Settings, LogOut
+  Truck, Wallet, CreditCard, ScrollText, Settings, LogOut, Archive, Building
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,19 +14,21 @@ import { Button } from '@/components/ui/button';
 const menuItems = [
   { title: 'لوحة التحكم', url: '/', icon: LayoutDashboard },
   { title: 'الأوردرات', url: '/orders', icon: Package },
+  { title: 'الأوردرات القديمة', url: '/closed-orders', icon: Archive },
   { title: 'المكاتب', url: '/offices', icon: Building2 },
   { title: 'العملاء', url: '/customers', icon: Users },
   { title: 'الشركات', url: '/companies', icon: Factory },
   { title: 'المنتجات', url: '/products', icon: Box },
   { title: 'المندوبين', url: '/couriers', icon: Truck },
-  { title: 'التحصيلات', url: '/collections', icon: Wallet },
+  { title: 'تحصيلات المندوبين', url: '/courier-collections', icon: Wallet },
   { title: 'حسابات الشركات', url: '/company-accounts', icon: CreditCard },
+  { title: 'حسابات المكاتب', url: '/office-accounts', icon: Building },
   { title: 'سجل الحركات', url: '/logs', icon: ScrollText },
   { title: 'الإعدادات', url: '/settings', icon: Settings },
 ];
 
 export function AppSidebar() {
-  const { logout, user } = useAuth();
+  const { logout } = useAuth();
 
   return (
     <Sidebar side="right" collapsible="icon">

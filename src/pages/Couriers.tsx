@@ -3,33 +3,82 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Eye, Lock, StickyNote } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function Couriers() {
   const [couriers, setCouriers] = useState<any[]>([]);
+  const [selectedCourier, setSelectedCourier] = useState<string>('');
+  const [courierOrders, setCourierOrders] = useState<any[]>([]);
+  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
+  const [notesDialog, setNotesDialog] = useState<any | null>(null);
+  const [notes, setNotes] = useState<any[]>([]);
 
   useEffect(() => {
     const load = async () => {
-      // Get users with courier role
-      const { data: roles } = await supabase
-        .from('user_roles')
-        .select('user_id')
-        .eq('role', 'courier');
-
+      const { data: roles } = await supabase.from('user_roles').select('user_id').eq('role', 'courier');
       if (roles && roles.length > 0) {
-        const ids = roles.map(r => r.user_id);
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('*')
-          .in('id', ids);
+        const { data: profiles } = await supabase.from('profiles').select('*').in('id', roles.map(r => r.user_id));
         setCouriers(profiles || []);
       }
     };
     load();
   }, []);
 
+  useEffect(() => {
+    if (selectedCourier) loadCourierOrders();
+  }, [selectedCourier]);
+
+  const loadCourierOrders = async () => {
+    const { data } = await supabase
+      .from('orders')
+      .select('*, order_statuses(name, color)')
+      .eq('courier_id', selectedCourier)
+      .eq('is_closed', false)
+      .order('created_at', { ascending: false });
+    setCourierOrders(data || []);
+    setSelectedOrders(new Set());
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedOrders(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (selectedOrders.size === courierOrders.length) {
+      setSelectedOrders(new Set());
+    } else {
+      setSelectedOrders(new Set(courierOrders.map(o => o.id)));
+    }
+  };
+
+  const closeSelected = async () => {
+    if (selectedOrders.size === 0) return;
+    if (!confirm(`تقفيل ${selectedOrders.size} أوردر؟`)) return;
+    await supabase.from('orders').update({ is_closed: true }).in('id', Array.from(selectedOrders));
+    toast.success(`تم تقفيل ${selectedOrders.size} أوردر`);
+    loadCourierOrders();
+  };
+
+  const viewNotes = async (order: any) => {
+    setNotesDialog(order);
+    const { data } = await supabase.from('order_notes').select('*').eq('order_id', order.id).order('created_at', { ascending: false });
+    setNotes(data || []);
+  };
+
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">المندوبين</h1>
+
+      {/* Courier list */}
       <Card className="bg-card border-border">
         <CardContent className="p-0">
           <Table>
@@ -38,19 +87,21 @@ export default function Couriers() {
                 <TableHead className="text-right">الاسم</TableHead>
                 <TableHead className="text-right">الهاتف</TableHead>
                 <TableHead className="text-right">الحالة</TableHead>
+                <TableHead className="text-right">إجراء</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {couriers.length === 0 ? (
-                <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">لا يوجد مندوبين</TableCell></TableRow>
-              ) : couriers.map((c) => (
-                <TableRow key={c.id} className="border-border">
+                <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">لا يوجد مندوبين</TableCell></TableRow>
+              ) : couriers.map(c => (
+                <TableRow key={c.id} className={`border-border ${selectedCourier === c.id ? 'bg-secondary' : ''}`}>
                   <TableCell className="font-medium">{c.full_name}</TableCell>
                   <TableCell dir="ltr">{c.phone}</TableCell>
+                  <TableCell><Badge variant={c.is_active ? 'default' : 'secondary'}>{c.is_active ? 'نشط' : 'غير نشط'}</Badge></TableCell>
                   <TableCell>
-                    <Badge variant={c.is_active ? 'default' : 'secondary'}>
-                      {c.is_active ? 'نشط' : 'غير نشط'}
-                    </Badge>
+                    <Button size="sm" variant={selectedCourier === c.id ? 'default' : 'outline'} onClick={() => setSelectedCourier(c.id)}>
+                      <Eye className="h-4 w-4 ml-1" />عرض الأوردرات
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -58,6 +109,81 @@ export default function Couriers() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Courier orders */}
+      {selectedCourier && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">أوردرات المندوب</h2>
+            {selectedOrders.size > 0 && (
+              <Button size="sm" variant="destructive" onClick={closeSelected}>
+                <Lock className="h-4 w-4 ml-1" />تقفيل {selectedOrders.size} أوردر
+              </Button>
+            )}
+          </div>
+          <Card className="bg-card border-border">
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-border">
+                      <TableHead className="w-10">
+                        <Checkbox checked={courierOrders.length > 0 && selectedOrders.size === courierOrders.length} onCheckedChange={toggleAll} />
+                      </TableHead>
+                      <TableHead className="text-right">Tracking</TableHead>
+                      <TableHead className="text-right">العميل</TableHead>
+                      <TableHead className="text-right">المنتج</TableHead>
+                      <TableHead className="text-right">السعر</TableHead>
+                      <TableHead className="text-right">الحالة</TableHead>
+                      <TableHead className="text-right">ملاحظات</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {courierOrders.length === 0 ? (
+                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
+                    ) : courierOrders.map(order => (
+                      <TableRow key={order.id} className="border-border">
+                        <TableCell><Checkbox checked={selectedOrders.has(order.id)} onCheckedChange={() => toggleSelect(order.id)} /></TableCell>
+                        <TableCell className="font-mono text-xs">{order.tracking_id}</TableCell>
+                        <TableCell>{order.customer_name}</TableCell>
+                        <TableCell>{order.product_name}</TableCell>
+                        <TableCell>{order.price} ج.م</TableCell>
+                        <TableCell>
+                          <Badge style={{ backgroundColor: order.order_statuses?.color || undefined }} className="text-xs">
+                            {order.order_statuses?.name || '-'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Button size="icon" variant="ghost" onClick={() => viewNotes(order)}>
+                            <StickyNote className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Notes Dialog */}
+      <Dialog open={!!notesDialog} onOpenChange={(v) => { if (!v) setNotesDialog(null); }}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader><DialogTitle>ملاحظات - {notesDialog?.tracking_id}</DialogTitle></DialogHeader>
+          <div className="space-y-2 max-h-60 overflow-y-auto">
+            {notes.length === 0 ? (
+              <p className="text-sm text-muted-foreground">لا توجد ملاحظات</p>
+            ) : notes.map(n => (
+              <div key={n.id} className="p-2 bg-secondary rounded text-sm">
+                <p>{n.note}</p>
+                <p className="text-xs text-muted-foreground mt-1">{new Date(n.created_at).toLocaleString('ar-EG')}</p>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

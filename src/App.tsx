@@ -9,7 +9,9 @@ import AppLayout from "@/components/AppLayout";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import Orders from "@/pages/Orders";
+import UnassignedOrders from "@/pages/UnassignedOrders";
 import ClosedOrders from "@/pages/ClosedOrders";
+import GlobalSearch from "@/pages/GlobalSearch";
 import Offices from "@/pages/Offices";
 import Customers from "@/pages/Customers";
 import Companies from "@/pages/Companies";
@@ -18,6 +20,8 @@ import Couriers from "@/pages/Couriers";
 import CourierCollections from "@/pages/CourierCollections";
 import CompanyAccounts from "@/pages/CompanyAccounts";
 import OfficeAccounts from "@/pages/OfficeAccounts";
+import Advances from "@/pages/Advances";
+import PrintSticker from "@/pages/PrintSticker";
 import ActivityLogs from "@/pages/ActivityLogs";
 import Settings from "@/pages/Settings";
 import CourierOrders from "@/pages/CourierOrders";
@@ -49,7 +53,9 @@ const App = () => (
             }>
               <Route path="/" element={<Dashboard />} />
               <Route path="/orders" element={<Orders />} />
+              <Route path="/unassigned-orders" element={<UnassignedOrders />} />
               <Route path="/closed-orders" element={<ClosedOrders />} />
+              <Route path="/search" element={<GlobalSearch />} />
               <Route path="/offices" element={<Offices />} />
               <Route path="/customers" element={<Customers />} />
               <Route path="/companies" element={<Companies />} />
@@ -59,6 +65,8 @@ const App = () => (
               <Route path="/collections" element={<Navigate to="/courier-collections" replace />} />
               <Route path="/company-accounts" element={<CompanyAccounts />} />
               <Route path="/office-accounts" element={<OfficeAccounts />} />
+              <Route path="/advances" element={<Advances />} />
+              <Route path="/print" element={<PrintSticker />} />
               <Route path="/logs" element={<ActivityLogs />} />
               <Route path="/settings" element={<Settings />} />
             </Route>

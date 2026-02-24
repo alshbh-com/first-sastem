@@ -3,37 +3,28 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { Search, UserPlus, Lock } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
-import AddOrderDialog from '@/components/AddOrderDialog';
 
-export default function Orders() {
+export default function UnassignedOrders() {
   const [orders, setOrders] = useState<any[]>([]);
-  const [search, setSearch] = useState('');
-  const [filterOffice, setFilterOffice] = useState('all');
-  const [filterCompany, setFilterCompany] = useState('all');
-  const [offices, setOffices] = useState<any[]>([]);
-  const [companies, setCompanies] = useState<any[]>([]);
   const [couriers, setCouriers] = useState<any[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [assignCourier, setAssignCourier] = useState('');
+  const [filterCourier, setFilterCourier] = useState('unassigned');
 
-  useEffect(() => { loadOrders(); loadFilters(); }, []);
+  useEffect(() => {
+    loadOrders();
+    loadCouriers();
+  }, []);
 
-  const loadFilters = async () => {
-    const [o, c, r] = await Promise.all([
-      supabase.from('offices').select('id, name').order('name'),
-      supabase.from('companies').select('id, name').order('name'),
-      supabase.from('user_roles').select('user_id').eq('role', 'courier'),
-    ]);
-    setOffices(o.data || []);
-    setCompanies(c.data || []);
-    if (r.data && r.data.length > 0) {
-      const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', r.data.map(x => x.user_id));
+  const loadCouriers = async () => {
+    const { data: roles } = await supabase.from('user_roles').select('user_id').eq('role', 'courier');
+    if (roles && roles.length > 0) {
+      const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', roles.map(r => r.user_id));
       setCouriers(profiles || []);
     }
   };
@@ -41,20 +32,16 @@ export default function Orders() {
   const loadOrders = async () => {
     const { data } = await supabase
       .from('orders')
-      .select('*, order_statuses(name, color), companies(name), offices(name)')
+      .select('*, order_statuses(name, color), offices(name), companies(name)')
       .eq('is_closed', false)
-      .order('created_at', { ascending: false })
-      .limit(500);
+      .order('created_at', { ascending: false });
     setOrders(data || []);
   };
 
   const filtered = orders.filter(o => {
-    const matchSearch = !search ||
-      o.tracking_id?.includes(search) || o.customer_name?.includes(search) ||
-      o.customer_phone?.includes(search) || o.barcode?.includes(search) || o.customer_code?.includes(search);
-    const matchOffice = filterOffice === 'all' || o.office_id === filterOffice;
-    const matchCompany = filterCompany === 'all' || o.company_id === filterCompany;
-    return matchSearch && matchOffice && matchCompany;
+    if (filterCourier === 'unassigned') return !o.courier_id;
+    if (filterCourier === 'all') return true;
+    return o.courier_id === filterCourier;
   });
 
   const toggleSelect = (id: string) => {
@@ -71,44 +58,27 @@ export default function Orders() {
     const { error } = await supabase.from('orders').update({ courier_id: assignCourier }).in('id', Array.from(selected));
     if (error) { toast.error(error.message); return; }
     toast.success(`تم تعيين ${selected.size} أوردر للمندوب`);
-    setSelected(new Set()); setAssignCourier('');
+    setSelected(new Set());
+    setAssignCourier('');
     loadOrders();
   };
 
-  const closeSelected = async () => {
-    if (selected.size === 0) { toast.error('اختر أوردرات أولاً'); return; }
-    if (!confirm(`هل تريد تقفيل ${selected.size} أوردر؟`)) return;
-    const { error } = await supabase.from('orders').update({ is_closed: true }).in('id', Array.from(selected));
-    if (error) { toast.error(error.message); return; }
-    toast.success(`تم تقفيل ${selected.size} أوردر`);
-    setSelected(new Set());
-    loadOrders();
+  const courierName = (id: string | null) => {
+    if (!id) return 'غير معين';
+    return couriers.find(c => c.id === id)?.full_name || '-';
   };
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-2xl font-bold">الأوردرات</h1>
-        <AddOrderDialog onOrderAdded={loadOrders} />
-      </div>
+      <h1 className="text-2xl font-bold">جميع الأوردرات الغير مقفلة</h1>
 
       <div className="flex flex-wrap gap-3 items-end">
-        <div className="relative w-64">
-          <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="بحث بالاسم/الهاتف/الباركود/الكود..." value={search} onChange={e => setSearch(e.target.value)} className="pr-9 bg-secondary border-border" />
-        </div>
-        <Select value={filterOffice} onValueChange={setFilterOffice}>
-          <SelectTrigger className="w-40 bg-secondary border-border"><SelectValue placeholder="المكتب" /></SelectTrigger>
+        <Select value={filterCourier} onValueChange={setFilterCourier}>
+          <SelectTrigger className="w-48 bg-secondary border-border"><SelectValue placeholder="فلتر" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">كل المكاتب</SelectItem>
-            {offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={filterCompany} onValueChange={setFilterCompany}>
-          <SelectTrigger className="w-40 bg-secondary border-border"><SelectValue placeholder="الشركة" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">كل الشركات</SelectItem>
-            {companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+            <SelectItem value="all">كل الأوردرات</SelectItem>
+            <SelectItem value="unassigned">غير معينة</SelectItem>
+            {couriers.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
@@ -118,10 +88,13 @@ export default function Orders() {
           <span className="text-sm font-medium">تم تحديد {selected.size} أوردر</span>
           <Select value={assignCourier} onValueChange={setAssignCourier}>
             <SelectTrigger className="w-44 bg-card border-border"><SelectValue placeholder="اختر مندوب" /></SelectTrigger>
-            <SelectContent>{couriers.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}</SelectContent>
+            <SelectContent>
+              {couriers.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}
+            </SelectContent>
           </Select>
-          <Button size="sm" onClick={assignToCourier} disabled={!assignCourier}><UserPlus className="h-4 w-4 ml-1" />تعيين مندوب</Button>
-          <Button size="sm" variant="destructive" onClick={closeSelected}><Lock className="h-4 w-4 ml-1" />تم التقفيل</Button>
+          <Button size="sm" onClick={assignToCourier} disabled={!assignCourier}>
+            <UserPlus className="h-4 w-4 ml-1" />تعيين مندوب
+          </Button>
         </div>
       )}
 
@@ -135,28 +108,26 @@ export default function Orders() {
                   <TableHead className="text-right">Tracking</TableHead>
                   <TableHead className="text-right">الكود</TableHead>
                   <TableHead className="text-right">العميل</TableHead>
-                  <TableHead className="text-right">الهاتف</TableHead>
                   <TableHead className="text-right">المنتج</TableHead>
                   <TableHead className="text-right">الإجمالي</TableHead>
-                  <TableHead className="text-right">الشركة</TableHead>
                   <TableHead className="text-right">المكتب</TableHead>
+                  <TableHead className="text-right">المندوب</TableHead>
                   <TableHead className="text-right">الحالة</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
-                ) : filtered.map((order) => (
+                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
+                ) : filtered.map(order => (
                   <TableRow key={order.id} className="border-border">
                     <TableCell><Checkbox checked={selected.has(order.id)} onCheckedChange={() => toggleSelect(order.id)} /></TableCell>
                     <TableCell className="font-mono text-xs">{order.tracking_id}</TableCell>
                     <TableCell className="font-mono text-xs">{order.customer_code || '-'}</TableCell>
                     <TableCell>{order.customer_name}</TableCell>
-                    <TableCell dir="ltr">{order.customer_phone}</TableCell>
                     <TableCell>{order.product_name}</TableCell>
-                    <TableCell className="font-bold">{Number(order.price) + Number(order.delivery_price)} ج.م</TableCell>
-                    <TableCell>{order.companies?.name || '-'}</TableCell>
+                    <TableCell>{Number(order.price) + Number(order.delivery_price)} ج.م</TableCell>
                     <TableCell>{order.offices?.name || '-'}</TableCell>
+                    <TableCell>{courierName(order.courier_id)}</TableCell>
                     <TableCell>
                       <Badge style={{ backgroundColor: order.order_statuses?.color || undefined }} className="text-xs">
                         {order.order_statuses?.name || 'بدون حالة'}

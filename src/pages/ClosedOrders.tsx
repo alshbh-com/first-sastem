@@ -24,7 +24,8 @@ export default function ClosedOrders() {
   }, []);
 
   const filtered = orders.filter(o =>
-    !search || o.tracking_id?.includes(search) || o.customer_name?.includes(search) || o.customer_phone?.includes(search)
+    !search || o.tracking_id?.includes(search) || o.customer_name?.includes(search) || 
+    o.customer_phone?.includes(search) || o.barcode?.includes(search) || o.customer_code?.includes(search)
   );
 
   return (
@@ -41,23 +42,27 @@ export default function ClosedOrders() {
               <TableHeader>
                 <TableRow className="border-border">
                   <TableHead className="text-right">Tracking</TableHead>
+                  <TableHead className="text-right">الكود</TableHead>
                   <TableHead className="text-right">العميل</TableHead>
                   <TableHead className="text-right">المنتج</TableHead>
-                  <TableHead className="text-right">السعر</TableHead>
+                  <TableHead className="text-right">الإجمالي</TableHead>
                   <TableHead className="text-right">الشركة</TableHead>
+                  <TableHead className="text-right">المكتب</TableHead>
                   <TableHead className="text-right">الحالة</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">لا توجد أوردرات مقفلة</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">لا توجد أوردرات مقفلة</TableCell></TableRow>
                 ) : filtered.map(order => (
                   <TableRow key={order.id} className="border-border">
                     <TableCell className="font-mono text-xs">{order.tracking_id}</TableCell>
+                    <TableCell className="font-mono text-xs">{order.customer_code || '-'}</TableCell>
                     <TableCell>{order.customer_name}</TableCell>
                     <TableCell>{order.product_name}</TableCell>
-                    <TableCell>{order.price} ج.م</TableCell>
+                    <TableCell className="font-bold">{Number(order.price) + Number(order.delivery_price)} ج.م</TableCell>
                     <TableCell>{order.companies?.name || '-'}</TableCell>
+                    <TableCell>{order.offices?.name || '-'}</TableCell>
                     <TableCell>
                       <Badge style={{ backgroundColor: order.order_statuses?.color || undefined }} className="text-xs">
                         {order.order_statuses?.name || '-'}

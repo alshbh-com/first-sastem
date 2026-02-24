@@ -1,6 +1,7 @@
 import {
   LayoutDashboard, Package, Building2, Users, Factory, Box,
-  Truck, Wallet, CreditCard, ScrollText, Settings, LogOut, Archive, Building
+  Truck, Wallet, CreditCard, ScrollText, Settings, LogOut, Archive, Building,
+  PackageSearch, Search, Printer, DollarSign
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,7 +15,9 @@ import { Button } from '@/components/ui/button';
 const menuItems = [
   { title: 'لوحة التحكم', url: '/', icon: LayoutDashboard },
   { title: 'الأوردرات', url: '/orders', icon: Package },
+  { title: 'جميع الأوردرات', url: '/unassigned-orders', icon: PackageSearch },
   { title: 'الأوردرات القديمة', url: '/closed-orders', icon: Archive },
+  { title: 'بحث شامل', url: '/search', icon: Search },
   { title: 'المكاتب', url: '/offices', icon: Building2 },
   { title: 'العملاء', url: '/customers', icon: Users },
   { title: 'الشركات', url: '/companies', icon: Factory },
@@ -23,6 +26,8 @@ const menuItems = [
   { title: 'تحصيلات المندوبين', url: '/courier-collections', icon: Wallet },
   { title: 'حسابات الشركات', url: '/company-accounts', icon: CreditCard },
   { title: 'حسابات المكاتب', url: '/office-accounts', icon: Building },
+  { title: 'السلفات والخصومات', url: '/advances', icon: DollarSign },
+  { title: 'الطباعة', url: '/print', icon: Printer },
   { title: 'سجل الحركات', url: '/logs', icon: ScrollText },
   { title: 'الإعدادات', url: '/settings', icon: Settings },
 ];

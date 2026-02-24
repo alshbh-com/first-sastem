@@ -38,6 +38,36 @@ export type Database = {
         }
         Relationships: []
       }
+      advances: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          reason: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          reason?: string | null
+          type?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          reason?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           agreement_price: number
@@ -96,6 +126,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      courier_bonuses: {
+        Row: {
+          amount: number
+          courier_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          amount?: number
+          courier_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          amount?: number
+          courier_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          reason?: string | null
+        }
+        Relationships: []
       }
       courier_collections: {
         Row: {
@@ -432,6 +489,7 @@ export type Database = {
         Returns: boolean
       }
       is_owner_or_admin: { Args: { _user_id: string }; Returns: boolean }
+      nextval_barcode: { Args: never; Returns: number }
     }
     Enums: {
       app_role: "owner" | "admin" | "courier"

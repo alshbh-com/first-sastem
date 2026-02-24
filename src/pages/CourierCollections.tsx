@@ -7,16 +7,24 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function CourierCollections() {
+  const { user } = useAuth();
   const [couriers, setCouriers] = useState<any[]>([]);
   const [selectedCourier, setSelectedCourier] = useState('');
   const [statuses, setStatuses] = useState<any[]>([]);
   const [commissionPerOrder, setCommissionPerOrder] = useState('');
   const [commissionStatuses, setCommissionStatuses] = useState<string[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
-  const [collections, setCollections] = useState<any[]>([]);
+  const [bonuses, setBonuses] = useState<any[]>([]);
+  const [bonusDialogOpen, setBonusDialogOpen] = useState(false);
+  const [bonusAmount, setBonusAmount] = useState('');
+  const [bonusReason, setBonusReason] = useState('');
+  const [isClosed, setIsClosed] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -31,43 +39,76 @@ export default function CourierCollections() {
     load();
   }, []);
 
-  useEffect(() => {
-    if (selectedCourier) {
-      loadCourierData();
-    }
-  }, [selectedCourier]);
+  useEffect(() => { if (selectedCourier) loadCourierData(); }, [selectedCourier]);
 
   const loadCourierData = async () => {
     const { data: orderData } = await supabase
       .from('orders')
       .select('*, order_statuses(name, color)')
       .eq('courier_id', selectedCourier)
+      .eq('is_closed', false)
       .order('created_at', { ascending: false });
     setOrders(orderData || []);
 
-    const { data: collData } = await supabase
-      .from('courier_collections')
-      .select('*, orders(tracking_id)')
+    const { data: bonusData } = await supabase
+      .from('courier_bonuses')
+      .select('*')
       .eq('courier_id', selectedCourier)
       .order('created_at', { ascending: false });
-    setCollections(collData || []);
+    setBonuses(bonusData || []);
+    setIsClosed(false);
   };
 
-  const calculateCommission = () => {
-    if (!commissionPerOrder || commissionStatuses.length === 0 || !selectedCourier) {
-      toast.error('اختر مندوب وحالات ومبلغ العمولة');
-      return;
-    }
-    const rate = parseFloat(commissionPerOrder) || 0;
-    const eligibleOrders = orders.filter(o => commissionStatuses.includes(o.status_id));
-    const total = eligibleOrders.length * rate;
-    toast.success(`العمولة: ${total} ج.م (${eligibleOrders.length} أوردر × ${rate} ج.م)`);
-  };
+  const deliveredStatus = statuses.find(s => s.name === 'تم التسليم');
+  const rejectWithShipStatus = statuses.find(s => s.name === 'رفض واخد شحن');
+
+  // Auto-calculated: total collection = sum of (price + delivery_price) for delivered orders
+  const deliveredOrders = orders.filter(o => o.status_id === deliveredStatus?.id);
+  const totalCollection = deliveredOrders.reduce((sum, o) => sum + Number(o.price) + Number(o.delivery_price), 0);
+
+  // Reject with shipping - courier keeps shipping cost
+  const rejectShipOrders = orders.filter(o => o.status_id === rejectWithShipStatus?.id);
+  const rejectShipTotal = rejectShipOrders.reduce((sum, o) => sum + Number(o.delivery_price), 0);
+
+  // Commission
+  const rate = parseFloat(commissionPerOrder) || 0;
+  const eligibleOrders = orders.filter(o => commissionStatuses.includes(o.status_id));
+  const commissionTotal = eligibleOrders.length * rate;
+
+  // Bonuses total
+  const totalBonuses = bonuses.reduce((sum, b) => sum + Number(b.amount), 0);
+
+  // Net: totalCollection + rejectShipTotal - commissionTotal - totalBonuses
+  const netDue = totalCollection + rejectShipTotal - commissionTotal - totalBonuses;
 
   const toggleStatus = (statusId: string) => {
-    setCommissionStatuses(prev => 
-      prev.includes(statusId) ? prev.filter(s => s !== statusId) : [...prev, statusId]
-    );
+    setCommissionStatuses(prev => prev.includes(statusId) ? prev.filter(s => s !== statusId) : [...prev, statusId]);
+  };
+
+  const addBonus = async () => {
+    if (!bonusAmount || !selectedCourier) return;
+    const { error } = await supabase.from('courier_bonuses').insert({
+      courier_id: selectedCourier,
+      amount: parseFloat(bonusAmount),
+      reason: bonusReason,
+      created_by: user?.id,
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success('تم إضافة العمولة');
+    setBonusDialogOpen(false);
+    setBonusAmount(''); setBonusReason('');
+    loadCourierData();
+  };
+
+  const closeAccount = async () => {
+    if (!confirm('هل تريد تقفيل حساب المندوب؟ سيتم تقفيل جميع الأوردرات.')) return;
+    const orderIds = orders.map(o => o.id);
+    if (orderIds.length > 0) {
+      await supabase.from('orders').update({ is_closed: true }).in('id', orderIds);
+    }
+    toast.success('تم تقفيل الحساب');
+    setIsClosed(true);
+    loadCourierData();
   };
 
   return (
@@ -79,18 +120,40 @@ export default function CourierCollections() {
           <Label className="text-xs">المندوب</Label>
           <Select value={selectedCourier} onValueChange={setSelectedCourier}>
             <SelectTrigger className="w-48 bg-secondary border-border"><SelectValue placeholder="اختر مندوب" /></SelectTrigger>
-            <SelectContent>
-              {couriers.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}
-            </SelectContent>
+            <SelectContent>{couriers.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}</SelectContent>
           </Select>
         </div>
       </div>
 
       {selectedCourier && (
         <>
+          {/* Summary cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">إجمالي التحصيل</p><p className="text-lg font-bold text-emerald-500">{totalCollection} ج.م</p></CardContent></Card>
+            <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">رفض واخد شحن</p><p className="text-lg font-bold text-amber-500">{rejectShipTotal} ج.م</p></CardContent></Card>
+            <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">العمولة</p><p className="text-lg font-bold text-destructive">{commissionTotal} ج.م</p></CardContent></Card>
+            <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">صافي المستحق</p><p className="text-lg font-bold text-primary">{netDue} ج.م</p></CardContent></Card>
+          </div>
+
           {/* Commission calculator */}
           <Card className="bg-card border-border">
-            <CardHeader><CardTitle className="text-base">حاسبة العمولة</CardTitle></CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-base">حاسبة العمولة</CardTitle>
+              <div className="flex gap-2">
+                <Dialog open={bonusDialogOpen} onOpenChange={setBonusDialogOpen}>
+                  <DialogTrigger asChild><Button size="sm" variant="outline"><Plus className="h-4 w-4 ml-1" />عمولة خاصة</Button></DialogTrigger>
+                  <DialogContent className="bg-card border-border">
+                    <DialogHeader><DialogTitle>إضافة عمولة خاصة</DialogTitle></DialogHeader>
+                    <div className="space-y-4">
+                      <div><Label>المبلغ</Label><Input type="number" value={bonusAmount} onChange={e => setBonusAmount(e.target.value)} className="bg-secondary border-border" /></div>
+                      <div><Label>السبب</Label><Input value={bonusReason} onChange={e => setBonusReason(e.target.value)} className="bg-secondary border-border" placeholder="مشوار خاص..." /></div>
+                      <Button onClick={addBonus} className="w-full">حفظ</Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                <Button size="sm" variant="destructive" onClick={closeAccount}>تقفيل الحساب</Button>
+              </div>
+            </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex flex-wrap gap-2">
                 {statuses.map(s => (
@@ -98,8 +161,7 @@ export default function CourierCollections() {
                     style={{ backgroundColor: commissionStatuses.includes(s.id) ? s.color : undefined }}
                     variant={commissionStatuses.includes(s.id) ? 'default' : 'outline'}
                     className="cursor-pointer"
-                    onClick={() => toggleStatus(s.id)}
-                  >
+                    onClick={() => toggleStatus(s.id)}>
                     {s.name}
                   </Badge>
                 ))}
@@ -109,13 +171,37 @@ export default function CourierCollections() {
                   <Label className="text-xs">مبلغ العمولة لكل أوردر (ج.م)</Label>
                   <Input type="number" value={commissionPerOrder} onChange={e => setCommissionPerOrder(e.target.value)}
                     className="w-40 bg-secondary border-border" placeholder="30"
-                    onFocus={e => { if (e.target.value === '0') setCommissionPerOrder(''); }}
-                  />
+                    onFocus={e => { if (e.target.value === '0') setCommissionPerOrder(''); }} />
                 </div>
-                <Button onClick={calculateCommission}>احسب العمولة</Button>
+                <p className="text-sm">= {commissionTotal} ج.م ({eligibleOrders.length} أوردر)</p>
               </div>
             </CardContent>
           </Card>
+
+          {/* Bonuses */}
+          {bonuses.length > 0 && (
+            <Card className="bg-card border-border">
+              <CardHeader><CardTitle className="text-base">عمولات خاصة</CardTitle></CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader><TableRow className="border-border">
+                    <TableHead className="text-right">المبلغ</TableHead>
+                    <TableHead className="text-right">السبب</TableHead>
+                    <TableHead className="text-right">التاريخ</TableHead>
+                  </TableRow></TableHeader>
+                  <TableBody>
+                    {bonuses.map(b => (
+                      <TableRow key={b.id} className="border-border">
+                        <TableCell className="font-bold">{b.amount} ج.م</TableCell>
+                        <TableCell>{b.reason || '-'}</TableCell>
+                        <TableCell>{new Date(b.created_at).toLocaleDateString('ar-EG')}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Courier orders */}
           <Card className="bg-card border-border">
@@ -126,19 +212,25 @@ export default function CourierCollections() {
                   <TableHeader>
                     <TableRow className="border-border">
                       <TableHead className="text-right">Tracking</TableHead>
+                      <TableHead className="text-right">الكود</TableHead>
                       <TableHead className="text-right">العميل</TableHead>
                       <TableHead className="text-right">السعر</TableHead>
+                      <TableHead className="text-right">التوصيل</TableHead>
+                      <TableHead className="text-right">الإجمالي</TableHead>
                       <TableHead className="text-right">الحالة</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {orders.length === 0 ? (
-                      <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-4">لا توجد أوردرات</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-4">لا توجد أوردرات</TableCell></TableRow>
                     ) : orders.map(o => (
                       <TableRow key={o.id} className="border-border">
                         <TableCell className="font-mono text-xs">{o.tracking_id}</TableCell>
+                        <TableCell className="font-mono text-xs">{o.customer_code || '-'}</TableCell>
                         <TableCell>{o.customer_name}</TableCell>
                         <TableCell>{o.price} ج.م</TableCell>
+                        <TableCell>{o.delivery_price} ج.م</TableCell>
+                        <TableCell className="font-bold">{Number(o.price) + Number(o.delivery_price)} ج.م</TableCell>
                         <TableCell>
                           <Badge style={{ backgroundColor: o.order_statuses?.color }} className="text-xs">
                             {o.order_statuses?.name || '-'}

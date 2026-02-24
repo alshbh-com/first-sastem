@@ -4,19 +4,22 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Eye, Lock, StickyNote } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Couriers() {
+  const { user } = useAuth();
   const [couriers, setCouriers] = useState<any[]>([]);
   const [selectedCourier, setSelectedCourier] = useState<string>('');
   const [courierOrders, setCourierOrders] = useState<any[]>([]);
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [notesDialog, setNotesDialog] = useState<any | null>(null);
   const [notes, setNotes] = useState<any[]>([]);
+  const [noteText, setNoteText] = useState('');
 
   useEffect(() => {
     const load = async () => {
@@ -29,14 +32,12 @@ export default function Couriers() {
     load();
   }, []);
 
-  useEffect(() => {
-    if (selectedCourier) loadCourierOrders();
-  }, [selectedCourier]);
+  useEffect(() => { if (selectedCourier) loadCourierOrders(); }, [selectedCourier]);
 
   const loadCourierOrders = async () => {
     const { data } = await supabase
       .from('orders')
-      .select('*, order_statuses(name, color)')
+      .select('*, order_statuses(name, color), offices(name)')
       .eq('courier_id', selectedCourier)
       .eq('is_closed', false)
       .order('created_at', { ascending: false });
@@ -45,19 +46,12 @@ export default function Couriers() {
   };
 
   const toggleSelect = (id: string) => {
-    setSelectedOrders(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+    setSelectedOrders(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   };
 
   const toggleAll = () => {
-    if (selectedOrders.size === courierOrders.length) {
-      setSelectedOrders(new Set());
-    } else {
-      setSelectedOrders(new Set(courierOrders.map(o => o.id)));
-    }
+    if (selectedOrders.size === courierOrders.length) setSelectedOrders(new Set());
+    else setSelectedOrders(new Set(courierOrders.map(o => o.id)));
   };
 
   const closeSelected = async () => {
@@ -74,11 +68,19 @@ export default function Couriers() {
     setNotes(data || []);
   };
 
+  const addNote = async () => {
+    if (!noteText.trim() || !notesDialog) return;
+    await supabase.from('order_notes').insert({ order_id: notesDialog.id, user_id: user?.id || '', note: noteText.trim() });
+    setNoteText('');
+    const { data } = await supabase.from('order_notes').select('*').eq('order_id', notesDialog.id).order('created_at', { ascending: false });
+    setNotes(data || []);
+    toast.success('تم إضافة الملاحظة');
+  };
+
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">المندوبين</h1>
 
-      {/* Courier list */}
       <Card className="bg-card border-border">
         <CardContent className="p-0">
           <Table>
@@ -110,7 +112,6 @@ export default function Couriers() {
         </CardContent>
       </Card>
 
-      {/* Courier orders */}
       {selectedCourier && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -127,27 +128,27 @@ export default function Couriers() {
                 <Table>
                   <TableHeader>
                     <TableRow className="border-border">
-                      <TableHead className="w-10">
-                        <Checkbox checked={courierOrders.length > 0 && selectedOrders.size === courierOrders.length} onCheckedChange={toggleAll} />
-                      </TableHead>
+                      <TableHead className="w-10"><Checkbox checked={courierOrders.length > 0 && selectedOrders.size === courierOrders.length} onCheckedChange={toggleAll} /></TableHead>
                       <TableHead className="text-right">Tracking</TableHead>
+                      <TableHead className="text-right">الكود</TableHead>
                       <TableHead className="text-right">العميل</TableHead>
                       <TableHead className="text-right">المنتج</TableHead>
-                      <TableHead className="text-right">السعر</TableHead>
+                      <TableHead className="text-right">الإجمالي</TableHead>
                       <TableHead className="text-right">الحالة</TableHead>
                       <TableHead className="text-right">ملاحظات</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {courierOrders.length === 0 ? (
-                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
                     ) : courierOrders.map(order => (
                       <TableRow key={order.id} className="border-border">
                         <TableCell><Checkbox checked={selectedOrders.has(order.id)} onCheckedChange={() => toggleSelect(order.id)} /></TableCell>
                         <TableCell className="font-mono text-xs">{order.tracking_id}</TableCell>
+                        <TableCell className="font-mono text-xs">{order.customer_code || '-'}</TableCell>
                         <TableCell>{order.customer_name}</TableCell>
                         <TableCell>{order.product_name}</TableCell>
-                        <TableCell>{order.price} ج.م</TableCell>
+                        <TableCell className="font-bold">{Number(order.price) + Number(order.delivery_price)} ج.م</TableCell>
                         <TableCell>
                           <Badge style={{ backgroundColor: order.order_statuses?.color || undefined }} className="text-xs">
                             {order.order_statuses?.name || '-'}
@@ -168,8 +169,7 @@ export default function Couriers() {
         </div>
       )}
 
-      {/* Notes Dialog */}
-      <Dialog open={!!notesDialog} onOpenChange={(v) => { if (!v) setNotesDialog(null); }}>
+      <Dialog open={!!notesDialog} onOpenChange={(v) => { if (!v) { setNotesDialog(null); setNoteText(''); } }}>
         <DialogContent className="bg-card border-border">
           <DialogHeader><DialogTitle>ملاحظات - {notesDialog?.tracking_id}</DialogTitle></DialogHeader>
           <div className="space-y-2 max-h-60 overflow-y-auto">
@@ -181,6 +181,10 @@ export default function Couriers() {
                 <p className="text-xs text-muted-foreground mt-1">{new Date(n.created_at).toLocaleString('ar-EG')}</p>
               </div>
             ))}
+          </div>
+          <div className="flex gap-2">
+            <Input value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="أضف ملاحظة..." className="bg-secondary border-border" />
+            <Button size="sm" onClick={addNote} disabled={!noteText.trim()}>إضافة</Button>
           </div>
         </DialogContent>
       </Dialog>

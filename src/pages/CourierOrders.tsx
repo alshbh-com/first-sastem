@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Eye, Phone, MessageSquare, Send } from 'lucide-react';
+import { LogOut, Eye, Phone, MessageSquare, Send, GripVertical } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function CourierOrders() {
@@ -18,6 +18,8 @@ export default function CourierOrders() {
   const [noteText, setNoteText] = useState('');
   const [notes, setNotes] = useState<any[]>([]);
   const [savingNote, setSavingNote] = useState(false);
+  const [shippingCost, setShippingCost] = useState('');
+  const [shippingDialog, setShippingDialog] = useState<any | null>(null);
 
   useEffect(() => {
     load();
@@ -27,42 +29,71 @@ export default function CourierOrders() {
   const load = async () => {
     const { data } = await supabase
       .from('orders')
-      .select('*, order_statuses(name, color)')
+      .select('*, order_statuses(name, color), offices(name)')
       .eq('courier_id', user?.id || '')
       .eq('is_closed', false)
       .order('created_at', { ascending: false });
     setOrders(data || []);
   };
 
+  const rejectWithShipStatus = statuses.find(s => s.name === 'رفض واخد شحن');
+  const postponedStatus = statuses.find(s => s.name === 'مؤجل');
+
   const updateStatus = async (orderId: string, statusId: string) => {
+    // If رفض واخد شحن, ask for shipping cost
+    if (statusId === rejectWithShipStatus?.id) {
+      setShippingDialog({ orderId, statusId });
+      setShippingCost('');
+      return;
+    }
+
     await supabase.from('orders').update({ status_id: statusId }).eq('id', orderId);
+
+    // If مؤجل, remove courier assignment so it goes back to orders pool
+    if (statusId === postponedStatus?.id) {
+      await supabase.from('orders').update({ courier_id: null }).eq('id', orderId);
+    }
+
     toast.success('تم تحديث الحالة');
+    load();
+  };
+
+  const confirmRejectWithShip = async () => {
+    if (!shippingDialog) return;
+    const cost = parseFloat(shippingCost) || 0;
+    await supabase.from('orders').update({ 
+      status_id: shippingDialog.statusId,
+      delivery_price: cost 
+    }).eq('id', shippingDialog.orderId);
+
+    toast.success(`تم تحديث الحالة - مصاريف الشحن: ${cost} ج.م`);
+    setShippingDialog(null);
     load();
   };
 
   const openDetails = async (order: any) => {
     setSelectedOrder(order);
-    const { data } = await supabase
-      .from('order_notes')
-      .select('*')
-      .eq('order_id', order.id)
-      .order('created_at', { ascending: false });
+    const { data } = await supabase.from('order_notes').select('*').eq('order_id', order.id).order('created_at', { ascending: false });
     setNotes(data || []);
   };
 
   const addNote = async () => {
     if (!noteText.trim() || !selectedOrder) return;
     setSavingNote(true);
-    await supabase.from('order_notes').insert({
-      order_id: selectedOrder.id,
-      user_id: user?.id || '',
-      note: noteText.trim(),
-    });
+    await supabase.from('order_notes').insert({ order_id: selectedOrder.id, user_id: user?.id || '', note: noteText.trim() });
     setNoteText('');
     const { data } = await supabase.from('order_notes').select('*').eq('order_id', selectedOrder.id).order('created_at', { ascending: false });
     setNotes(data || []);
     setSavingNote(false);
     toast.success('تم إضافة الملاحظة');
+  };
+
+  // Drag to reorder
+  const moveOrder = (index: number, direction: number) => {
+    const newOrders = [...orders];
+    const [item] = newOrders.splice(index, 1);
+    newOrders.splice(index + direction, 0, item);
+    setOrders(newOrders);
   };
 
   return (
@@ -81,7 +112,9 @@ export default function CourierOrders() {
               <Table>
                 <TableHeader>
                   <TableRow className="border-border">
+                    <TableHead className="w-10">ترتيب</TableHead>
                     <TableHead className="text-right">Tracking</TableHead>
+                    <TableHead className="text-right">الكود</TableHead>
                     <TableHead className="text-right">العميل</TableHead>
                     <TableHead className="text-right">المنتج</TableHead>
                     <TableHead className="text-right">المحافظة</TableHead>
@@ -91,29 +124,30 @@ export default function CourierOrders() {
                 </TableHeader>
                 <TableBody>
                   {orders.length === 0 ? (
-                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
-                  ) : orders.map((order) => (
+                    <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
+                  ) : orders.map((order, idx) => (
                     <TableRow key={order.id} className="border-border">
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          {idx > 0 && <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => moveOrder(idx, -1)}>↑</Button>}
+                          {idx < orders.length - 1 && <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => moveOrder(idx, 1)}>↓</Button>}
+                        </div>
+                      </TableCell>
                       <TableCell className="font-mono text-xs">{order.tracking_id}</TableCell>
+                      <TableCell className="font-mono text-xs">{order.customer_code || '-'}</TableCell>
                       <TableCell>{order.customer_name}</TableCell>
                       <TableCell>{order.product_name}</TableCell>
                       <TableCell>{order.governorate}</TableCell>
                       <TableCell>
                         <Select value={order.status_id || ''} onValueChange={(v) => updateStatus(order.id, v)}>
-                          <SelectTrigger className="w-36 bg-secondary border-border">
-                            <SelectValue placeholder="اختر الحالة" />
-                          </SelectTrigger>
+                          <SelectTrigger className="w-36 bg-secondary border-border"><SelectValue placeholder="اختر الحالة" /></SelectTrigger>
                           <SelectContent>
-                            {statuses.map(s => (
-                              <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                            ))}
+                            {statuses.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                           </SelectContent>
                         </Select>
                       </TableCell>
                       <TableCell>
-                        <Button size="icon" variant="ghost" onClick={() => openDetails(order)}>
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => openDetails(order)}><Eye className="h-4 w-4" /></Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -124,47 +158,48 @@ export default function CourierOrders() {
         </Card>
       </div>
 
+      {/* Reject with shipping dialog */}
+      <Dialog open={!!shippingDialog} onOpenChange={v => { if (!v) setShippingDialog(null); }}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader><DialogTitle>رفض واخد شحن - أدخل مصاريف الشحن</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <Input type="number" value={shippingCost} onChange={e => setShippingCost(e.target.value)} placeholder="مصاريف الشحن" className="bg-secondary border-border" />
+            <Button onClick={confirmRejectWithShip} className="w-full">تأكيد</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Order Details Dialog */}
       <Dialog open={!!selectedOrder} onOpenChange={(v) => { if (!v) setSelectedOrder(null); }}>
         <DialogContent className="max-w-lg bg-card border-border max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>تفاصيل الأوردر - {selectedOrder?.tracking_id}</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>تفاصيل الأوردر - {selectedOrder?.tracking_id}</DialogTitle></DialogHeader>
           {selectedOrder && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div><span className="text-muted-foreground">العميل:</span> <strong>{selectedOrder.customer_name}</strong></div>
                 <div><span className="text-muted-foreground">الهاتف:</span> <strong dir="ltr">{selectedOrder.customer_phone}</strong></div>
+                <div><span className="text-muted-foreground">الكود:</span> <strong>{selectedOrder.customer_code || '-'}</strong></div>
                 <div><span className="text-muted-foreground">المنتج:</span> <strong>{selectedOrder.product_name}</strong></div>
                 <div><span className="text-muted-foreground">الكمية:</span> <strong>{selectedOrder.quantity}</strong></div>
-                <div><span className="text-muted-foreground">السعر:</span> <strong>{selectedOrder.price} ج.م</strong></div>
-                <div><span className="text-muted-foreground">التوصيل:</span> <strong>{selectedOrder.delivery_price} ج.م</strong></div>
                 <div><span className="text-muted-foreground">المحافظة:</span> <strong>{selectedOrder.governorate}</strong></div>
                 <div><span className="text-muted-foreground">اللون:</span> <strong>{selectedOrder.color || '-'}</strong></div>
                 <div><span className="text-muted-foreground">المقاس:</span> <strong>{selectedOrder.size || '-'}</strong></div>
                 <div><span className="text-muted-foreground">الباركود:</span> <strong dir="ltr">{selectedOrder.barcode || '-'}</strong></div>
+                <div><span className="text-muted-foreground">المكتب:</span> <strong>{selectedOrder.offices?.name || '-'}</strong></div>
               </div>
 
-              {/* Contact actions */}
               <div className="flex gap-2">
                 <Button size="sm" variant="outline" className="flex-1" asChild>
-                  <a href={`tel:${selectedOrder.customer_phone}`}>
-                    <Phone className="h-4 w-4 ml-1" />اتصال
-                  </a>
+                  <a href={`tel:${selectedOrder.customer_phone}`}><Phone className="h-4 w-4 ml-1" />اتصال</a>
                 </Button>
                 <Button size="sm" variant="outline" className="flex-1" asChild>
-                  <a href={`sms:${selectedOrder.customer_phone}`}>
-                    <MessageSquare className="h-4 w-4 ml-1" />رسالة
-                  </a>
+                  <a href={`sms:${selectedOrder.customer_phone}`}><MessageSquare className="h-4 w-4 ml-1" />رسالة</a>
                 </Button>
                 <Button size="sm" variant="outline" className="flex-1 text-emerald-500" asChild>
-                  <a href={`https://wa.me/${selectedOrder.customer_phone?.replace(/^0/, '20')}`} target="_blank" rel="noopener noreferrer">
-                    <Send className="h-4 w-4 ml-1" />واتساب
-                  </a>
+                  <a href={`https://wa.me/${selectedOrder.customer_phone?.replace(/^0/, '20')}`} target="_blank" rel="noopener noreferrer"><Send className="h-4 w-4 ml-1" />واتساب</a>
                 </Button>
               </div>
 
-              {/* Notes */}
               <div className="space-y-2">
                 <h3 className="font-semibold text-sm">الملاحظات</h3>
                 <div className="max-h-40 overflow-y-auto space-y-2">

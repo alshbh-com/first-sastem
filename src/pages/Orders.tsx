@@ -19,6 +19,7 @@ export default function Orders() {
   const [offices, setOffices] = useState<any[]>([]);
   const [companies, setCompanies] = useState<any[]>([]);
   const [couriers, setCouriers] = useState<any[]>([]);
+  const [courierMap, setCourierMap] = useState<Record<string, string>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [assignCourier, setAssignCourier] = useState('');
 
@@ -35,6 +36,9 @@ export default function Orders() {
     if (r.data && r.data.length > 0) {
       const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', r.data.map(x => x.user_id));
       setCouriers(profiles || []);
+      const map: Record<string, string> = {};
+      (profiles || []).forEach(p => { map[p.id] = p.full_name; });
+      setCourierMap(map);
     }
   };
 
@@ -60,7 +64,6 @@ export default function Orders() {
   const toggleSelect = (id: string) => {
     setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   };
-
   const toggleAll = () => {
     if (selected.size === filtered.length) setSelected(new Set());
     else setSelected(new Set(filtered.map(o => o.id)));
@@ -140,30 +143,37 @@ export default function Orders() {
                   <TableHead className="text-right">الإجمالي</TableHead>
                   <TableHead className="text-right">الشركة</TableHead>
                   <TableHead className="text-right">المكتب</TableHead>
+                  <TableHead className="text-right">المندوب</TableHead>
                   <TableHead className="text-right">الحالة</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
-                ) : filtered.map((order) => (
-                  <TableRow key={order.id} className="border-border">
-                    <TableCell><Checkbox checked={selected.has(order.id)} onCheckedChange={() => toggleSelect(order.id)} /></TableCell>
-                    <TableCell className="font-mono text-xs">{order.tracking_id}</TableCell>
-                    <TableCell className="font-mono text-xs">{order.customer_code || '-'}</TableCell>
-                    <TableCell>{order.customer_name}</TableCell>
-                    <TableCell dir="ltr">{order.customer_phone}</TableCell>
-                    <TableCell>{order.product_name}</TableCell>
-                    <TableCell className="font-bold">{Number(order.price) + Number(order.delivery_price)} ج.م</TableCell>
-                    <TableCell>{order.companies?.name || '-'}</TableCell>
-                    <TableCell>{order.offices?.name || '-'}</TableCell>
-                    <TableCell>
-                      <Badge style={{ backgroundColor: order.order_statuses?.color || undefined }} className="text-xs">
-                        {order.order_statuses?.name || 'بدون حالة'}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                  <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
+                ) : filtered.map((order) => {
+                  const hasCourier = !!order.courier_id;
+                  return (
+                    <TableRow key={order.id} className={`border-border ${hasCourier ? 'bg-muted/30' : ''}`}>
+                      <TableCell><Checkbox checked={selected.has(order.id)} onCheckedChange={() => toggleSelect(order.id)} /></TableCell>
+                      <TableCell className="font-mono text-xs">{order.tracking_id}</TableCell>
+                      <TableCell className="font-mono text-xs">{order.customer_code || '-'}</TableCell>
+                      <TableCell>{order.customer_name}</TableCell>
+                      <TableCell dir="ltr">{order.customer_phone}</TableCell>
+                      <TableCell>{order.product_name}</TableCell>
+                      <TableCell className="font-bold">{Number(order.price) + Number(order.delivery_price)} ج.م</TableCell>
+                      <TableCell>{order.companies?.name || '-'}</TableCell>
+                      <TableCell>{order.offices?.name || '-'}</TableCell>
+                      <TableCell className={hasCourier ? 'font-medium' : 'text-muted-foreground'}>
+                        {hasCourier ? (courierMap[order.courier_id] || 'مندوب') : 'غير معين'}
+                      </TableCell>
+                      <TableCell>
+                        <Badge style={{ backgroundColor: order.order_statuses?.color || undefined }} className="text-xs">
+                          {order.order_statuses?.name || 'بدون حالة'}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

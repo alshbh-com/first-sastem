@@ -213,25 +213,72 @@ export type Database = {
         }
         Relationships: []
       }
-      offices: {
+      delivery_prices: {
         Row: {
           created_at: string
+          governorate: string
           id: string
-          name: string
-          specialty: string | null
+          office_id: string
+          price: number
           updated_at: string
         }
         Insert: {
           created_at?: string
+          governorate?: string
           id?: string
-          name: string
-          specialty?: string | null
+          office_id: string
+          price?: number
           updated_at?: string
         }
         Update: {
           created_at?: string
+          governorate?: string
+          id?: string
+          office_id?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_prices_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offices: {
+        Row: {
+          address: string | null
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          owner_name: string | null
+          owner_phone: string | null
+          specialty: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          owner_name?: string | null
+          owner_phone?: string | null
+          specialty?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
           id?: string
           name?: string
+          notes?: string | null
+          owner_name?: string | null
+          owner_phone?: string | null
           specialty?: string | null
           updated_at?: string
         }
@@ -310,6 +357,7 @@ export type Database = {
           id: string
           is_closed: boolean
           office_id: string | null
+          partial_amount: number | null
           price: number
           product_id: string | null
           product_name: string
@@ -335,6 +383,7 @@ export type Database = {
           id?: string
           is_closed?: boolean
           office_id?: string | null
+          partial_amount?: number | null
           price?: number
           product_id?: string | null
           product_name?: string
@@ -360,6 +409,7 @@ export type Database = {
           id?: string
           is_closed?: boolean
           office_id?: string | null
+          partial_amount?: number | null
           price?: number
           product_id?: string | null
           product_name?: string
@@ -433,26 +483,32 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address: string | null
           created_at: string
           full_name: string
           id: string
           is_active: boolean
+          notes: string | null
           phone: string | null
           updated_at: string
         }
         Insert: {
+          address?: string | null
           created_at?: string
           full_name?: string
           id: string
           is_active?: boolean
+          notes?: string | null
           phone?: string | null
           updated_at?: string
         }
         Update: {
+          address?: string | null
           created_at?: string
           full_name?: string
           id?: string
           is_active?: boolean
+          notes?: string | null
           phone?: string | null
           updated_at?: string
         }

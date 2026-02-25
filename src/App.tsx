@@ -13,7 +13,7 @@ import UnassignedOrders from "@/pages/UnassignedOrders";
 import ClosedOrders from "@/pages/ClosedOrders";
 import GlobalSearch from "@/pages/GlobalSearch";
 import Offices from "@/pages/Offices";
-import Customers from "@/pages/Customers";
+import DeliveryPrices from "@/pages/DeliveryPrices";
 import Companies from "@/pages/Companies";
 import Products from "@/pages/Products";
 import Couriers from "@/pages/Couriers";
@@ -57,7 +57,7 @@ const App = () => (
               <Route path="/closed-orders" element={<ClosedOrders />} />
               <Route path="/search" element={<GlobalSearch />} />
               <Route path="/offices" element={<Offices />} />
-              <Route path="/customers" element={<Customers />} />
+              <Route path="/delivery-prices" element={<DeliveryPrices />} />
               <Route path="/companies" element={<Companies />} />
               <Route path="/products" element={<Products />} />
               <Route path="/couriers" element={<Couriers />} />

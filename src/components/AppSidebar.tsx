@@ -1,7 +1,7 @@
 import {
-  LayoutDashboard, Package, Building2, Users, Factory, Box,
+  LayoutDashboard, Package, Building2, Factory, Box,
   Truck, Wallet, CreditCard, ScrollText, Settings, LogOut, Archive, Building,
-  PackageSearch, Search, Printer, DollarSign
+  PackageSearch, Search, Printer, DollarSign, MapPin
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,7 +19,7 @@ const menuItems = [
   { title: 'الأوردرات القديمة', url: '/closed-orders', icon: Archive },
   { title: 'بحث شامل', url: '/search', icon: Search },
   { title: 'المكاتب', url: '/offices', icon: Building2 },
-  { title: 'العملاء', url: '/customers', icon: Users },
+  { title: 'أسعار التوصيل', url: '/delivery-prices', icon: MapPin },
   { title: 'الشركات', url: '/companies', icon: Factory },
   { title: 'المنتجات', url: '/products', icon: Box },
   { title: 'المندوبين', url: '/couriers', icon: Truck },
@@ -47,9 +47,7 @@ export function AppSidebar() {
           </span>
         </div>
       </SidebarHeader>
-
       <SidebarSeparator />
-
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
@@ -57,12 +55,7 @@ export function AppSidebar() {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton asChild tooltip={item.title}>
-                    <NavLink
-                      to={item.url}
-                      end={item.url === '/'}
-                      className="hover:bg-sidebar-accent"
-                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
-                    >
+                    <NavLink to={item.url} end={item.url === '/'} className="hover:bg-sidebar-accent" activeClassName="bg-sidebar-accent text-sidebar-primary font-medium">
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </NavLink>
@@ -73,13 +66,8 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-
       <SidebarFooter className="p-2">
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-          onClick={logout}
-        >
+        <Button variant="ghost" className="w-full justify-start gap-2 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={logout}>
           <LogOut className="h-4 w-4" />
           <span className="group-data-[collapsible=icon]:hidden">تسجيل خروج</span>
         </Button>

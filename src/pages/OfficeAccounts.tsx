@@ -33,41 +33,52 @@ export default function OfficeAccounts() {
     const dateFilter = getDateFilter();
 
     const deliveredStatus = statuses.find(s => s.name === 'تم التسليم');
-    const returnStatuses = statuses.filter(s => s.name.includes('مرتجع'));
+    const returnStatuses = statuses.filter(s => s.name.includes('مرتجع') && s.name !== 'مرتجع دون شحن');
+    const returnNoShipStatus = statuses.find(s => s.name === 'مرتجع دون شحن');
     const postponedStatus = statuses.find(s => s.name === 'مؤجل');
     const rejectStatuses = statuses.filter(s => s.name.includes('رفض'));
-    // مرتجع دون شحن - shipping cost deducted
-    const returnNoShipStatus = statuses.find(s => s.name === 'مرتجع دون شحن');
+    const partialStatus = statuses.find(s => s.name === 'تسليم جزئي');
 
     const result = await Promise.all(officeList.map(async (office) => {
-      let query = supabase.from('orders').select('price, delivery_price, status_id').eq('office_id', office.id);
+      let query = supabase.from('orders').select('price, delivery_price, status_id, partial_amount').eq('office_id', office.id);
       if (dateFilter) query = query.gte('created_at', dateFilter);
       const { data: orders } = await query;
-      if (!orders) return { id: office.id, name: office.name, totalOrders: 0, deliveredTotal: 0, returnedTotal: 0, postponedTotal: 0, rejectedTotal: 0, returnNoShipDeduction: 0, settlement: 0, settlementWithPostponed: 0, orderCount: 0 };
+      if (!orders) return null;
 
-      const totalOrders = orders.reduce((sum, o) => sum + Number(o.price), 0);
       const deliveredTotal = orders.filter(o => o.status_id === deliveredStatus?.id).reduce((sum, o) => sum + Number(o.price), 0);
       const returnedTotal = orders.filter(o => returnStatuses.some(rs => rs.id === o.status_id)).reduce((sum, o) => sum + Number(o.price), 0);
       const postponedTotal = orders.filter(o => o.status_id === postponedStatus?.id).reduce((sum, o) => sum + Number(o.price), 0);
-      const rejectedTotal = orders.filter(o => rejectStatuses.some(rs => rs.id === o.status_id)).reduce((sum, o) => sum + Number(o.price), 0);
-      // Deduct shipping for مرتجع دون شحن and رفض
-      const returnNoShipDeduction = orders.filter(o => o.status_id === returnNoShipStatus?.id || rejectStatuses.some(rs => rs.id === o.status_id)).reduce((sum, o) => sum + Number(o.delivery_price), 0);
+      
+      // خصم شحن مرتجع دون شحن + رفض
+      const returnNoShipDeduction = orders
+        .filter(o => o.status_id === returnNoShipStatus?.id || rejectStatuses.some(rs => rs.id === o.status_id))
+        .reduce((sum, o) => sum + Number(o.delivery_price), 0);
 
-      // المستحق = التسليمات - (المرتجع + العمولة + الرفض)
-      // العمولة = delivery_price for delivered orders
-      const deliveryCommission = orders.filter(o => o.status_id === deliveredStatus?.id).reduce((sum, o) => sum + Number(o.delivery_price), 0);
-      const settlement = deliveredTotal - (returnedTotal + deliveryCommission + rejectedTotal + returnNoShipDeduction);
+      // المرتجع الجزئي = سعر الأوردر - المبلغ المحصل (partial_amount)
+      const partialOrders = orders.filter(o => o.status_id === partialStatus?.id);
+      const partialDeliveredTotal = partialOrders.reduce((sum, o) => sum + Number(o.partial_amount || 0), 0);
+      const partialReturnTotal = partialOrders.reduce((sum, o) => sum + (Number(o.price) - Number(o.partial_amount || 0)), 0);
+
+      // المستحق = التسليمات - (المرتجع + خصم شحن مرتجع دون شحن)
+      const settlement = deliveredTotal + partialDeliveredTotal - (returnedTotal + returnNoShipDeduction);
+      // المستحق بالمؤجل = المستحق + المؤجل
       const settlementWithPostponed = settlement + postponedTotal;
 
       return {
         id: office.id, name: office.name,
-        totalOrders, deliveredTotal, returnedTotal, postponedTotal, rejectedTotal,
-        returnNoShipDeduction, settlement, settlementWithPostponed,
         orderCount: orders.length,
+        deliveredTotal,
+        returnedTotal,
+        postponedTotal,
+        returnNoShipDeduction,
+        partialDeliveredTotal,
+        partialReturnTotal,
+        settlement,
+        settlementWithPostponed,
       };
     }));
 
-    setAccounts(result);
+    setAccounts(result.filter(Boolean));
   };
 
   return (
@@ -82,7 +93,6 @@ export default function OfficeAccounts() {
             {offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
           </SelectContent>
         </Select>
-
         <Tabs value={period} onValueChange={setPeriod} className="w-auto">
           <TabsList className="bg-secondary">
             <TabsTrigger value="all">الكل</TabsTrigger>
@@ -101,11 +111,11 @@ export default function OfficeAccounts() {
                 <TableRow className="border-border">
                   <TableHead className="text-right">المكتب</TableHead>
                   <TableHead className="text-right">عدد</TableHead>
-                  <TableHead className="text-right">إجمالي</TableHead>
                   <TableHead className="text-right">تسليم</TableHead>
                   <TableHead className="text-right">مرتجع</TableHead>
                   <TableHead className="text-right">مؤجل</TableHead>
-                  <TableHead className="text-right">رفض</TableHead>
+                  <TableHead className="text-right">مرتجع جزئي</TableHead>
+                  <TableHead className="text-right">خصم شحن</TableHead>
                   <TableHead className="text-right">المستحق</TableHead>
                   <TableHead className="text-right">المستحق بالمؤجل</TableHead>
                 </TableRow>
@@ -117,11 +127,11 @@ export default function OfficeAccounts() {
                   <TableRow key={a.id} className="border-border">
                     <TableCell className="font-medium">{a.name}</TableCell>
                     <TableCell>{a.orderCount}</TableCell>
-                    <TableCell>{a.totalOrders} ج.م</TableCell>
                     <TableCell className="text-emerald-500 font-bold">{a.deliveredTotal} ج.م</TableCell>
                     <TableCell className="text-destructive font-bold">{a.returnedTotal} ج.م</TableCell>
                     <TableCell className="text-amber-500 font-bold">{a.postponedTotal} ج.م</TableCell>
-                    <TableCell className="text-destructive font-bold">{a.rejectedTotal} ج.م</TableCell>
+                    <TableCell className="text-orange-400 font-bold">{a.partialReturnTotal} ج.م</TableCell>
+                    <TableCell className="text-destructive">{a.returnNoShipDeduction} ج.م</TableCell>
                     <TableCell className="font-bold">{a.settlement} ج.م</TableCell>
                     <TableCell className="font-bold text-primary">{a.settlementWithPostponed} ج.م</TableCell>
                   </TableRow>
@@ -134,7 +144,7 @@ export default function OfficeAccounts() {
 
       <Card className="bg-card border-border p-4">
         <h3 className="font-semibold mb-2">معادلة صافي الحساب:</h3>
-        <p className="text-sm text-muted-foreground">المستحق = التسليمات - (المرتجع + عمولة التسليم + الرفض + خصم شحن مرتجع دون شحن)</p>
+        <p className="text-sm text-muted-foreground">المستحق = (التسليمات + تسليم جزئي) - (المرتجع + خصم شحن مرتجع دون شحن/رفض)</p>
         <p className="text-sm text-muted-foreground">المستحق بالمؤجل = المستحق + المؤجل</p>
       </Card>
     </div>

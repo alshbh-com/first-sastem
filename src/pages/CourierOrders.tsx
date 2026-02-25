@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Eye, Phone, MessageSquare, Send, GripVertical } from 'lucide-react';
+import { LogOut, Eye, Phone, MessageSquare, Send } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function CourierOrders() {
@@ -20,6 +20,8 @@ export default function CourierOrders() {
   const [savingNote, setSavingNote] = useState(false);
   const [shippingCost, setShippingCost] = useState('');
   const [shippingDialog, setShippingDialog] = useState<any | null>(null);
+  const [partialDialog, setPartialDialog] = useState<any | null>(null);
+  const [partialAmount, setPartialAmount] = useState('');
 
   useEffect(() => {
     load();
@@ -38,18 +40,28 @@ export default function CourierOrders() {
 
   const rejectWithShipStatus = statuses.find(s => s.name === 'رفض واخد شحن');
   const postponedStatus = statuses.find(s => s.name === 'مؤجل');
+  const partialDeliveryStatus = statuses.find(s => s.name === 'تسليم جزئي');
 
   const updateStatus = async (orderId: string, statusId: string) => {
-    // If رفض واخد شحن, ask for shipping cost
+    const order = orders.find(o => o.id === orderId);
+    
+    // رفض واخد شحن - ask for shipping cost
     if (statusId === rejectWithShipStatus?.id) {
       setShippingDialog({ orderId, statusId });
       setShippingCost('');
       return;
     }
 
+    // تسليم جزئي - ask for partial amount
+    if (statusId === partialDeliveryStatus?.id) {
+      setPartialDialog({ orderId, statusId, order });
+      setPartialAmount('');
+      return;
+    }
+
     await supabase.from('orders').update({ status_id: statusId }).eq('id', orderId);
 
-    // If مؤجل, remove courier assignment so it goes back to orders pool
+    // مؤجل - remove courier, goes back to pool
     if (statusId === postponedStatus?.id) {
       await supabase.from('orders').update({ courier_id: null }).eq('id', orderId);
     }
@@ -65,9 +77,25 @@ export default function CourierOrders() {
       status_id: shippingDialog.statusId,
       delivery_price: cost 
     }).eq('id', shippingDialog.orderId);
-
-    toast.success(`تم تحديث الحالة - مصاريف الشحن: ${cost} ج.م`);
+    toast.success(`تم - مصاريف الشحن: ${cost} ج.م`);
     setShippingDialog(null);
+    load();
+  };
+
+  const confirmPartialDelivery = async () => {
+    if (!partialDialog) return;
+    const received = parseFloat(partialAmount) || 0;
+    const order = partialDialog.order;
+    const orderPrice = Number(order?.price || 0);
+    const returnAmount = orderPrice - received; // المرتجع الجزئي
+
+    await supabase.from('orders').update({ 
+      status_id: partialDialog.statusId,
+      partial_amount: received,
+    }).eq('id', partialDialog.orderId);
+
+    toast.success(`تسليم جزئي: ${received} ج.م - مرتجع: ${returnAmount} ج.م`);
+    setPartialDialog(null);
     load();
   };
 
@@ -88,7 +116,6 @@ export default function CourierOrders() {
     toast.success('تم إضافة الملاحظة');
   };
 
-  // Drag to reorder
   const moveOrder = (index: number, direction: number) => {
     const newOrders = [...orders];
     const [item] = newOrders.splice(index, 1);
@@ -169,6 +196,21 @@ export default function CourierOrders() {
         </DialogContent>
       </Dialog>
 
+      {/* Partial delivery dialog */}
+      <Dialog open={!!partialDialog} onOpenChange={v => { if (!v) setPartialDialog(null); }}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader><DialogTitle>تسليم جزئي - أدخل المبلغ المحصل</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">سعر الأوردر: {partialDialog?.order?.price || 0} ج.م</p>
+            <Input type="number" value={partialAmount} onChange={e => setPartialAmount(e.target.value)} placeholder="المبلغ المحصل (بدون الشحن)" className="bg-secondary border-border" />
+            {partialAmount && (
+              <p className="text-sm">المرتجع الجزئي: <strong className="text-destructive">{Number(partialDialog?.order?.price || 0) - (parseFloat(partialAmount) || 0)} ج.م</strong></p>
+            )}
+            <Button onClick={confirmPartialDelivery} className="w-full">تأكيد</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Order Details Dialog */}
       <Dialog open={!!selectedOrder} onOpenChange={(v) => { if (!v) setSelectedOrder(null); }}>
         <DialogContent className="max-w-lg bg-card border-border max-h-[90vh] overflow-y-auto">
@@ -187,7 +229,6 @@ export default function CourierOrders() {
                 <div><span className="text-muted-foreground">الباركود:</span> <strong dir="ltr">{selectedOrder.barcode || '-'}</strong></div>
                 <div><span className="text-muted-foreground">المكتب:</span> <strong>{selectedOrder.offices?.name || '-'}</strong></div>
               </div>
-
               <div className="flex gap-2">
                 <Button size="sm" variant="outline" className="flex-1" asChild>
                   <a href={`tel:${selectedOrder.customer_phone}`}><Phone className="h-4 w-4 ml-1" />اتصال</a>
@@ -199,7 +240,6 @@ export default function CourierOrders() {
                   <a href={`https://wa.me/${selectedOrder.customer_phone?.replace(/^0/, '20')}`} target="_blank" rel="noopener noreferrer"><Send className="h-4 w-4 ml-1" />واتساب</a>
                 </Button>
               </div>
-
               <div className="space-y-2">
                 <h3 className="font-semibold text-sm">الملاحظات</h3>
                 <div className="max-h-40 overflow-y-auto space-y-2">

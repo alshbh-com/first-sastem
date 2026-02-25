@@ -7,7 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Eye, Lock, StickyNote } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Eye, Lock, StickyNote, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -20,17 +22,18 @@ export default function Couriers() {
   const [notesDialog, setNotesDialog] = useState<any | null>(null);
   const [notes, setNotes] = useState<any[]>([]);
   const [noteText, setNoteText] = useState('');
+  const [editDialog, setEditDialog] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState({ full_name: '', phone: '', address: '', notes: '' });
 
-  useEffect(() => {
-    const load = async () => {
-      const { data: roles } = await supabase.from('user_roles').select('user_id').eq('role', 'courier');
-      if (roles && roles.length > 0) {
-        const { data: profiles } = await supabase.from('profiles').select('*').in('id', roles.map(r => r.user_id));
-        setCouriers(profiles || []);
-      }
-    };
-    load();
-  }, []);
+  useEffect(() => { loadCouriers(); }, []);
+
+  const loadCouriers = async () => {
+    const { data: roles } = await supabase.from('user_roles').select('user_id').eq('role', 'courier');
+    if (roles && roles.length > 0) {
+      const { data: profiles } = await supabase.from('profiles').select('*').in('id', roles.map(r => r.user_id));
+      setCouriers(profiles || []);
+    }
+  };
 
   useEffect(() => { if (selectedCourier) loadCourierOrders(); }, [selectedCourier]);
 
@@ -48,12 +51,10 @@ export default function Couriers() {
   const toggleSelect = (id: string) => {
     setSelectedOrders(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   };
-
   const toggleAll = () => {
     if (selectedOrders.size === courierOrders.length) setSelectedOrders(new Set());
     else setSelectedOrders(new Set(courierOrders.map(o => o.id)));
   };
-
   const closeSelected = async () => {
     if (selectedOrders.size === 0) return;
     if (!confirm(`تقفيل ${selectedOrders.size} أوردر؟`)) return;
@@ -67,7 +68,6 @@ export default function Couriers() {
     const { data } = await supabase.from('order_notes').select('*').eq('order_id', order.id).order('created_at', { ascending: false });
     setNotes(data || []);
   };
-
   const addNote = async () => {
     if (!noteText.trim() || !notesDialog) return;
     await supabase.from('order_notes').insert({ order_id: notesDialog.id, user_id: user?.id || '', note: noteText.trim() });
@@ -75,6 +75,18 @@ export default function Couriers() {
     const { data } = await supabase.from('order_notes').select('*').eq('order_id', notesDialog.id).order('created_at', { ascending: false });
     setNotes(data || []);
     toast.success('تم إضافة الملاحظة');
+  };
+
+  const openEditCourier = (c: any) => {
+    setEditDialog(c);
+    setEditForm({ full_name: c.full_name || '', phone: c.phone || '', address: c.address || '', notes: c.notes || '' });
+  };
+  const saveEditCourier = async () => {
+    if (!editDialog) return;
+    await supabase.from('profiles').update(editForm).eq('id', editDialog.id);
+    toast.success('تم التعديل');
+    setEditDialog(null);
+    loadCouriers();
   };
 
   return (
@@ -88,22 +100,29 @@ export default function Couriers() {
               <TableRow className="border-border">
                 <TableHead className="text-right">الاسم</TableHead>
                 <TableHead className="text-right">الهاتف</TableHead>
+                <TableHead className="text-right">العنوان</TableHead>
+                <TableHead className="text-right">ملاحظات</TableHead>
                 <TableHead className="text-right">الحالة</TableHead>
                 <TableHead className="text-right">إجراء</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {couriers.length === 0 ? (
-                <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">لا يوجد مندوبين</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">لا يوجد مندوبين</TableCell></TableRow>
               ) : couriers.map(c => (
                 <TableRow key={c.id} className={`border-border ${selectedCourier === c.id ? 'bg-secondary' : ''}`}>
                   <TableCell className="font-medium">{c.full_name}</TableCell>
-                  <TableCell dir="ltr">{c.phone}</TableCell>
+                  <TableCell dir="ltr">{c.phone || '-'}</TableCell>
+                  <TableCell>{c.address || '-'}</TableCell>
+                  <TableCell className="max-w-32 truncate">{c.notes || '-'}</TableCell>
                   <TableCell><Badge variant={c.is_active ? 'default' : 'secondary'}>{c.is_active ? 'نشط' : 'غير نشط'}</Badge></TableCell>
                   <TableCell>
-                    <Button size="sm" variant={selectedCourier === c.id ? 'default' : 'outline'} onClick={() => setSelectedCourier(c.id)}>
-                      <Eye className="h-4 w-4 ml-1" />عرض الأوردرات
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button size="sm" variant={selectedCourier === c.id ? 'default' : 'outline'} onClick={() => setSelectedCourier(c.id)}>
+                        <Eye className="h-4 w-4 ml-1" />أوردرات
+                      </Button>
+                      <Button size="icon" variant="ghost" onClick={() => openEditCourier(c)}><Pencil className="h-4 w-4" /></Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -155,9 +174,7 @@ export default function Couriers() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Button size="icon" variant="ghost" onClick={() => viewNotes(order)}>
-                            <StickyNote className="h-4 w-4" />
-                          </Button>
+                          <Button size="icon" variant="ghost" onClick={() => viewNotes(order)}><StickyNote className="h-4 w-4" /></Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -169,6 +186,21 @@ export default function Couriers() {
         </div>
       )}
 
+      {/* Edit courier dialog */}
+      <Dialog open={!!editDialog} onOpenChange={v => { if (!v) setEditDialog(null); }}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader><DialogTitle>تعديل بيانات المندوب</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2"><Label>الاسم</Label><Input value={editForm.full_name} onChange={e => setEditForm(f => ({ ...f, full_name: e.target.value }))} className="bg-secondary border-border" /></div>
+            <div className="space-y-2"><Label>الهاتف</Label><Input value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))} className="bg-secondary border-border" dir="ltr" /></div>
+            <div className="space-y-2"><Label>العنوان</Label><Input value={editForm.address} onChange={e => setEditForm(f => ({ ...f, address: e.target.value }))} className="bg-secondary border-border" /></div>
+            <div className="space-y-2"><Label>ملاحظات</Label><Textarea value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} className="bg-secondary border-border" rows={2} /></div>
+            <Button onClick={saveEditCourier} className="w-full">حفظ التعديل</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Notes dialog */}
       <Dialog open={!!notesDialog} onOpenChange={(v) => { if (!v) { setNotesDialog(null); setNoteText(''); } }}>
         <DialogContent className="bg-card border-border">
           <DialogHeader><DialogTitle>ملاحظات - {notesDialog?.tracking_id}</DialogTitle></DialogHeader>

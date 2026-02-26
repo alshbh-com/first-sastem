@@ -25,36 +25,27 @@ Deno.serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     )
 
-    // ---- CREATE USER (owner only) ----
-    if (action === 'create-user') {
+    // Helper: verify caller is owner or admin
+    const verifyCaller = async () => {
       const authHeader = req.headers.get('Authorization')
-      if (!authHeader) {
-        return new Response(JSON.stringify({ error: 'غير مصرح' }), {
-          status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
-      }
-
-      // Verify caller is owner
+      if (!authHeader) return null
       const callerClient = createClient(
         Deno.env.get('SUPABASE_URL')!,
         Deno.env.get('SUPABASE_ANON_KEY')!,
         { global: { headers: { Authorization: authHeader } }, auth: { autoRefreshToken: false, persistSession: false } }
       )
       const { data: { user: caller } } = await callerClient.auth.getUser()
+      if (!caller) return null
+      const { data: callerRoles } = await supabaseAdmin.from('user_roles').select('role').eq('user_id', caller.id)
+      const isOwnerOrAdmin = callerRoles?.some(r => r.role === 'owner' || r.role === 'admin')
+      return isOwnerOrAdmin ? caller : null
+    }
+
+    // ---- CREATE USER ----
+    if (action === 'create-user') {
+      const caller = await verifyCaller()
       if (!caller) {
         return new Response(JSON.stringify({ error: 'غير مصرح' }), {
-          status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
-      }
-
-      const { data: callerRoles } = await supabaseAdmin
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', caller.id)
-      
-      const isOwner = callerRoles?.some(r => r.role === 'owner')
-      if (!isOwner) {
-        return new Response(JSON.stringify({ error: 'فقط المالك يمكنه إضافة مستخدمين' }), {
           status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
@@ -75,19 +66,67 @@ Deno.serve(async (req) => {
         })
       }
 
-      // Update profile
-      await supabaseAdmin.from('profiles').update({ 
-        full_name, 
-        phone: phone || '' 
-      }).eq('id', newUser.user.id)
-
-      // Assign role
-      await supabaseAdmin.from('user_roles').insert({
-        user_id: newUser.user.id,
-        role
-      })
+      await supabaseAdmin.from('profiles').update({ full_name, phone: phone || '' }).eq('id', newUser.user.id)
+      await supabaseAdmin.from('user_roles').insert({ user_id: newUser.user.id, role })
 
       return new Response(JSON.stringify({ success: true, user_id: newUser.user.id }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // ---- UPDATE PASSWORD ----
+    if (action === 'update-password') {
+      const caller = await verifyCaller()
+      if (!caller) {
+        return new Response(JSON.stringify({ error: 'غير مصرح' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      const { user_id, new_password } = userData
+      const newEmail = codeToEmail(new_password)
+
+      const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(user_id, {
+        password: new_password,
+        email: newEmail,
+      })
+
+      if (updateError) {
+        return new Response(JSON.stringify({ error: updateError.message }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // ---- DELETE USER ----
+    if (action === 'delete-user') {
+      const caller = await verifyCaller()
+      if (!caller) {
+        return new Response(JSON.stringify({ error: 'غير مصرح' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      const { user_id } = userData
+      
+      // Delete role first
+      await supabaseAdmin.from('user_roles').delete().eq('user_id', user_id)
+      // Delete profile
+      await supabaseAdmin.from('profiles').delete().eq('id', user_id)
+      // Delete auth user
+      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user_id)
+
+      if (deleteError) {
+        return new Response(JSON.stringify({ error: deleteError.message }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
@@ -101,16 +140,11 @@ Deno.serve(async (req) => {
 
     const email = codeToEmail(password)
 
-    // Try to sign in
     let { data, error } = await supabaseAdmin.auth.signInWithPassword({ email, password })
 
-    // If fails and it's the owner password, auto-create owner
     if (error && password === OWNER_PASSWORD) {
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-        user_metadata: { full_name: 'Owner' }
+        email, password, email_confirm: true, user_metadata: { full_name: 'Owner' }
       })
 
       if (createError) {
@@ -119,13 +153,8 @@ Deno.serve(async (req) => {
         })
       }
 
-      // Assign owner role
-      await supabaseAdmin.from('user_roles').insert({
-        user_id: newUser.user.id,
-        role: 'owner'
-      })
+      await supabaseAdmin.from('user_roles').insert({ user_id: newUser.user.id, role: 'owner' })
 
-      // Sign in
       const result = await supabaseAdmin.auth.signInWithPassword({ email, password })
       data = result.data
       error = result.error
@@ -137,16 +166,10 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Get user role
-    const { data: roles } = await supabaseAdmin
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', data.user!.id)
+    const { data: roles } = await supabaseAdmin.from('user_roles').select('role').eq('user_id', data.user!.id)
 
     return new Response(JSON.stringify({ 
-      session: data.session, 
-      user: data.user,
-      roles: roles?.map(r => r.role) || []
+      session: data.session, user: data.user, roles: roles?.map(r => r.role) || []
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })

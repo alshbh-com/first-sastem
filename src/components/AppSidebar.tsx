@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Package, Building2, Factory, Box,
   Truck, Wallet, CreditCard, ScrollText, Settings, LogOut, Archive, Building,
-  PackageSearch, Search, Printer, DollarSign, MapPin
+  PackageSearch, Search, Printer, DollarSign, MapPin, Users
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,6 +23,7 @@ const menuItems = [
   { title: 'الشركات', url: '/companies', icon: Factory },
   { title: 'المنتجات', url: '/products', icon: Box },
   { title: 'المندوبين', url: '/couriers', icon: Truck },
+  { title: 'المستخدمين', url: '/users', icon: Users },
   { title: 'تحصيلات المندوبين', url: '/courier-collections', icon: Wallet },
   { title: 'حسابات الشركات', url: '/company-accounts', icon: CreditCard },
   { title: 'حسابات المكاتب', url: '/office-accounts', icon: Building },

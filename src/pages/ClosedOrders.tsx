@@ -4,36 +4,63 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Search, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ClosedOrders() {
+  const { isOwner } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
   const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    const load = async () => {
-      const { data } = await supabase
-        .from('orders')
-        .select('*, order_statuses(name, color), companies(name), offices(name)')
-        .eq('is_closed', true)
-        .order('updated_at', { ascending: false })
-        .limit(500);
-      setOrders(data || []);
-    };
-    load();
-  }, []);
+  useEffect(() => { loadOrders(); }, []);
+
+  const loadOrders = async () => {
+    const { data } = await supabase
+      .from('orders')
+      .select('*, order_statuses(name, color), companies(name), offices(name)')
+      .eq('is_closed', true)
+      .order('updated_at', { ascending: false })
+      .limit(500);
+    setOrders(data || []);
+  };
 
   const filtered = orders.filter(o =>
     !search || o.tracking_id?.includes(search) || o.customer_name?.includes(search) || 
     o.customer_phone?.includes(search) || o.barcode?.includes(search) || o.customer_code?.includes(search)
   );
 
+  const toggleSelect = (id: string) => {
+    setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  };
+  const toggleAll = () => {
+    if (selected.size === filtered.length) setSelected(new Set());
+    else setSelected(new Set(filtered.map(o => o.id)));
+  };
+
+  const deleteSelected = async () => {
+    if (selected.size === 0) return;
+    if (!confirm(`حذف ${selected.size} أوردر نهائياً؟`)) return;
+    await supabase.from('orders').delete().in('id', Array.from(selected));
+    toast.success('تم الحذف');
+    setSelected(new Set());
+    loadOrders();
+  };
+
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">الأوردرات القديمة (المقفلة)</h1>
-      <div className="relative max-w-sm">
-        <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input placeholder="بحث..." value={search} onChange={e => setSearch(e.target.value)} className="pr-9 bg-secondary border-border" />
+      <h1 className="text-xl sm:text-2xl font-bold">الأوردرات القديمة (المقفلة)</h1>
+      <div className="flex flex-wrap gap-2 items-center">
+        <div className="relative flex-1 min-w-[200px] max-w-xs">
+          <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input placeholder="بحث..." value={search} onChange={e => setSearch(e.target.value)} className="pr-9 bg-secondary border-border" />
+        </div>
+        {isOwner && selected.size > 0 && (
+          <Button size="sm" variant="destructive" onClick={deleteSelected}><Trash2 className="h-4 w-4 ml-1" />حذف {selected.size}</Button>
+        )}
       </div>
       <Card className="bg-card border-border">
         <CardContent className="p-0">
@@ -41,28 +68,30 @@ export default function ClosedOrders() {
             <Table>
               <TableHeader>
                 <TableRow className="border-border">
+                  {isOwner && <TableHead className="w-10"><Checkbox checked={filtered.length > 0 && selected.size === filtered.length} onCheckedChange={toggleAll} /></TableHead>}
                   <TableHead className="text-right">Tracking</TableHead>
                   <TableHead className="text-right">الكود</TableHead>
                   <TableHead className="text-right">العميل</TableHead>
-                  <TableHead className="text-right">المنتج</TableHead>
+                  <TableHead className="text-right hidden sm:table-cell">المنتج</TableHead>
                   <TableHead className="text-right">الإجمالي</TableHead>
-                  <TableHead className="text-right">الشركة</TableHead>
-                  <TableHead className="text-right">المكتب</TableHead>
+                  <TableHead className="text-right hidden md:table-cell">الشركة</TableHead>
+                  <TableHead className="text-right hidden md:table-cell">المكتب</TableHead>
                   <TableHead className="text-right">الحالة</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">لا توجد أوردرات مقفلة</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={isOwner ? 9 : 8} className="text-center text-muted-foreground py-8">لا توجد أوردرات مقفلة</TableCell></TableRow>
                 ) : filtered.map(order => (
                   <TableRow key={order.id} className="border-border">
+                    {isOwner && <TableCell><Checkbox checked={selected.has(order.id)} onCheckedChange={() => toggleSelect(order.id)} /></TableCell>}
                     <TableCell className="font-mono text-xs">{order.tracking_id}</TableCell>
                     <TableCell className="font-mono text-xs">{order.customer_code || '-'}</TableCell>
-                    <TableCell>{order.customer_name}</TableCell>
-                    <TableCell>{order.product_name}</TableCell>
-                    <TableCell className="font-bold">{Number(order.price) + Number(order.delivery_price)} ج.م</TableCell>
-                    <TableCell>{order.companies?.name || '-'}</TableCell>
-                    <TableCell>{order.offices?.name || '-'}</TableCell>
+                    <TableCell className="text-sm">{order.customer_name}</TableCell>
+                    <TableCell className="hidden sm:table-cell text-sm">{order.product_name}</TableCell>
+                    <TableCell className="font-bold text-sm">{Number(order.price) + Number(order.delivery_price)} ج.م</TableCell>
+                    <TableCell className="hidden md:table-cell text-sm">{order.companies?.name || '-'}</TableCell>
+                    <TableCell className="hidden md:table-cell text-sm">{order.offices?.name || '-'}</TableCell>
                     <TableCell>
                       <Badge style={{ backgroundColor: order.order_statuses?.color || undefined }} className="text-xs">
                         {order.order_statuses?.name || '-'}

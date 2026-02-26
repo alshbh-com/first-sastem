@@ -24,6 +24,7 @@ import Advances from "@/pages/Advances";
 import PrintSticker from "@/pages/PrintSticker";
 import ActivityLogs from "@/pages/ActivityLogs";
 import Settings from "@/pages/Settings";
+import UsersPage from "@/pages/UsersPage";
 import CourierOrders from "@/pages/CourierOrders";
 import NotFound from "./pages/NotFound";
 
@@ -61,6 +62,7 @@ const App = () => (
               <Route path="/companies" element={<Companies />} />
               <Route path="/products" element={<Products />} />
               <Route path="/couriers" element={<Couriers />} />
+              <Route path="/users" element={<UsersPage />} />
               <Route path="/courier-collections" element={<CourierCollections />} />
               <Route path="/collections" element={<Navigate to="/courier-collections" replace />} />
               <Route path="/company-accounts" element={<CompanyAccounts />} />

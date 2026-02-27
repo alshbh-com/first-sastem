@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
         })
       }
 
-      await supabaseAdmin.from('profiles').update({ full_name, phone: phone || '' }).eq('id', newUser.user.id)
+      await supabaseAdmin.from('profiles').update({ full_name, phone: phone || '', login_code }).eq('id', newUser.user.id)
       await supabaseAdmin.from('user_roles').insert({ user_id: newUser.user.id, role })
 
       return new Response(JSON.stringify({ success: true, user_id: newUser.user.id }), {
@@ -98,6 +98,11 @@ Deno.serve(async (req) => {
         email: newEmail,
         email_confirm: true,
       })
+
+      // Save login_code to profiles
+      if (!updateError) {
+        await supabaseAdmin.from('profiles').update({ login_code: new_password }).eq('id', user_id)
+      }
 
       if (updateError) {
         return new Response(JSON.stringify({ error: updateError.message }), {

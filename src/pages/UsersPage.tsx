@@ -7,10 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { UserPlus, Trash2, Key } from 'lucide-react';
+import { UserPlus, Trash2, Key, Shield, Eye, EyeOff } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { ALL_SECTIONS, PermissionLevel } from '@/hooks/usePermissions';
 
 export default function UsersPage() {
   const { isOwner } = useAuth();
@@ -29,6 +30,14 @@ export default function UsersPage() {
   const [pwDialog, setPwDialog] = useState<any>(null);
   const [newPw, setNewPw] = useState('');
   const [updatingPw, setUpdatingPw] = useState(false);
+
+  // Permissions dialog
+  const [permUser, setPermUser] = useState<any>(null);
+  const [permData, setPermData] = useState<Record<string, PermissionLevel>>({});
+  const [savingPerms, setSavingPerms] = useState(false);
+
+  // Show/hide passwords
+  const [showPasswords, setShowPasswords] = useState(false);
 
   useEffect(() => { loadUsers(); }, []);
 
@@ -87,8 +96,9 @@ export default function UsersPage() {
     setUpdatingPw(true);
     try {
       await callEdgeFunction('update-password', { user_id: pwDialog.id, new_password: newPw });
-      toast.success('تم تحديث كلمة المرور بنجاح - كلمة المرور الجديدة: ' + newPw);
+      toast.success('تم تحديث كلمة المرور بنجاح');
       setPwDialog(null); setNewPw('');
+      loadUsers();
     } catch (err: any) {
       toast.error(err.message || 'خطأ');
     }
@@ -106,6 +116,47 @@ export default function UsersPage() {
     }
   };
 
+  // Permissions management
+  const openPermissions = async (u: any) => {
+    setPermUser(u);
+    const { data } = await supabase
+      .from('user_permissions')
+      .select('section, permission')
+      .eq('user_id', u.id);
+    const perms: Record<string, PermissionLevel> = {};
+    ALL_SECTIONS.forEach(s => { perms[s.key] = 'edit'; }); // default edit
+    (data || []).forEach((p: any) => { perms[p.section] = p.permission; });
+    setPermData(perms);
+  };
+
+  const savePermissions = async () => {
+    if (!permUser) return;
+    setSavingPerms(true);
+    try {
+      // Delete existing permissions
+      await supabase.from('user_permissions').delete().eq('user_id', permUser.id);
+      
+      // Insert only non-default (non-edit) permissions
+      const toInsert = Object.entries(permData)
+        .filter(([_, perm]) => perm !== 'edit')
+        .map(([section, permission]) => ({
+          user_id: permUser.id,
+          section,
+          permission,
+        }));
+      
+      if (toInsert.length > 0) {
+        await supabase.from('user_permissions').insert(toInsert);
+      }
+      
+      toast.success('تم حفظ الصلاحيات');
+      setPermUser(null);
+    } catch (err: any) {
+      toast.error('خطأ في حفظ الصلاحيات');
+    }
+    setSavingPerms(false);
+  };
+
   const roleLabel = (role: string) => {
     if (role === 'owner') return 'مالك';
     if (role === 'admin') return 'مسؤول';
@@ -120,34 +171,54 @@ export default function UsersPage() {
     return undefined;
   };
 
+  const permLabel = (p: PermissionLevel) => {
+    if (p === 'edit') return 'تعديل';
+    if (p === 'view') return 'مشاهدة فقط';
+    return 'مخفي';
+  };
+
+  const permColor = (p: PermissionLevel) => {
+    if (p === 'edit') return 'hsl(142, 76%, 36%)';
+    if (p === 'view') return 'hsl(38, 92%, 50%)';
+    return 'hsl(0, 72%, 51%)';
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-xl sm:text-2xl font-bold">المستخدمين</h1>
-        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger asChild><Button size="sm"><UserPlus className="h-4 w-4 ml-1" />إضافة مستخدم</Button></DialogTrigger>
-          <DialogContent className="bg-card border-border">
-            <DialogHeader><DialogTitle>إضافة مستخدم جديد</DialogTitle></DialogHeader>
-            <div className="space-y-4">
-              <div><Label>الاسم *</Label><Input value={newName} onChange={e => setNewName(e.target.value)} className="bg-secondary border-border" /></div>
-              <div><Label>الهاتف</Label><Input value={newPhone} onChange={e => setNewPhone(e.target.value)} className="bg-secondary border-border" dir="ltr" /></div>
-              <div><Label>كود الدخول (كلمة المرور) *</Label><Input value={newCode} onChange={e => setNewCode(e.target.value)} className="bg-secondary border-border" dir="ltr" /></div>
-              <div>
-                <Label>الصلاحية *</Label>
-                <Select value={newRole} onValueChange={setNewRole}>
-                  <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder="اختر الصلاحية" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">مسؤول (Admin)</SelectItem>
-                    <SelectItem value="courier">مندوب (Courier)</SelectItem>
-                  </SelectContent>
-                </Select>
+        <div className="flex gap-2">
+          {isOwner && (
+            <Button size="sm" variant="outline" onClick={() => setShowPasswords(!showPasswords)}>
+              {showPasswords ? <EyeOff className="h-4 w-4 ml-1" /> : <Eye className="h-4 w-4 ml-1" />}
+              {showPasswords ? 'إخفاء كلمات المرور' : 'عرض كلمات المرور'}
+            </Button>
+          )}
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogTrigger asChild><Button size="sm"><UserPlus className="h-4 w-4 ml-1" />إضافة مستخدم</Button></DialogTrigger>
+            <DialogContent className="bg-card border-border">
+              <DialogHeader><DialogTitle>إضافة مستخدم جديد</DialogTitle></DialogHeader>
+              <div className="space-y-4">
+                <div><Label>الاسم *</Label><Input value={newName} onChange={e => setNewName(e.target.value)} className="bg-secondary border-border" /></div>
+                <div><Label>الهاتف</Label><Input value={newPhone} onChange={e => setNewPhone(e.target.value)} className="bg-secondary border-border" dir="ltr" /></div>
+                <div><Label>كود الدخول (كلمة المرور) *</Label><Input value={newCode} onChange={e => setNewCode(e.target.value)} className="bg-secondary border-border" dir="ltr" /></div>
+                <div>
+                  <Label>الصلاحية *</Label>
+                  <Select value={newRole} onValueChange={setNewRole}>
+                    <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder="اختر الصلاحية" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">مسؤول (Admin)</SelectItem>
+                      <SelectItem value="courier">مندوب (Courier)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button onClick={createUser} className="w-full" disabled={creating}>
+                  {creating ? 'جارٍ الإنشاء...' : 'إنشاء المستخدم'}
+                </Button>
               </div>
-              <Button onClick={createUser} className="w-full" disabled={creating}>
-                {creating ? 'جارٍ الإنشاء...' : 'إنشاء المستخدم'}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <Card className="bg-card border-border">
@@ -158,6 +229,7 @@ export default function UsersPage() {
                 <TableRow className="border-border">
                   <TableHead className="text-right">الاسم</TableHead>
                   <TableHead className="text-right">الهاتف</TableHead>
+                  {isOwner && showPasswords && <TableHead className="text-right">كلمة المرور</TableHead>}
                   <TableHead className="text-right">الصلاحية</TableHead>
                   <TableHead className="text-right">الحالة</TableHead>
                   <TableHead className="text-right">إجراءات</TableHead>
@@ -165,13 +237,18 @@ export default function UsersPage() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">جارٍ التحميل...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={isOwner && showPasswords ? 6 : 5} className="text-center text-muted-foreground py-8">جارٍ التحميل...</TableCell></TableRow>
                 ) : users.length === 0 ? (
-                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">لا يوجد مستخدمين</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={isOwner && showPasswords ? 6 : 5} className="text-center text-muted-foreground py-8">لا يوجد مستخدمين</TableCell></TableRow>
                 ) : users.map(u => (
                   <TableRow key={u.id} className="border-border">
                     <TableCell className="font-medium">{u.full_name}</TableCell>
                     <TableCell dir="ltr">{u.phone || '-'}</TableCell>
+                    {isOwner && showPasswords && (
+                      <TableCell dir="ltr" className="font-mono text-xs">
+                        {u.login_code || '-'}
+                      </TableCell>
+                    )}
                     <TableCell>
                       <Badge style={{ backgroundColor: roleColor(u.role) }} className="text-xs">{roleLabel(u.role)}</Badge>
                     </TableCell>
@@ -180,6 +257,11 @@ export default function UsersPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
+                        {isOwner && u.role !== 'owner' && (
+                          <Button size="icon" variant="ghost" title="الصلاحيات" onClick={() => openPermissions(u)}>
+                            <Shield className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button size="icon" variant="ghost" title="تغيير كلمة المرور" onClick={() => { setPwDialog(u); setNewPw(''); }}>
                           <Key className="h-4 w-4" />
                         </Button>
@@ -207,6 +289,42 @@ export default function UsersPage() {
             <p className="text-xs text-muted-foreground">ملاحظة: بعد تغيير كلمة المرور، لن يعمل الكود القديم وسيجب استخدام الكود الجديد فقط.</p>
             <Button onClick={updatePassword} className="w-full" disabled={updatingPw || !newPw.trim()}>
               {updatingPw ? 'جارٍ التحديث...' : 'تحديث كلمة المرور'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Permissions dialog */}
+      <Dialog open={!!permUser} onOpenChange={v => { if (!v) setPermUser(null); }}>
+        <DialogContent className="bg-card border-border max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>صلاحيات - {permUser?.full_name}</DialogTitle></DialogHeader>
+          <div className="space-y-2">
+            {ALL_SECTIONS.map(section => (
+              <div key={section.key} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                <span className="text-sm font-medium">{section.label}</span>
+                <Select
+                  value={permData[section.key] || 'edit'}
+                  onValueChange={(v) => setPermData(prev => ({ ...prev, [section.key]: v as PermissionLevel }))}
+                >
+                  <SelectTrigger className="w-36 h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="edit">
+                      <span className="flex items-center gap-1">✏️ تعديل</span>
+                    </SelectItem>
+                    <SelectItem value="view">
+                      <span className="flex items-center gap-1">👁️ مشاهدة فقط</span>
+                    </SelectItem>
+                    <SelectItem value="hidden">
+                      <span className="flex items-center gap-1">🚫 مخفي</span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            ))}
+            <Button onClick={savePermissions} className="w-full mt-4" disabled={savingPerms}>
+              {savingPerms ? 'جارٍ الحفظ...' : 'حفظ الصلاحيات'}
             </Button>
           </div>
         </DialogContent>

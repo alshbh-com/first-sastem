@@ -1,13 +1,22 @@
-import { Outlet, Navigate } from 'react-router-dom';
+import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions, urlToSectionKey } from '@/hooks/usePermissions';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
 
 export default function AppLayout() {
   const { isCourier, isOwnerOrAdmin } = useAuth();
+  const { canView, canEdit } = usePermissions();
+  const location = useLocation();
 
   if (isCourier && !isOwnerOrAdmin) {
     return <Navigate to="/courier-orders" replace />;
+  }
+
+  // Check if current section is hidden
+  const sectionKey = urlToSectionKey(location.pathname);
+  if (!canView(sectionKey)) {
+    return <Navigate to="/" replace />;
   }
 
   return (
@@ -19,7 +28,7 @@ export default function AppLayout() {
             <SidebarTrigger />
           </header>
           <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-x-hidden">
-            <Outlet />
+            <Outlet context={{ canEdit: canEdit(sectionKey) }} />
           </main>
         </SidebarInset>
       </div>

@@ -529,6 +529,7 @@ export type Database = {
           full_name: string
           id: string
           is_active: boolean
+          login_code: string | null
           notes: string | null
           phone: string | null
           salary: number
@@ -540,6 +541,7 @@ export type Database = {
           full_name?: string
           id: string
           is_active?: boolean
+          login_code?: string | null
           notes?: string | null
           phone?: string | null
           salary?: number
@@ -551,10 +553,32 @@ export type Database = {
           full_name?: string
           id?: string
           is_active?: boolean
+          login_code?: string | null
           notes?: string | null
           phone?: string | null
           salary?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_permissions: {
+        Row: {
+          id: string
+          permission: string
+          section: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          permission?: string
+          section: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          permission?: string
+          section?: string
+          user_id?: string
         }
         Relationships: []
       }

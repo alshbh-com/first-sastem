@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -21,12 +21,14 @@ export default function Advances() {
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
   const [type, setType] = useState('advance');
+  const [salary, setSalary] = useState('');
+  const [savingSalary, setSavingSalary] = useState(false);
 
   useEffect(() => {
     const load = async () => {
       const { data: roles } = await supabase.from('user_roles').select('user_id, role');
       if (roles && roles.length > 0) {
-        const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', roles.map(r => r.user_id));
+        const { data: profiles } = await supabase.from('profiles').select('id, full_name, salary').in('id', roles.map(r => r.user_id));
         setEmployees(profiles || []);
       }
     };
@@ -34,7 +36,11 @@ export default function Advances() {
   }, []);
 
   useEffect(() => {
-    if (selectedEmployee) loadAdvances();
+    if (selectedEmployee) {
+      loadAdvances();
+      const emp = employees.find(e => e.id === selectedEmployee);
+      setSalary(String(emp?.salary || 0));
+    }
   }, [selectedEmployee]);
 
   const loadAdvances = async () => {
@@ -68,14 +74,28 @@ export default function Advances() {
     loadAdvances();
   };
 
+  const saveSalary = async () => {
+    if (!selectedEmployee) return;
+    setSavingSalary(true);
+    const { error } = await supabase.from('profiles').update({ salary: parseFloat(salary) || 0 }).eq('id', selectedEmployee);
+    if (error) { toast.error(error.message); }
+    else {
+      toast.success('تم حفظ الراتب');
+      setEmployees(prev => prev.map(e => e.id === selectedEmployee ? { ...e, salary: parseFloat(salary) || 0 } : e));
+    }
+    setSavingSalary(false);
+  };
+
   const totalAdvances = advances.filter(a => a.type === 'advance').reduce((s, a) => s + Number(a.amount), 0);
   const totalDeductions = advances.filter(a => a.type === 'deduction').reduce((s, a) => s + Number(a.amount), 0);
-  const totalBonuses = advances.filter(a => a.type === 'bonus').reduce((s, a) => s + Number(a.amount), 0);
+  const totalExtra = advances.filter(a => a.type === 'bonus').reduce((s, a) => s + Number(a.amount), 0);
+  const salaryNum = parseFloat(salary) || 0;
+  const netResult = (salaryNum + totalExtra) - (totalAdvances + totalDeductions);
 
   const typeLabel = (t: string) => {
     if (t === 'advance') return 'سلفة';
     if (t === 'deduction') return 'خصم';
-    return 'مكافأة';
+    return 'إضافي';
   };
   const typeColor = (t: string) => {
     if (t === 'advance') return 'bg-amber-500';
@@ -85,7 +105,7 @@ export default function Advances() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">السلفات والخصومات</h1>
+      <h1 className="text-xl sm:text-2xl font-bold">السلفات والخصومات</h1>
 
       <div className="flex flex-wrap gap-3 items-end">
         <div className="space-y-1">
@@ -101,7 +121,7 @@ export default function Advances() {
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 ml-1" />إضافة</Button></DialogTrigger>
             <DialogContent className="bg-card border-border">
-              <DialogHeader><DialogTitle>إضافة سلفة / خصم / مكافأة</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>إضافة سلفة / خصم / إضافي</DialogTitle></DialogHeader>
               <div className="space-y-4">
                 <div><Label>النوع</Label>
                   <Select value={type} onValueChange={setType}>
@@ -109,7 +129,7 @@ export default function Advances() {
                     <SelectContent>
                       <SelectItem value="advance">سلفة</SelectItem>
                       <SelectItem value="deduction">خصم</SelectItem>
-                      <SelectItem value="bonus">مكافأة</SelectItem>
+                      <SelectItem value="bonus">إضافي</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -124,11 +144,31 @@ export default function Advances() {
 
       {selectedEmployee && (
         <>
-          <div className="grid grid-cols-3 gap-4">
-            <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-sm text-muted-foreground">إجمالي السلف</p><p className="text-xl font-bold text-amber-500">{totalAdvances} ج.م</p></CardContent></Card>
-            <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-sm text-muted-foreground">إجمالي الخصومات</p><p className="text-xl font-bold text-destructive">{totalDeductions} ج.م</p></CardContent></Card>
-            <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-sm text-muted-foreground">إجمالي المكافآت</p><p className="text-xl font-bold text-emerald-500">{totalBonuses} ج.م</p></CardContent></Card>
+          {/* Salary input */}
+          <Card className="bg-card border-border">
+            <CardContent className="p-4">
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">الراتب</Label>
+                  <Input type="number" value={salary} onChange={e => setSalary(e.target.value)} className="w-40 bg-secondary border-border" placeholder="0" />
+                </div>
+                <Button size="sm" onClick={saveSalary} disabled={savingSalary}>
+                  <Save className="h-4 w-4 ml-1" />حفظ الراتب
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">الراتب</p><p className="text-lg font-bold">{salaryNum} ج.م</p></CardContent></Card>
+            <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">الإضافي</p><p className="text-lg font-bold text-emerald-500">{totalExtra} ج.م</p></CardContent></Card>
+            <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">السلف + الخصومات</p><p className="text-lg font-bold text-destructive">{totalAdvances + totalDeductions} ج.م</p></CardContent></Card>
+            <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">الناتج</p><p className={`text-lg font-bold ${netResult >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>{netResult} ج.م</p></CardContent></Card>
           </div>
+
+          <Card className="bg-card border-border p-3">
+            <p className="text-sm text-muted-foreground text-center">المعادلة: [الراتب ({salaryNum}) + الإضافي ({totalExtra})] - [السلف ({totalAdvances}) + الخصومات ({totalDeductions})] = <strong className={netResult >= 0 ? 'text-emerald-500' : 'text-destructive'}>{netResult} ج.م</strong></p>
+          </Card>
 
           <Card className="bg-card border-border">
             <CardContent className="p-0">

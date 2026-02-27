@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { UserPlus, Pencil, Trash2, Key } from 'lucide-react';
+import { UserPlus, Trash2, Key } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,7 +22,7 @@ export default function UsersPage() {
   const [newName, setNewName] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [newCode, setNewCode] = useState('');
-  const [newRole, setNewRole] = useState('courier');
+  const [newRole, setNewRole] = useState('');
   const [creating, setCreating] = useState(false);
 
   // Edit password
@@ -62,18 +62,19 @@ export default function UsersPage() {
       body: JSON.stringify({ action, userData }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
+    if (!res.ok) throw new Error(data.error || 'حدث خطأ');
     return data;
   };
 
   const createUser = async () => {
-    if (!newName || !newCode) return;
+    if (!newName || !newCode) { toast.error('أدخل الاسم وكود الدخول'); return; }
+    if (!newRole) { toast.error('اختر الصلاحية'); return; }
     setCreating(true);
     try {
       await callEdgeFunction('create-user', { full_name: newName, phone: newPhone, login_code: newCode, role: newRole });
       toast.success('تم إنشاء المستخدم بنجاح');
       setCreateOpen(false);
-      setNewName(''); setNewPhone(''); setNewCode(''); setNewRole('courier');
+      setNewName(''); setNewPhone(''); setNewCode(''); setNewRole('');
       loadUsers();
     } catch (err: any) {
       toast.error(err.message || 'خطأ');
@@ -86,7 +87,7 @@ export default function UsersPage() {
     setUpdatingPw(true);
     try {
       await callEdgeFunction('update-password', { user_id: pwDialog.id, new_password: newPw });
-      toast.success('تم تحديث كلمة المرور');
+      toast.success('تم تحديث كلمة المرور بنجاح - كلمة المرور الجديدة: ' + newPw);
       setPwDialog(null); setNewPw('');
     } catch (err: any) {
       toast.error(err.message || 'خطأ');
@@ -122,19 +123,19 @@ export default function UsersPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-2xl font-bold">المستخدمين</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">المستخدمين</h1>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild><Button size="sm"><UserPlus className="h-4 w-4 ml-1" />إضافة مستخدم</Button></DialogTrigger>
           <DialogContent className="bg-card border-border">
             <DialogHeader><DialogTitle>إضافة مستخدم جديد</DialogTitle></DialogHeader>
             <div className="space-y-4">
-              <div><Label>الاسم</Label><Input value={newName} onChange={e => setNewName(e.target.value)} className="bg-secondary border-border" /></div>
+              <div><Label>الاسم *</Label><Input value={newName} onChange={e => setNewName(e.target.value)} className="bg-secondary border-border" /></div>
               <div><Label>الهاتف</Label><Input value={newPhone} onChange={e => setNewPhone(e.target.value)} className="bg-secondary border-border" dir="ltr" /></div>
-              <div><Label>كود الدخول (كلمة المرور)</Label><Input value={newCode} onChange={e => setNewCode(e.target.value)} className="bg-secondary border-border" dir="ltr" /></div>
+              <div><Label>كود الدخول (كلمة المرور) *</Label><Input value={newCode} onChange={e => setNewCode(e.target.value)} className="bg-secondary border-border" dir="ltr" /></div>
               <div>
-                <Label>الصلاحية</Label>
+                <Label>الصلاحية *</Label>
                 <Select value={newRole} onValueChange={setNewRole}>
-                  <SelectTrigger className="bg-secondary border-border"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder="اختر الصلاحية" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="admin">مسؤول (Admin)</SelectItem>
                     <SelectItem value="courier">مندوب (Courier)</SelectItem>
@@ -203,6 +204,7 @@ export default function UsersPage() {
           <DialogHeader><DialogTitle>تغيير كلمة المرور - {pwDialog?.full_name}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div><Label>كلمة المرور الجديدة</Label><Input value={newPw} onChange={e => setNewPw(e.target.value)} className="bg-secondary border-border" dir="ltr" /></div>
+            <p className="text-xs text-muted-foreground">ملاحظة: بعد تغيير كلمة المرور، لن يعمل الكود القديم وسيجب استخدام الكود الجديد فقط.</p>
             <Button onClick={updatePassword} className="w-full" disabled={updatingPw || !newPw.trim()}>
               {updatingPw ? 'جارٍ التحديث...' : 'تحديث كلمة المرور'}
             </Button>

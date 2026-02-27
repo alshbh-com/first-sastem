@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { Search, UserPlus, Lock, Trash2, UserMinus } from 'lucide-react';
+import { Search, UserPlus, Lock, Trash2, UserMinus, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import AddOrderDialog from '@/components/AddOrderDialog';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,6 +25,7 @@ export default function Orders() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [assignCourier, setAssignCourier] = useState('');
   const [statuses, setStatuses] = useState<any[]>([]);
+  const [editOrder, setEditOrder] = useState<any>(null);
 
   useEffect(() => { loadOrders(); loadFilters(); }, []);
 
@@ -60,7 +61,8 @@ export default function Orders() {
   const filtered = orders.filter(o => {
     const matchSearch = !search ||
       o.tracking_id?.includes(search) || o.customer_name?.includes(search) ||
-      o.customer_phone?.includes(search) || o.barcode?.includes(search) || o.customer_code?.includes(search);
+      o.customer_phone?.includes(search) || o.barcode?.includes(search) || o.customer_code?.includes(search) ||
+      o.address?.includes(search);
     const matchOffice = filterOffice === 'all' || o.office_id === filterOffice;
     const matchCompany = filterCompany === 'all' || o.company_id === filterCompany;
     return matchSearch && matchOffice && matchCompany;
@@ -76,7 +78,6 @@ export default function Orders() {
 
   const assignToCourier = async () => {
     if (!assignCourier || selected.size === 0) { toast.error('اختر مندوب واوردرات'); return; }
-    // Auto-set status to "قيد التوصيل"
     const courierStatus = statuses.find(s => s.name === 'قيد التوصيل');
     const updateData: any = { courier_id: assignCourier };
     if (courierStatus) updateData.status_id = courierStatus.id;
@@ -90,7 +91,12 @@ export default function Orders() {
 
   const unassignCourier = async () => {
     if (selected.size === 0) { toast.error('اختر أوردرات أولاً'); return; }
-    const { error } = await supabase.from('orders').update({ courier_id: null }).in('id', Array.from(selected));
+    // Reset status to first status (or null) when unassigning
+    const defaultStatus = statuses.length > 0 ? statuses[0] : null;
+    const updateData: any = { courier_id: null };
+    if (defaultStatus) updateData.status_id = defaultStatus.id;
+    
+    const { error } = await supabase.from('orders').update(updateData).in('id', Array.from(selected));
     if (error) { toast.error(error.message); return; }
     toast.success(`تم إلغاء تعيين ${selected.size} أوردر`);
     setSelected(new Set());
@@ -124,8 +130,16 @@ export default function Orders() {
         <AddOrderDialog onOrderAdded={loadOrders} />
       </div>
 
+      {editOrder && (
+        <AddOrderDialog
+          onOrderAdded={() => { loadOrders(); setEditOrder(null); }}
+          editOrder={editOrder}
+          onClose={() => setEditOrder(null)}
+        />
+      )}
+
       <div className="flex flex-wrap gap-2 items-end">
-        <div className="relative flex-1 min-w-[200px] max-w-xs">
+        <div className="relative flex-1 min-w-[180px] max-w-xs">
           <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input placeholder="بحث..." value={search} onChange={e => setSearch(e.target.value)} className="pr-9 bg-secondary border-border" />
         </div>
@@ -169,18 +183,22 @@ export default function Orders() {
                   <TableHead className="text-right">Tracking</TableHead>
                   <TableHead className="text-right">الكود</TableHead>
                   <TableHead className="text-right">العميل</TableHead>
+                  <TableHead className="text-right hidden sm:table-cell">العنوان</TableHead>
                   <TableHead className="text-right hidden sm:table-cell">الهاتف</TableHead>
                   <TableHead className="text-right hidden md:table-cell">المنتج</TableHead>
+                  <TableHead className="text-right">السعر</TableHead>
+                  <TableHead className="text-right">الشحن</TableHead>
                   <TableHead className="text-right">الإجمالي</TableHead>
                   <TableHead className="text-right hidden lg:table-cell">الشركة</TableHead>
                   <TableHead className="text-right hidden md:table-cell">المكتب</TableHead>
                   <TableHead className="text-right">المندوب</TableHead>
                   <TableHead className="text-right">الحالة</TableHead>
+                  <TableHead className="text-right w-10">تعديل</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={15} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
                 ) : filtered.map((order) => {
                   const hasCourier = !!order.courier_id;
                   return (
@@ -189,8 +207,11 @@ export default function Orders() {
                       <TableCell className="font-mono text-xs">{order.tracking_id}</TableCell>
                       <TableCell className="font-mono text-xs">{order.customer_code || '-'}</TableCell>
                       <TableCell className="text-sm">{order.customer_name}</TableCell>
+                      <TableCell className="hidden sm:table-cell text-sm truncate max-w-[120px]">{order.address || '-'}</TableCell>
                       <TableCell dir="ltr" className="hidden sm:table-cell text-sm">{order.customer_phone}</TableCell>
                       <TableCell className="hidden md:table-cell text-sm">{order.product_name}</TableCell>
+                      <TableCell className="text-sm">{Number(order.price)} ج.م</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{Number(order.delivery_price)} ج.م</TableCell>
                       <TableCell className="font-bold text-sm">{Number(order.price) + Number(order.delivery_price)} ج.م</TableCell>
                       <TableCell className="hidden lg:table-cell text-sm">{order.companies?.name || '-'}</TableCell>
                       <TableCell className="hidden md:table-cell text-sm">{order.offices?.name || '-'}</TableCell>
@@ -201,6 +222,11 @@ export default function Orders() {
                         <Badge style={{ backgroundColor: order.order_statuses?.color || undefined }} className="text-xs">
                           {order.order_statuses?.name || 'بدون حالة'}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button size="icon" variant="ghost" onClick={() => setEditOrder(order)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   );

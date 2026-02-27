@@ -248,6 +248,44 @@ export type Database = {
           },
         ]
       }
+      office_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          notes: string | null
+          office_id: string
+          paid_by: string | null
+          type: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          office_id: string
+          paid_by?: string | null
+          type?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          office_id?: string
+          paid_by?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "office_payments_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       offices: {
         Row: {
           address: string | null
@@ -342,6 +380,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          address: string | null
           barcode: string | null
           color: string | null
           company_id: string | null
@@ -368,6 +407,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          address?: string | null
           barcode?: string | null
           color?: string | null
           company_id?: string | null
@@ -394,6 +434,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          address?: string | null
           barcode?: string | null
           color?: string | null
           company_id?: string | null
@@ -490,6 +531,7 @@ export type Database = {
           is_active: boolean
           notes: string | null
           phone: string | null
+          salary: number
           updated_at: string
         }
         Insert: {
@@ -500,6 +542,7 @@ export type Database = {
           is_active?: boolean
           notes?: string | null
           phone?: string | null
+          salary?: number
           updated_at?: string
         }
         Update: {
@@ -510,6 +553,7 @@ export type Database = {
           is_active?: boolean
           notes?: string | null
           phone?: string | null
+          salary?: number
           updated_at?: string
         }
         Relationships: []

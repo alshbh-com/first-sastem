@@ -183,7 +183,7 @@ export default function Orders() {
                   <TableHead className="text-right">Tracking</TableHead>
                   <TableHead className="text-right">الكود</TableHead>
                   <TableHead className="text-right">العميل</TableHead>
-                  <TableHead className="text-right hidden sm:table-cell">العنوان</TableHead>
+                  <TableHead className="text-right">العنوان</TableHead>
                   <TableHead className="text-right hidden sm:table-cell">الهاتف</TableHead>
                   <TableHead className="text-right hidden md:table-cell">المنتج</TableHead>
                   <TableHead className="text-right">السعر</TableHead>
@@ -207,7 +207,7 @@ export default function Orders() {
                       <TableCell className="font-mono text-xs">{order.tracking_id}</TableCell>
                       <TableCell className="font-mono text-xs">{order.customer_code || '-'}</TableCell>
                       <TableCell className="text-sm">{order.customer_name}</TableCell>
-                      <TableCell className="hidden sm:table-cell text-sm truncate max-w-[120px]">{order.address || '-'}</TableCell>
+                      <TableCell className="text-sm truncate max-w-[120px]">{order.address || '-'}</TableCell>
                       <TableCell dir="ltr" className="hidden sm:table-cell text-sm">{order.customer_phone}</TableCell>
                       <TableCell className="hidden md:table-cell text-sm">{order.product_name}</TableCell>
                       <TableCell className="text-sm">{Number(order.price)} ج.م</TableCell>

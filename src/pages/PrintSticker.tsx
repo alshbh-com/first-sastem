@@ -82,15 +82,16 @@ export default function PrintSticker() {
 
     printWindow.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8">
       <style>
-        @page { size: 76mm 50mm; margin: 0; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; font-size: 9px; }
-        .sticker { width: 72mm; height: 46mm; padding: 2mm; box-sizing: border-box; page-break-after: always; border: 1px dashed #ccc; }
-        .header { text-align: center; font-size: 14px; font-weight: bold; margin-bottom: 2px; }
-        .barcode-area { text-align: center; margin: 2px 0; }
-        .barcode-num { text-align: center; font-family: monospace; font-size: 10px; font-weight: bold; }
-        .info { margin: 1px 0; font-size: 8px; }
-        .row { display: flex; justify-content: space-between; margin: 1px 0; font-size: 8px; }
-        .total { font-size: 12px; font-weight: bold; text-align: center; margin-top: 3px; border: 1px solid #000; padding: 2px; }
+        @page { size: 76mm 127mm; margin: 0; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; font-size: 11px; }
+        .sticker { width: 74mm; height: 125mm; padding: 3mm; box-sizing: border-box; page-break-after: always; display: flex; flex-direction: column; justify-content: center; }
+        .sticker:last-child { page-break-after: auto; }
+        .header { text-align: center; font-size: 20px; font-weight: bold; margin-bottom: 6px; }
+        .barcode-area { text-align: center; margin: 6px 0; }
+        .barcode-num { text-align: center; font-family: monospace; font-size: 14px; font-weight: bold; margin-bottom: 6px; }
+        .info { margin: 3px 0; font-size: 11px; }
+        .row { display: flex; justify-content: space-between; margin: 3px 0; font-size: 11px; }
+        .total { font-size: 16px; font-weight: bold; text-align: center; margin-top: 8px; border: 2px solid #000; padding: 4px; }
       </style></head><body>${stickers}</body></html>`);
     printWindow.document.close();
     printWindow.focus();
@@ -102,57 +103,42 @@ export default function PrintSticker() {
     const printWindow = window.open('', '_blank', 'width=800,height=1000');
     if (!printWindow) return;
 
-    // Group into pages of ~20 orders each to fit on A4
-    const perPage = 20;
-    const pages: any[][] = [];
-    for (let i = 0; i < selectedOrders.length; i += perPage) {
-      pages.push(selectedOrders.slice(i, i + perPage));
-    }
-
-    const totalAll = selectedOrders.reduce((s, o) => s + Number(o.price) + Number(o.delivery_price), 0);
-
-    const pagesHtml = pages.map((pageOrders, pageIdx) => {
-      const rows = pageOrders.map((order, i) => {
-        const total = Number(order.price) + Number(order.delivery_price);
-        const barcode = order.barcode || '';
-        const globalIdx = pageIdx * perPage + i + 1;
-        return `<tr>
-          <td>${globalIdx}</td>
-          <td>${order.customer_code || '-'}</td>
-          <td style="direction:ltr;text-align:center"><span style="font-family:monospace;font-size:9px">${barcode}</span></td>
-          <td>${order.customer_name}</td>
-          <td dir="ltr">${order.customer_phone}</td>
-          <td>${order.offices?.name || '-'}</td>
-          <td>${order.address || order.governorate || '-'}</td>
-          <td><b>${total} ج.م</b></td>
-        </tr>`;
-      }).join('');
-
+    const invoicesHtml = selectedOrders.map((order, i) => {
+      const total = Number(order.price) + Number(order.delivery_price);
+      const barcode = order.barcode || '';
       return `
-        <div class="page">
+        <div class="invoice-page">
           <div class="header">FIRST</div>
-          <div class="date">${new Date().toLocaleDateString('ar-EG')} - عدد: ${selectedOrders.length} أوردر - صفحة ${pageIdx + 1}/${pages.length}</div>
+          <div class="date">${new Date().toLocaleDateString('ar-EG')} - فاتورة ${i + 1} من ${selectedOrders.length}</div>
           <table>
-            <thead><tr><th>#</th><th>الكود</th><th>الباركود</th><th>العميل</th><th>الهاتف</th><th>المكتب</th><th>العنوان</th><th>الإجمالي</th></tr></thead>
-            <tbody>${rows}</tbody>
+            <tr><th>الكود</th><td>${order.customer_code || '-'}</td></tr>
+            <tr><th>الباركود</th><td style="font-family:monospace;direction:ltr">${barcode}</td></tr>
+            <tr><th>اسم العميل</th><td>${order.customer_name}</td></tr>
+            <tr><th>الهاتف</th><td dir="ltr">${order.customer_phone}</td></tr>
+            <tr><th>المكتب</th><td>${order.offices?.name || '-'}</td></tr>
+            <tr><th>العنوان</th><td>${order.address || order.governorate || '-'}</td></tr>
+            <tr><th>المنتج</th><td>${order.product_name || '-'}</td></tr>
+            <tr><th>الكمية</th><td>${order.quantity}</td></tr>
+            <tr><th>السعر</th><td>${Number(order.price)} ج.م</td></tr>
+            <tr><th>الشحن</th><td>${Number(order.delivery_price)} ج.م</td></tr>
           </table>
-          ${pageIdx === pages.length - 1 ? `<div class="total-row">الإجمالي الكلي: ${totalAll} ج.م</div>` : ''}
+          <div class="total">الإجمالي: ${total} ج.م</div>
         </div>`;
     }).join('');
 
     printWindow.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8">
       <style>
-        @page { size: A4; margin: 8mm; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; font-size: 11px; }
-        .page { page-break-after: always; }
-        .page:last-child { page-break-after: auto; }
-        .header { text-align: center; font-size: 20px; font-weight: bold; margin-bottom: 4px; }
-        .date { text-align: center; margin-bottom: 10px; color: #666; font-size: 10px; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #333; padding: 4px 6px; text-align: right; font-size: 10px; }
-        th { background: #f0f0f0; font-weight: bold; }
-        .total-row { font-size: 14px; font-weight: bold; text-align: center; margin-top: 10px; border: 2px solid #000; padding: 6px; }
-      </style></head><body>${pagesHtml}</body></html>`);
+        @page { size: A4; margin: 15mm; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; }
+        .invoice-page { page-break-after: always; padding: 10mm 0; }
+        .invoice-page:last-child { page-break-after: auto; }
+        .header { text-align: center; font-size: 28px; font-weight: bold; margin-bottom: 10px; }
+        .date { text-align: center; margin-bottom: 20px; color: #666; font-size: 13px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #333; padding: 10px 14px; text-align: right; font-size: 14px; }
+        th { background: #f0f0f0; font-weight: bold; width: 30%; }
+        .total { font-size: 22px; font-weight: bold; text-align: center; border: 3px solid #000; padding: 12px; }
+      </style></head><body>${invoicesHtml}</body></html>`);
     printWindow.document.close();
     printWindow.focus();
     printWindow.print();

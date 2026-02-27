@@ -26,6 +26,16 @@ import ActivityLogs from "@/pages/ActivityLogs";
 import Settings from "@/pages/Settings";
 import UsersPage from "@/pages/UsersPage";
 import CourierOrders from "@/pages/CourierOrders";
+import FinancialReports from "@/pages/FinancialReports";
+import CourierStats from "@/pages/CourierStats";
+import OfficeStats from "@/pages/OfficeStats";
+import CustomersPage from "@/pages/CustomersPage";
+import TrackingPage from "@/pages/TrackingPage";
+import DailyReport from "@/pages/DailyReport";
+import ProfitReport from "@/pages/ProfitReport";
+import StatusManagement from "@/pages/StatusManagement";
+import OrderNotes from "@/pages/OrderNotes";
+import DataExport from "@/pages/DataExport";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +56,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<LoginRedirect />} />
+            <Route path="/tracking" element={<TrackingPage />} />
             <Route path="/courier-orders" element={
               <ProtectedRoute><CourierOrders /></ProtectedRoute>
             } />
@@ -63,6 +74,7 @@ const App = () => (
               <Route path="/products" element={<Products />} />
               <Route path="/couriers" element={<Couriers />} />
               <Route path="/users" element={<UsersPage />} />
+              <Route path="/customers" element={<CustomersPage />} />
               <Route path="/courier-collections" element={<CourierCollections />} />
               <Route path="/collections" element={<Navigate to="/courier-collections" replace />} />
               <Route path="/company-accounts" element={<CompanyAccounts />} />
@@ -71,6 +83,14 @@ const App = () => (
               <Route path="/print" element={<PrintSticker />} />
               <Route path="/logs" element={<ActivityLogs />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/financial-reports" element={<FinancialReports />} />
+              <Route path="/courier-stats" element={<CourierStats />} />
+              <Route path="/office-stats" element={<OfficeStats />} />
+              <Route path="/daily-report" element={<DailyReport />} />
+              <Route path="/profit-report" element={<ProfitReport />} />
+              <Route path="/status-management" element={<StatusManagement />} />
+              <Route path="/order-notes" element={<OrderNotes />} />
+              <Route path="/data-export" element={<DataExport />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

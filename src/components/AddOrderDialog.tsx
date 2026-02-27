@@ -10,10 +10,12 @@ import { toast } from 'sonner';
 
 interface Props {
   onOrderAdded: () => void;
+  editOrder?: any;
+  onClose?: () => void;
 }
 
-export default function AddOrderDialog({ onOrderAdded }: Props) {
-  const [open, setOpen] = useState(false);
+export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Props) {
+  const [open, setOpen] = useState(!!editOrder);
   const [loading, setLoading] = useState(false);
 
   const [companies, setCompanies] = useState<any[]>([]);
@@ -26,10 +28,33 @@ export default function AddOrderDialog({ onOrderAdded }: Props) {
     product_name: '', product_id: '',
     quantity: '', price: '', delivery_price: '',
     company_id: '', office_id: '', status_id: '',
-    governorate: '', color: '', size: '',
+    governorate: '', color: '', size: '', address: '',
   };
 
   const [form, setForm] = useState(emptyForm);
+
+  useEffect(() => {
+    if (editOrder) {
+      setForm({
+        customer_name: editOrder.customer_name || '',
+        customer_phone: editOrder.customer_phone || '',
+        customer_code: editOrder.customer_code || '',
+        product_name: editOrder.product_name || '',
+        product_id: editOrder.product_id || '',
+        quantity: String(editOrder.quantity || 1),
+        price: String(editOrder.price || 0),
+        delivery_price: String(editOrder.delivery_price || 0),
+        company_id: editOrder.company_id || '',
+        office_id: editOrder.office_id || '',
+        status_id: editOrder.status_id || '',
+        governorate: editOrder.governorate || '',
+        color: editOrder.color || '',
+        size: editOrder.size || '',
+        address: editOrder.address || '',
+      });
+      setOpen(true);
+    }
+  }, [editOrder]);
 
   useEffect(() => { if (open) loadDropdowns(); }, [open]);
 
@@ -53,6 +78,11 @@ export default function AddOrderDialog({ onOrderAdded }: Props) {
 
   const totalCollection = (parseFloat(form.price) || 0) + (parseFloat(form.delivery_price) || 0);
 
+  const handleClose = (v: boolean) => {
+    if (!v) { setOpen(false); onClose?.(); }
+    else setOpen(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.customer_name.trim() || !form.customer_phone.trim()) {
@@ -66,10 +96,6 @@ export default function AddOrderDialog({ onOrderAdded }: Props) {
       const price = parseFloat(form.price) || 0;
       const deliveryPrice = parseFloat(form.delivery_price) || 0;
 
-      // Generate numeric-only barcode from sequence
-      const { data: seqData } = await supabase.rpc('nextval_barcode' as any);
-      const barcode = seqData ? String(seqData) : String(Date.now());
-
       const orderData: any = {
         customer_name: form.customer_name,
         customer_phone: form.customer_phone,
@@ -77,28 +103,40 @@ export default function AddOrderDialog({ onOrderAdded }: Props) {
         product_name: form.product_name || 'بدون منتج',
         quantity: qty, price, delivery_price: deliveryPrice,
         governorate: form.governorate, color: form.color, size: form.size,
-        barcode,
-        tracking_id: 'temp',
+        address: form.address,
       };
       if (form.company_id) orderData.company_id = form.company_id;
       if (form.office_id) orderData.office_id = form.office_id;
       if (form.product_id) orderData.product_id = form.product_id;
       if (form.status_id) orderData.status_id = form.status_id;
 
-      const { error } = await supabase.from('orders').insert(orderData);
-      if (error) throw error;
+      if (editOrder) {
+        // Update existing order
+        const { error } = await supabase.from('orders').update(orderData).eq('id', editOrder.id);
+        if (error) throw error;
+        toast.success('تم تحديث الأوردر');
+      } else {
+        // Generate barcode for new order
+        const { data: seqData } = await supabase.rpc('nextval_barcode' as any);
+        const barcode = seqData ? String(seqData) : String(Date.now());
+        orderData.barcode = barcode;
+        orderData.tracking_id = 'temp';
 
-      // Deduct stock
-      if (form.product_id && qty > 0) {
-        const product = products.find(p => p.id === form.product_id);
-        if (product) {
-          await supabase.from('products').update({ quantity: Math.max(0, product.quantity - qty) }).eq('id', form.product_id);
+        const { error } = await supabase.from('orders').insert(orderData);
+        if (error) throw error;
+
+        // Deduct stock
+        if (form.product_id && qty > 0) {
+          const product = products.find(p => p.id === form.product_id);
+          if (product) {
+            await supabase.from('products').update({ quantity: Math.max(0, product.quantity - qty) }).eq('id', form.product_id);
+          }
         }
+        toast.success('تم إضافة الأوردر بنجاح');
       }
 
-      toast.success('تم إضافة الأوردر بنجاح');
       setForm(emptyForm);
-      setOpen(false);
+      handleClose(false);
       onOrderAdded();
     } catch (err: any) {
       toast.error(err.message || 'حصل خطأ');
@@ -110,14 +148,16 @@ export default function AddOrderDialog({ onOrderAdded }: Props) {
   const set = (key: string, value: any) => setForm(f => ({ ...f, [key]: value }));
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button><Plus className="h-4 w-4 ml-2" />إضافة أوردر</Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={handleClose}>
+      {!editOrder && (
+        <DialogTrigger asChild>
+          <Button><Plus className="h-4 w-4 ml-2" />إضافة أوردر</Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-card border-border">
-        <DialogHeader><DialogTitle>إضافة أوردر جديد</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{editOrder ? 'تعديل الأوردر' : 'إضافة أوردر جديد'}</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>اسم العميل *</Label>
               <Input value={form.customer_name} onChange={e => set('customer_name', e.target.value)} className="bg-secondary border-border" placeholder="اسم العميل" />
@@ -128,7 +168,7 @@ export default function AddOrderDialog({ onOrderAdded }: Props) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>الكود (يدوي - اختياري)</Label>
               <Input value={form.customer_code} onChange={e => set('customer_code', e.target.value)} className="bg-secondary border-border" placeholder="كود المكتب" />
@@ -139,7 +179,12 @@ export default function AddOrderDialog({ onOrderAdded }: Props) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>العنوان</Label>
+            <Input value={form.address} onChange={e => set('address', e.target.value)} className="bg-secondary border-border" placeholder="العنوان بالتفصيل" />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>المنتج (اختيار من القائمة)</Label>
               <Select value={form.product_id} onValueChange={handleProductSelect}>
@@ -155,7 +200,7 @@ export default function AddOrderDialog({ onOrderAdded }: Props) {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-3">
             <div className="space-y-2">
               <Label>الكمية</Label>
               <Input type="number" min={1} value={form.quantity} onChange={e => set('quantity', e.target.value)}
@@ -169,20 +214,19 @@ export default function AddOrderDialog({ onOrderAdded }: Props) {
                 className="bg-secondary border-border" placeholder="0" />
             </div>
             <div className="space-y-2">
-              <Label>سعر التوصيل (ج.م)</Label>
+              <Label>سعر التوصيل</Label>
               <Input type="number" min={0} value={form.delivery_price} onChange={e => set('delivery_price', e.target.value)}
                 onFocus={e => { if (e.target.value === '0') set('delivery_price', ''); }}
                 className="bg-secondary border-border" placeholder="0" />
             </div>
           </div>
 
-          {/* Auto-calculated total */}
           <div className="p-3 bg-secondary rounded-lg border border-border text-center">
             <span className="text-sm text-muted-foreground">إجمالي التحصيل: </span>
             <span className="text-lg font-bold">{totalCollection} ج.م</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>الشركة</Label>
               <Select value={form.company_id} onValueChange={v => set('company_id', v)}>
@@ -199,7 +243,7 @@ export default function AddOrderDialog({ onOrderAdded }: Props) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>الحالة</Label>
               <Select value={form.status_id} onValueChange={v => set('status_id', v)}>
@@ -218,10 +262,10 @@ export default function AddOrderDialog({ onOrderAdded }: Props) {
             <Input value={form.size} onChange={e => set('size', e.target.value)} className="bg-secondary border-border" />
           </div>
 
-          <p className="text-xs text-muted-foreground">* الباركود يتم توليده تلقائياً (رقمي فقط)</p>
+          {!editOrder && <p className="text-xs text-muted-foreground">* الباركود يتم توليده تلقائياً (رقمي فقط)</p>}
 
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'إضافة الأوردر'}
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : (editOrder ? 'حفظ التعديلات' : 'إضافة الأوردر')}
           </Button>
         </form>
       </DialogContent>

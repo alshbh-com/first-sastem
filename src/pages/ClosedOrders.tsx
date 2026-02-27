@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Search, Trash2 } from 'lucide-react';
+import { Search, Trash2, Unlock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -50,16 +50,29 @@ export default function ClosedOrders() {
     loadOrders();
   };
 
+  const reopenSelected = async () => {
+    if (selected.size === 0) return;
+    if (!confirm(`إلغاء تقفيل ${selected.size} أوردر؟`)) return;
+    const { error } = await supabase.from('orders').update({ is_closed: false }).in('id', Array.from(selected));
+    if (error) { toast.error(error.message); return; }
+    toast.success('تم إعادة فتح الأوردرات');
+    setSelected(new Set());
+    loadOrders();
+  };
+
   return (
     <div className="space-y-4">
       <h1 className="text-xl sm:text-2xl font-bold">الأوردرات القديمة (المقفلة)</h1>
       <div className="flex flex-wrap gap-2 items-center">
-        <div className="relative flex-1 min-w-[200px] max-w-xs">
+        <div className="relative flex-1 min-w-[180px] max-w-xs">
           <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input placeholder="بحث..." value={search} onChange={e => setSearch(e.target.value)} className="pr-9 bg-secondary border-border" />
         </div>
         {isOwner && selected.size > 0 && (
-          <Button size="sm" variant="destructive" onClick={deleteSelected}><Trash2 className="h-4 w-4 ml-1" />حذف {selected.size}</Button>
+          <>
+            <Button size="sm" variant="outline" onClick={reopenSelected}><Unlock className="h-4 w-4 ml-1" />إلغاء التقفيل {selected.size}</Button>
+            <Button size="sm" variant="destructive" onClick={deleteSelected}><Trash2 className="h-4 w-4 ml-1" />حذف {selected.size}</Button>
+          </>
         )}
       </div>
       <Card className="bg-card border-border">

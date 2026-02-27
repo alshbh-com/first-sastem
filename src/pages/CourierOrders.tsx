@@ -38,22 +38,21 @@ export default function CourierOrders() {
     setOrders(data || []);
   };
 
+  const totalPrice = orders.reduce((sum, o) => sum + Number(o.price) + Number(o.delivery_price), 0);
+
   const rejectWithShipStatus = statuses.find(s => s.name === 'رفض واخد شحن');
   const postponedStatus = statuses.find(s => s.name === 'مؤجل');
   const partialDeliveryStatus = statuses.find(s => s.name === 'تسليم جزئي');
 
   const updateStatus = async (orderId: string, statusId: string) => {
-    const order = orders.find(o => o.id === orderId);
-    
-    // رفض واخد شحن - ask for shipping cost
     if (statusId === rejectWithShipStatus?.id) {
       setShippingDialog({ orderId, statusId });
       setShippingCost('');
       return;
     }
 
-    // تسليم جزئي - ask for partial amount
     if (statusId === partialDeliveryStatus?.id) {
+      const order = orders.find(o => o.id === orderId);
       setPartialDialog({ orderId, statusId, order });
       setPartialAmount('');
       return;
@@ -61,7 +60,6 @@ export default function CourierOrders() {
 
     await supabase.from('orders').update({ status_id: statusId }).eq('id', orderId);
 
-    // مؤجل - remove courier, goes back to pool
     if (statusId === postponedStatus?.id) {
       await supabase.from('orders').update({ courier_id: null }).eq('id', orderId);
     }
@@ -85,15 +83,11 @@ export default function CourierOrders() {
   const confirmPartialDelivery = async () => {
     if (!partialDialog) return;
     const received = parseFloat(partialAmount) || 0;
-    const order = partialDialog.order;
-    const orderPrice = Number(order?.price || 0);
-    const returnAmount = orderPrice - received; // المرتجع الجزئي
-
     await supabase.from('orders').update({ 
       status_id: partialDialog.statusId,
       partial_amount: received,
     }).eq('id', partialDialog.orderId);
-
+    const returnAmount = Number(partialDialog.order?.price || 0) - received;
     toast.success(`تسليم جزئي: ${received} ج.م - مرتجع: ${returnAmount} ج.م`);
     setPartialDialog(null);
     load();
@@ -124,14 +118,22 @@ export default function CourierOrders() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-6">
+    <div className="min-h-screen bg-background p-3 sm:p-4 md:p-6">
       <div className="mx-auto max-w-4xl space-y-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">أوردراتي</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">أوردراتي</h1>
           <Button variant="ghost" className="text-destructive" onClick={logout}>
-            <LogOut className="h-4 w-4 ml-2" />تسجيل خروج
+            <LogOut className="h-4 w-4 ml-2" />خروج
           </Button>
         </div>
+
+        {/* Total */}
+        <Card className="bg-card border-border">
+          <CardContent className="p-3 flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">إجمالي الأوردرات: {orders.length}</span>
+            <span className="font-bold text-lg">{totalPrice} ج.م</span>
+          </CardContent>
+        </Card>
 
         <Card className="bg-card border-border">
           <CardContent className="p-0">
@@ -140,11 +142,11 @@ export default function CourierOrders() {
                 <TableHeader>
                   <TableRow className="border-border">
                     <TableHead className="w-10">ترتيب</TableHead>
-                    <TableHead className="text-right">Tracking</TableHead>
                     <TableHead className="text-right">الكود</TableHead>
                     <TableHead className="text-right">العميل</TableHead>
+                    <TableHead className="text-right">العنوان</TableHead>
                     <TableHead className="text-right">المنتج</TableHead>
-                    <TableHead className="text-right">المحافظة</TableHead>
+                    <TableHead className="text-right">الإجمالي</TableHead>
                     <TableHead className="text-right">الحالة</TableHead>
                     <TableHead className="text-right">تفاصيل</TableHead>
                   </TableRow>
@@ -160,14 +162,14 @@ export default function CourierOrders() {
                           {idx < orders.length - 1 && <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => moveOrder(idx, 1)}>↓</Button>}
                         </div>
                       </TableCell>
-                      <TableCell className="font-mono text-xs">{order.tracking_id}</TableCell>
                       <TableCell className="font-mono text-xs">{order.customer_code || '-'}</TableCell>
-                      <TableCell>{order.customer_name}</TableCell>
-                      <TableCell>{order.product_name}</TableCell>
-                      <TableCell>{order.governorate}</TableCell>
+                      <TableCell className="text-sm">{order.customer_name}</TableCell>
+                      <TableCell className="text-sm truncate max-w-[120px]">{order.address || order.governorate || '-'}</TableCell>
+                      <TableCell className="text-sm">{order.product_name}</TableCell>
+                      <TableCell className="font-bold text-sm">{Number(order.price) + Number(order.delivery_price)} ج.م</TableCell>
                       <TableCell>
                         <Select value={order.status_id || ''} onValueChange={(v) => updateStatus(order.id, v)}>
-                          <SelectTrigger className="w-36 bg-secondary border-border"><SelectValue placeholder="اختر الحالة" /></SelectTrigger>
+                          <SelectTrigger className="w-32 sm:w-36 bg-secondary border-border text-xs"><SelectValue placeholder="الحالة" /></SelectTrigger>
                           <SelectContent>
                             {statuses.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                           </SelectContent>
@@ -224,6 +226,10 @@ export default function CourierOrders() {
                 <div><span className="text-muted-foreground">المنتج:</span> <strong>{selectedOrder.product_name}</strong></div>
                 <div><span className="text-muted-foreground">الكمية:</span> <strong>{selectedOrder.quantity}</strong></div>
                 <div><span className="text-muted-foreground">المحافظة:</span> <strong>{selectedOrder.governorate}</strong></div>
+                <div className="col-span-2"><span className="text-muted-foreground">العنوان:</span> <strong>{selectedOrder.address || '-'}</strong></div>
+                <div><span className="text-muted-foreground">السعر:</span> <strong>{selectedOrder.price} ج.م</strong></div>
+                <div><span className="text-muted-foreground">الشحن:</span> <strong>{selectedOrder.delivery_price} ج.م</strong></div>
+                <div className="col-span-2"><span className="text-muted-foreground">الإجمالي:</span> <strong className="text-lg">{Number(selectedOrder.price) + Number(selectedOrder.delivery_price)} ج.م</strong></div>
                 <div><span className="text-muted-foreground">اللون:</span> <strong>{selectedOrder.color || '-'}</strong></div>
                 <div><span className="text-muted-foreground">المقاس:</span> <strong>{selectedOrder.size || '-'}</strong></div>
                 <div><span className="text-muted-foreground">الباركود:</span> <strong dir="ltr">{selectedOrder.barcode || '-'}</strong></div>

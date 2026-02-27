@@ -8,21 +8,30 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus } from 'lucide-react';
+import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function OfficeAccounts() {
+  const { isOwner } = useAuth();
   const [offices, setOffices] = useState<any[]>([]);
   const [selectedOffice, setSelectedOffice] = useState('all');
   const [statuses, setStatuses] = useState<any[]>([]);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [period, setPeriod] = useState('all');
+  const [payments, setPayments] = useState<any[]>([]);
 
-  // Advance payment
+  // Advance payment dialog
   const [advanceOpen, setAdvanceOpen] = useState(false);
   const [advanceOffice, setAdvanceOffice] = useState('');
   const [advanceAmount, setAdvanceAmount] = useState('');
   const [advanceNotes, setAdvanceNotes] = useState('');
+  const [advanceType, setAdvanceType] = useState('advance');
+
+  // Edit dialog
+  const [editItem, setEditItem] = useState<any>(null);
+  const [editAmount, setEditAmount] = useState('');
+  const [editNotes, setEditNotes] = useState('');
 
   useEffect(() => {
     supabase.from('offices').select('id, name').order('name').then(({ data }) => setOffices(data || []));
@@ -39,8 +48,14 @@ export default function OfficeAccounts() {
     return null;
   };
 
+  const loadPayments = async () => {
+    const { data } = await supabase.from('office_payments').select('*').order('created_at', { ascending: false });
+    setPayments(data || []);
+  };
+
   const loadAccounts = async () => {
     if (offices.length === 0 || statuses.length === 0) return;
+    await loadPayments();
     const officeList = selectedOffice === 'all' ? offices : offices.filter(o => o.id === selectedOffice);
     const dateFilter = getDateFilter();
 
@@ -51,15 +66,17 @@ export default function OfficeAccounts() {
     const rejectStatuses = statuses.filter(s => s.name.includes('رفض'));
     const partialStatus = statuses.find(s => s.name === 'تسليم جزئي');
 
+    const { data: allPayments } = await supabase.from('office_payments').select('*');
+
     const result = await Promise.all(officeList.map(async (office) => {
       let query = supabase.from('orders').select('price, delivery_price, status_id, partial_amount').eq('office_id', office.id);
       if (dateFilter) query = query.gte('created_at', dateFilter);
       const { data: orders } = await query;
       if (!orders) return null;
 
-      // Get advance payments for this office
-      const { data: payments } = await supabase.from('company_payments').select('amount').eq('company_id', office.id);
-      const advancePaid = payments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
+      const officePayments = (allPayments || []).filter(p => p.office_id === office.id);
+      const advancePaid = officePayments.filter(p => p.type === 'advance').reduce((sum, p) => sum + Number(p.amount), 0);
+      const commission = officePayments.filter(p => p.type === 'commission').reduce((sum, p) => sum + Number(p.amount), 0);
 
       const deliveredTotal = orders.filter(o => o.status_id === deliveredStatus?.id).reduce((sum, o) => sum + Number(o.price), 0);
       const returnedTotal = orders.filter(o => returnStatuses.some(rs => rs.id === o.status_id)).reduce((sum, o) => sum + Number(o.price), 0);
@@ -81,7 +98,7 @@ export default function OfficeAccounts() {
         orderCount: orders.length,
         deliveredTotal, returnedTotal, postponedTotal,
         returnNoShipDeduction, partialDeliveredTotal, partialReturnTotal,
-        settlement, settlementWithPostponed, advancePaid,
+        settlement, settlementWithPostponed, advancePaid, commission,
         netAfterAdvance: settlement - advancePaid,
       };
     }));
@@ -90,26 +107,50 @@ export default function OfficeAccounts() {
   };
 
   const saveAdvance = async () => {
-    if (!advanceOffice || !advanceAmount) return;
-    const { error } = await supabase.from('company_payments').insert({
-      company_id: advanceOffice,
+    if (!advanceOffice || !advanceAmount) { toast.error('اختر مكتب وأدخل المبلغ'); return; }
+    const { error } = await supabase.from('office_payments').insert({
+      office_id: advanceOffice,
       amount: parseFloat(advanceAmount),
-      notes: advanceNotes || 'دفعة مقدمة',
+      type: advanceType,
+      notes: advanceNotes || (advanceType === 'advance' ? 'دفعة مقدمة' : 'عمولة'),
     });
-    if (error) { toast.error(error.message); return; }
-    toast.success('تم تسجيل الدفعة المقدمة');
+    if (error) { toast.error('حدث خطأ: ' + error.message); return; }
+    toast.success('تم الحفظ بنجاح');
     setAdvanceOpen(false); setAdvanceAmount(''); setAdvanceNotes(''); setAdvanceOffice('');
     loadAccounts();
   };
+
+  const updatePayment = async () => {
+    if (!editItem) return;
+    const { error } = await supabase.from('office_payments').update({
+      amount: parseFloat(editAmount),
+      notes: editNotes,
+    }).eq('id', editItem.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success('تم التحديث');
+    setEditItem(null);
+    loadAccounts();
+  };
+
+  const deletePayment = async (id: string) => {
+    if (!confirm('حذف هذا السجل؟')) return;
+    await supabase.from('office_payments').delete().eq('id', id);
+    toast.success('تم الحذف');
+    loadAccounts();
+  };
+
+  const officePaymentsList = payments.filter(p => 
+    selectedOffice === 'all' || p.office_id === selectedOffice
+  );
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-xl sm:text-2xl font-bold">حسابات المكاتب</h1>
         <Dialog open={advanceOpen} onOpenChange={setAdvanceOpen}>
-          <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 ml-1" />دفعة مقدمة</Button></DialogTrigger>
+          <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 ml-1" />إضافة دفعة / عمولة</Button></DialogTrigger>
           <DialogContent className="bg-card border-border">
-            <DialogHeader><DialogTitle>تسجيل دفعة مقدمة</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>إضافة دفعة مقدمة / عمولة</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <div>
                 <Label>المكتب</Label>
@@ -118,8 +159,18 @@ export default function OfficeAccounts() {
                   <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
+              <div>
+                <Label>النوع</Label>
+                <Select value={advanceType} onValueChange={setAdvanceType}>
+                  <SelectTrigger className="bg-secondary border-border"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="advance">دفعة مقدمة</SelectItem>
+                    <SelectItem value="commission">عمولة</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div><Label>المبلغ</Label><Input type="number" value={advanceAmount} onChange={e => setAdvanceAmount(e.target.value)} className="bg-secondary border-border" /></div>
-              <div><Label>ملاحظات</Label><Input value={advanceNotes} onChange={e => setAdvanceNotes(e.target.value)} className="bg-secondary border-border" placeholder="دفعة مقدمة..." /></div>
+              <div><Label>ملاحظات</Label><Input value={advanceNotes} onChange={e => setAdvanceNotes(e.target.value)} className="bg-secondary border-border" /></div>
               <Button onClick={saveAdvance} className="w-full">حفظ</Button>
             </div>
           </DialogContent>
@@ -158,13 +209,14 @@ export default function OfficeAccounts() {
                   <TableHead className="text-right hidden sm:table-cell">مرتجع جزئي</TableHead>
                   <TableHead className="text-right hidden sm:table-cell">خصم شحن</TableHead>
                   <TableHead className="text-right">المدفوع مقدم</TableHead>
+                  <TableHead className="text-right">العمولة</TableHead>
                   <TableHead className="text-right">المستحق</TableHead>
                   <TableHead className="text-right">بالمؤجل</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {accounts.length === 0 ? (
-                  <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">لا توجد بيانات</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground py-8">لا توجد بيانات</TableCell></TableRow>
                 ) : accounts.map(a => (
                   <TableRow key={a.id} className="border-border">
                     <TableCell className="font-medium text-sm">{a.name}</TableCell>
@@ -175,6 +227,7 @@ export default function OfficeAccounts() {
                     <TableCell className="text-orange-400 font-bold text-sm hidden sm:table-cell">{a.partialReturnTotal} ج.م</TableCell>
                     <TableCell className="text-destructive text-sm hidden sm:table-cell">{a.returnNoShipDeduction} ج.م</TableCell>
                     <TableCell className="text-primary font-bold text-sm">{a.advancePaid} ج.م</TableCell>
+                    <TableCell className="text-sm font-bold">{a.commission} ج.م</TableCell>
                     <TableCell className="font-bold text-sm">{a.settlement} ج.م</TableCell>
                     <TableCell className="font-bold text-primary text-sm">{a.settlementWithPostponed} ج.م</TableCell>
                   </TableRow>
@@ -184,6 +237,64 @@ export default function OfficeAccounts() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Payments list */}
+      {officePaymentsList.length > 0 && (
+        <Card className="bg-card border-border">
+          <CardContent className="p-4">
+            <h3 className="font-semibold mb-3">سجل الدفعات والعمولات</h3>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border">
+                    <TableHead className="text-right">المكتب</TableHead>
+                    <TableHead className="text-right">النوع</TableHead>
+                    <TableHead className="text-right">المبلغ</TableHead>
+                    <TableHead className="text-right">ملاحظات</TableHead>
+                    <TableHead className="text-right">التاريخ</TableHead>
+                    <TableHead className="text-right">إجراءات</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {officePaymentsList.map(p => (
+                    <TableRow key={p.id} className="border-border">
+                      <TableCell className="text-sm">{offices.find(o => o.id === p.office_id)?.name || '-'}</TableCell>
+                      <TableCell className="text-sm">{p.type === 'advance' ? 'دفعة مقدمة' : 'عمولة'}</TableCell>
+                      <TableCell className="font-bold text-sm">{p.amount} ج.م</TableCell>
+                      <TableCell className="text-sm">{p.notes || '-'}</TableCell>
+                      <TableCell className="text-sm">{new Date(p.created_at).toLocaleDateString('ar-EG')}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button size="icon" variant="ghost" onClick={() => { setEditItem(p); setEditAmount(String(p.amount)); setEditNotes(p.notes || ''); }}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          {isOwner && (
+                            <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deletePayment(p.id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Edit payment dialog */}
+      <Dialog open={!!editItem} onOpenChange={v => { if (!v) setEditItem(null); }}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader><DialogTitle>تعديل السجل</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div><Label>المبلغ</Label><Input type="number" value={editAmount} onChange={e => setEditAmount(e.target.value)} className="bg-secondary border-border" /></div>
+            <div><Label>ملاحظات</Label><Input value={editNotes} onChange={e => setEditNotes(e.target.value)} className="bg-secondary border-border" /></div>
+            <Button onClick={updatePayment} className="w-full">حفظ</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Card className="bg-card border-border p-4">
         <h3 className="font-semibold mb-2">معادلة صافي الحساب:</h3>

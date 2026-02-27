@@ -71,7 +71,12 @@ export default function UnassignedOrders() {
 
   const unassignCourier = async () => {
     if (selected.size === 0) { toast.error('اختر أوردرات أولاً'); return; }
-    const { error } = await supabase.from('orders').update({ courier_id: null }).in('id', Array.from(selected));
+    // Reset status to first status when unassigning
+    const defaultStatus = statuses.length > 0 ? statuses[0] : null;
+    const updateData: any = { courier_id: null };
+    if (defaultStatus) updateData.status_id = defaultStatus.id;
+    
+    const { error } = await supabase.from('orders').update(updateData).in('id', Array.from(selected));
     if (error) { toast.error(error.message); return; }
     toast.success(`تم إلغاء تعيين ${selected.size} أوردر`);
     setSelected(new Set());

@@ -45,12 +45,18 @@ Deno.serve(async (req) => {
     if (action === 'create-user') {
       const caller = await verifyCaller()
       if (!caller) {
-        return new Response(JSON.stringify({ error: 'غير مصرح' }), {
+        return new Response(JSON.stringify({ error: 'غير مصرح - يجب تسجيل الدخول كمالك أو مسؤول' }), {
           status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
 
       const { full_name, phone, login_code, role } = userData
+      if (!role || !['admin', 'courier'].includes(role)) {
+        return new Response(JSON.stringify({ error: 'يجب اختيار الصلاحية (مسؤول أو مندوب)' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
       const email = codeToEmail(login_code)
 
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
@@ -86,9 +92,11 @@ Deno.serve(async (req) => {
       const { user_id, new_password } = userData
       const newEmail = codeToEmail(new_password)
 
+      // Update both email and password so old credentials are invalidated
       const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(user_id, {
         password: new_password,
         email: newEmail,
+        email_confirm: true,
       })
 
       if (updateError) {
@@ -115,9 +123,7 @@ Deno.serve(async (req) => {
       
       // Delete role first
       await supabaseAdmin.from('user_roles').delete().eq('user_id', user_id)
-      // Delete profile
-      await supabaseAdmin.from('profiles').delete().eq('id', user_id)
-      // Delete auth user
+      // Delete auth user (profile will be handled by cascade or trigger)
       const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user_id)
 
       if (deleteError) {

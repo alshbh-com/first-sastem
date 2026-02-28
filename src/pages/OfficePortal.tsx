@@ -84,6 +84,7 @@ export default function OfficePortal() {
                 <TableHeader>
                   <TableRow className="border-border">
                     <TableHead className="text-right">رقم التتبع</TableHead>
+                    <TableHead className="text-right">كود العميل</TableHead>
                     <TableHead className="text-right">العميل</TableHead>
                     <TableHead className="text-right">الهاتف</TableHead>
                     <TableHead className="text-right">المنتج</TableHead>
@@ -96,12 +97,13 @@ export default function OfficePortal() {
                 </TableHeader>
                 <TableBody>
                   {loading ? (
-                    <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">جارٍ التحميل...</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">جارٍ التحميل...</TableCell></TableRow>
                   ) : orders.length === 0 ? (
-                    <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
                   ) : orders.map(o => (
                     <TableRow key={o.id} className="border-border">
                       <TableCell className="font-mono text-xs">{o.tracking_id}</TableCell>
+                      <TableCell className="text-sm">{o.customer_code || '-'}</TableCell>
                       <TableCell className="font-medium text-sm">{o.customer_name}</TableCell>
                       <TableCell dir="ltr" className="text-sm">{o.customer_phone}</TableCell>
                       <TableCell className="text-sm">{o.product_name}</TableCell>

@@ -5,10 +5,13 @@ import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
 
 export default function AppLayout() {
-  const { isCourier, isOwnerOrAdmin } = useAuth();
+  const { isCourier, isOwnerOrAdmin, isOffice } = useAuth();
   const { canView, canEdit } = usePermissions();
   const location = useLocation();
 
+  if (isOffice && !isOwnerOrAdmin) {
+    return <Navigate to="/office-portal" replace />;
+  }
   if (isCourier && !isOwnerOrAdmin) {
     return <Navigate to="/courier-orders" replace />;
   }

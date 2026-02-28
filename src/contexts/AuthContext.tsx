@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useRef } from 'r
 import { supabase } from '@/integrations/supabase/client';
 import type { Session, User } from '@supabase/supabase-js';
 
-type AppRole = 'owner' | 'admin' | 'courier';
+type AppRole = 'owner' | 'admin' | 'courier' | 'office';
 
 interface AuthState {
   session: Session | null;
@@ -12,6 +12,7 @@ interface AuthState {
   isOwner: boolean;
   isAdmin: boolean;
   isCourier: boolean;
+  isOffice: boolean;
   isOwnerOrAdmin: boolean;
   login: (password: string) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
@@ -48,7 +49,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    // Set up listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, sess) => {
       if (!mounted) return;
       
@@ -70,7 +70,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setLoading(false);
             return;
           }
-          // Use setTimeout to avoid deadlock with Supabase auth
           setTimeout(async () => {
             if (!mounted) return;
             const userRoles = await fetchRoles(sess.user.id);
@@ -86,27 +85,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    // Then get initial session
     supabase.auth.getSession().then(async ({ data: { session: sess }, error }) => {
       if (!mounted) return;
-      
-      // If there's an error (e.g. invalid refresh token), sign out cleanly
       if (error || !sess) {
         setSession(null);
         setUser(null);
         setRoles([]);
         setLoading(false);
-        // Clear bad session
         if (error) {
           await supabase.auth.signOut();
         }
         return;
       }
-      
-      // onAuthStateChange INITIAL_SESSION will handle this
     });
 
-    // Safety timeout - never stay loading forever
     const timeout = setTimeout(() => {
       if (mounted && loading) {
         setLoading(false);
@@ -163,12 +155,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isOwner = roles.includes('owner');
   const isAdmin = roles.includes('admin');
   const isCourier = roles.includes('courier');
+  const isOffice = roles.includes('office');
   const isOwnerOrAdmin = isOwner || isAdmin;
 
   return (
     <AuthContext.Provider value={{
       session, user, roles, loading,
-      isOwner, isAdmin, isCourier, isOwnerOrAdmin,
+      isOwner, isAdmin, isCourier, isOffice, isOwnerOrAdmin,
       login, logout,
     }}>
       {children}

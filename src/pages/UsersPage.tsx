@@ -17,6 +17,7 @@ export default function UsersPage() {
   const { isOwner } = useAuth();
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [offices, setOffices] = useState<any[]>([]);
 
   // Create user
   const [createOpen, setCreateOpen] = useState(false);
@@ -24,6 +25,7 @@ export default function UsersPage() {
   const [newPhone, setNewPhone] = useState('');
   const [newCode, setNewCode] = useState('');
   const [newRole, setNewRole] = useState('');
+  const [newOfficeId, setNewOfficeId] = useState('');
   const [creating, setCreating] = useState(false);
 
   // Edit password
@@ -39,7 +41,10 @@ export default function UsersPage() {
   // Show/hide passwords
   const [showPasswords, setShowPasswords] = useState(false);
 
-  useEffect(() => { loadUsers(); }, []);
+  useEffect(() => { 
+    loadUsers(); 
+    supabase.from('offices').select('id, name').order('name').then(({ data }) => setOffices(data || []));
+  }, []);
 
   const loadUsers = async () => {
     setLoading(true);
@@ -50,7 +55,18 @@ export default function UsersPage() {
       const merged = (profiles || []).map(p => ({
         ...p,
         role: roles.find(r => r.user_id === p.id)?.role || 'unknown',
+        officeName: p.office_id ? undefined : undefined, // will be filled below
       }));
+      // Fill office names
+      const officeIds = [...new Set(merged.filter(m => m.office_id).map(m => m.office_id))];
+      if (officeIds.length > 0) {
+        const { data: officeData } = await supabase.from('offices').select('id, name').in('id', officeIds);
+        merged.forEach(m => {
+          if (m.office_id) {
+            m.officeName = officeData?.find(o => o.id === m.office_id)?.name || '';
+          }
+        });
+      }
       setUsers(merged);
     } else {
       setUsers([]);
@@ -78,12 +94,16 @@ export default function UsersPage() {
   const createUser = async () => {
     if (!newName || !newCode) { toast.error('أدخل الاسم وكود الدخول'); return; }
     if (!newRole) { toast.error('اختر الصلاحية'); return; }
+    if (newRole === 'office' && !newOfficeId) { toast.error('اختر المكتب'); return; }
     setCreating(true);
     try {
-      await callEdgeFunction('create-user', { full_name: newName, phone: newPhone, login_code: newCode, role: newRole });
+      await callEdgeFunction('create-user', { 
+        full_name: newName, phone: newPhone, login_code: newCode, role: newRole,
+        office_id: newRole === 'office' ? newOfficeId : undefined,
+      });
       toast.success('تم إنشاء المستخدم بنجاح');
       setCreateOpen(false);
-      setNewName(''); setNewPhone(''); setNewCode(''); setNewRole('');
+      setNewName(''); setNewPhone(''); setNewCode(''); setNewRole(''); setNewOfficeId('');
       loadUsers();
     } catch (err: any) {
       toast.error(err.message || 'خطأ');
@@ -161,6 +181,7 @@ export default function UsersPage() {
     if (role === 'owner') return 'مالك';
     if (role === 'admin') return 'مسؤول';
     if (role === 'courier') return 'مندوب';
+    if (role === 'office') return 'مكتب';
     return role;
   };
 
@@ -168,6 +189,7 @@ export default function UsersPage() {
     if (role === 'owner') return 'hsl(var(--primary))';
     if (role === 'admin') return 'hsl(142, 76%, 36%)';
     if (role === 'courier') return 'hsl(38, 92%, 50%)';
+    if (role === 'office') return 'hsl(200, 80%, 50%)';
     return undefined;
   };
 
@@ -209,9 +231,21 @@ export default function UsersPage() {
                     <SelectContent>
                       <SelectItem value="admin">مسؤول (Admin)</SelectItem>
                       <SelectItem value="courier">مندوب (Courier)</SelectItem>
+                      <SelectItem value="office">مكتب (Office)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+                {newRole === 'office' && (
+                  <div>
+                    <Label>المكتب *</Label>
+                    <Select value={newOfficeId} onValueChange={setNewOfficeId}>
+                      <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder="اختر المكتب" /></SelectTrigger>
+                      <SelectContent>
+                        {offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <Button onClick={createUser} className="w-full" disabled={creating}>
                   {creating ? 'جارٍ الإنشاء...' : 'إنشاء المستخدم'}
                 </Button>
@@ -231,15 +265,16 @@ export default function UsersPage() {
                   <TableHead className="text-right">الهاتف</TableHead>
                   {isOwner && showPasswords && <TableHead className="text-right">كلمة المرور</TableHead>}
                   <TableHead className="text-right">الصلاحية</TableHead>
+                  <TableHead className="text-right">المكتب</TableHead>
                   <TableHead className="text-right">الحالة</TableHead>
                   <TableHead className="text-right">إجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={isOwner && showPasswords ? 6 : 5} className="text-center text-muted-foreground py-8">جارٍ التحميل...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={isOwner && showPasswords ? 8 : 7} className="text-center text-muted-foreground py-8">جارٍ التحميل...</TableCell></TableRow>
                 ) : users.length === 0 ? (
-                  <TableRow><TableCell colSpan={isOwner && showPasswords ? 6 : 5} className="text-center text-muted-foreground py-8">لا يوجد مستخدمين</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={isOwner && showPasswords ? 8 : 7} className="text-center text-muted-foreground py-8">لا يوجد مستخدمين</TableCell></TableRow>
                 ) : users.map(u => (
                   <TableRow key={u.id} className="border-border">
                     <TableCell className="font-medium">{u.full_name}</TableCell>
@@ -252,6 +287,7 @@ export default function UsersPage() {
                     <TableCell>
                       <Badge style={{ backgroundColor: roleColor(u.role) }} className="text-xs">{roleLabel(u.role)}</Badge>
                     </TableCell>
+                    <TableCell className="text-sm">{u.officeName || '-'}</TableCell>
                     <TableCell>
                       <Badge variant={u.is_active ? 'default' : 'secondary'}>{u.is_active ? 'نشط' : 'غير نشط'}</Badge>
                     </TableCell>

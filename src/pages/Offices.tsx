@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 
 export default function Offices() {
@@ -86,8 +87,9 @@ export default function Offices() {
                   <TableHead className="text-right">صاحب المكتب</TableHead>
                   <TableHead className="text-right">الهاتف</TableHead>
                   <TableHead className="text-right">التخصص</TableHead>
-                  <TableHead className="text-right">العنوان</TableHead>
-                  <TableHead className="text-right">إجراءات</TableHead>
+                   <TableHead className="text-right">العنوان</TableHead>
+                   <TableHead className="text-right">إضافة أوردرات</TableHead>
+                   <TableHead className="text-right">إجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -98,6 +100,15 @@ export default function Offices() {
                     <TableCell dir="ltr">{o.owner_phone || '-'}</TableCell>
                     <TableCell>{o.specialty || '-'}</TableCell>
                     <TableCell>{o.address || '-'}</TableCell>
+                    <TableCell>
+                      <Switch
+                        checked={o.can_add_orders || false}
+                        onCheckedChange={async (checked) => {
+                          await supabase.from('offices').update({ can_add_orders: checked }).eq('id', o.id);
+                          load();
+                        }}
+                      />
+                    </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
                         <Button size="icon" variant="ghost" onClick={() => edit(o)}><Pencil className="h-4 w-4" /></Button>

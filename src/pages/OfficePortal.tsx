@@ -17,6 +17,7 @@ export default function OfficePortal() {
   const [statuses, setStatuses] = useState<any[]>([]);
   const [officeName, setOfficeName] = useState('');
   const [officeId, setOfficeId] = useState<string | null>(null);
+  const [canAddOrders, setCanAddOrders] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,10 +38,11 @@ export default function OfficePortal() {
       setOfficeId(profile.office_id);
       const { data: office } = await supabase
         .from('offices')
-        .select('name')
+        .select('name, can_add_orders')
         .eq('id', profile.office_id)
         .single();
       setOfficeName(office?.name || '');
+      setCanAddOrders(office?.can_add_orders || false);
     }
 
     const { data: sts } = await supabase.from('order_statuses').select('*').order('sort_order');
@@ -67,7 +69,7 @@ export default function OfficePortal() {
             {officeName && <p className="text-muted-foreground text-sm">{officeName}</p>}
           </div>
           <div className="flex gap-2">
-            <AddOfficeOrderDialog officeId={officeId} onOrderAdded={loadData} />
+            {canAddOrders && <AddOfficeOrderDialog officeId={officeId} onOrderAdded={loadData} />}
             <Button variant="outline" size="sm" onClick={logout}>
               <LogOut className="h-4 w-4 ml-1" />
               خروج

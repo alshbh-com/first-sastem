@@ -289,6 +289,7 @@ export type Database = {
       offices: {
         Row: {
           address: string | null
+          can_add_orders: boolean
           created_at: string
           id: string
           name: string
@@ -300,6 +301,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          can_add_orders?: boolean
           created_at?: string
           id?: string
           name: string
@@ -311,6 +313,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          can_add_orders?: boolean
           created_at?: string
           id?: string
           name?: string

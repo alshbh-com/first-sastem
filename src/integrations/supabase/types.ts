@@ -531,6 +531,7 @@ export type Database = {
           is_active: boolean
           login_code: string | null
           notes: string | null
+          office_id: string | null
           phone: string | null
           salary: number
           updated_at: string
@@ -543,6 +544,7 @@ export type Database = {
           is_active?: boolean
           login_code?: string | null
           notes?: string | null
+          office_id?: string | null
           phone?: string | null
           salary?: number
           updated_at?: string
@@ -555,11 +557,20 @@ export type Database = {
           is_active?: boolean
           login_code?: string | null
           notes?: string | null
+          office_id?: string | null
           phone?: string | null
           salary?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_permissions: {
         Row: {
@@ -616,7 +627,7 @@ export type Database = {
       nextval_barcode: { Args: never; Returns: number }
     }
     Enums: {
-      app_role: "owner" | "admin" | "courier"
+      app_role: "owner" | "admin" | "courier" | "office"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -744,7 +755,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["owner", "admin", "courier"],
+      app_role: ["owner", "admin", "courier", "office"],
     },
   },
 } as const

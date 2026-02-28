@@ -36,6 +36,7 @@ import ProfitReport from "@/pages/ProfitReport";
 import StatusManagement from "@/pages/StatusManagement";
 import OrderNotes from "@/pages/OrderNotes";
 import DataExport from "@/pages/DataExport";
+import OfficePortal from "@/pages/OfficePortal";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -59,6 +60,9 @@ const App = () => (
             <Route path="/tracking" element={<TrackingPage />} />
             <Route path="/courier-orders" element={
               <ProtectedRoute><CourierOrders /></ProtectedRoute>
+            } />
+            <Route path="/office-portal" element={
+              <ProtectedRoute><OfficePortal /></ProtectedRoute>
             } />
             <Route element={
               <ProtectedRoute requiredRole="owner_or_admin"><AppLayout /></ProtectedRoute>

@@ -50,9 +50,15 @@ Deno.serve(async (req) => {
         })
       }
 
-      const { full_name, phone, login_code, role } = userData
-      if (!role || !['admin', 'courier'].includes(role)) {
-        return new Response(JSON.stringify({ error: 'يجب اختيار الصلاحية (مسؤول أو مندوب)' }), {
+      const { full_name, phone, login_code, role, office_id } = userData
+      if (!role || !['admin', 'courier', 'office'].includes(role)) {
+        return new Response(JSON.stringify({ error: 'يجب اختيار الصلاحية (مسؤول أو مندوب أو مكتب)' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      if (role === 'office' && !office_id) {
+        return new Response(JSON.stringify({ error: 'يجب اختيار المكتب' }), {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
@@ -72,7 +78,12 @@ Deno.serve(async (req) => {
         })
       }
 
-      await supabaseAdmin.from('profiles').update({ full_name, phone: phone || '', login_code }).eq('id', newUser.user.id)
+      const profileUpdate: any = { full_name, phone: phone || '', login_code }
+      if (role === 'office' && office_id) {
+        profileUpdate.office_id = office_id
+      }
+
+      await supabaseAdmin.from('profiles').update(profileUpdate).eq('id', newUser.user.id)
       await supabaseAdmin.from('user_roles').insert({ user_id: newUser.user.id, role })
 
       return new Response(JSON.stringify({ success: true, user_id: newUser.user.id }), {
@@ -92,14 +103,12 @@ Deno.serve(async (req) => {
       const { user_id, new_password } = userData
       const newEmail = codeToEmail(new_password)
 
-      // Update both email and password so old credentials are invalidated
       const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(user_id, {
         password: new_password,
         email: newEmail,
         email_confirm: true,
       })
 
-      // Save login_code to profiles
       if (!updateError) {
         await supabaseAdmin.from('profiles').update({ login_code: new_password }).eq('id', user_id)
       }
@@ -126,9 +135,7 @@ Deno.serve(async (req) => {
 
       const { user_id } = userData
       
-      // Delete role first
       await supabaseAdmin.from('user_roles').delete().eq('user_id', user_id)
-      // Delete auth user (profile will be handled by cascade or trigger)
       const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user_id)
 
       if (deleteError) {

@@ -8,7 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Badge } from '@/components/ui/badge';
+import { Plus, Pencil, Trash2, Settings2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -53,10 +55,26 @@ export default function OfficeAccounts() {
   const loadOfficeOrders = async () => {
     const { data } = await supabase
       .from('orders')
-      .select('tracking_id, status_id')
+      .select('id, tracking_id, status_id, partial_amount')
       .eq('office_id', selectedOffice)
       .order('created_at', { ascending: false });
     setOfficeOrders(data || []);
+  };
+
+  const quickStatuses = ['تم التسليم', 'مرتجع', 'مؤجل', 'تسليم جزئي', 'مرتجع دون شحن'];
+
+  const changeOrderStatus = async (orderId: string, statusName: string, partialAmount?: number) => {
+    const status = statuses.find(s => s.name === statusName);
+    if (!status) { toast.error('حالة غير موجودة'); return; }
+    const updateData: any = { status_id: status.id };
+    if (statusName === 'تسليم جزئي' && partialAmount !== undefined) {
+      updateData.partial_amount = partialAmount;
+    }
+    const { error } = await supabase.from('orders').update(updateData).eq('id', orderId);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`تم تغيير الحالة إلى ${statusName}`);
+    loadOfficeOrders();
+    loadAccounts();
   };
 
   const getDateFilter = () => {
@@ -283,16 +301,39 @@ export default function OfficeAccounts() {
         <Card className="bg-card border-border">
           <CardContent className="p-4">
             <h3 className="font-semibold mb-3">أوردرات المكتب ({officeOrders.length})</h3>
-            <div className="flex flex-wrap gap-2">
-              {officeOrders.map((o, i) => {
-                const status = statuses.find(s => s.id === o.status_id);
-                return (
-                  <span key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-mono bg-secondary border border-border">
-                    {status && <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: status.color || '#6b7280' }} />}
-                    {o.tracking_id}
-                  </span>
-                );
-              })}
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border">
+                    <TableHead className="text-right">كود الأوردر</TableHead>
+                    <TableHead className="text-right">الحالة</TableHead>
+                    <TableHead className="text-right">إجراء</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {officeOrders.map((o) => {
+                    const status = statuses.find(s => s.id === o.status_id);
+                    return (
+                      <TableRow key={o.id} className="border-border">
+                        <TableCell className="font-mono text-xs">{o.tracking_id}</TableCell>
+                        <TableCell>
+                          {status && (
+                            <Badge style={{ backgroundColor: status.color }} className="text-xs">{status.name}</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <OrderStatusPopover
+                            orderId={o.id}
+                            quickStatuses={quickStatuses}
+                            statuses={statuses}
+                            onChangeStatus={changeOrderStatus}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </div>
           </CardContent>
         </Card>
@@ -362,5 +403,55 @@ export default function OfficeAccounts() {
         <p className="text-sm text-muted-foreground">المستحق بالمؤجل = المستحق + المؤجل</p>
       </Card>
     </div>
+  );
+}
+
+// Sub-component for order status popover
+function OrderStatusPopover({ orderId, quickStatuses, statuses, onChangeStatus }: {
+  orderId: string;
+  quickStatuses: string[];
+  statuses: any[];
+  onChangeStatus: (orderId: string, statusName: string, partialAmount?: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [showPartial, setShowPartial] = useState(false);
+  const [partialAmount, setPartialAmount] = useState('');
+
+  return (
+    <Popover open={open} onOpenChange={v => { setOpen(v); if (!v) { setShowPartial(false); setPartialAmount(''); } }}>
+      <PopoverTrigger asChild>
+        <Button size="icon" variant="ghost"><Settings2 className="h-4 w-4" /></Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-48 p-2">
+        {showPartial ? (
+          <div className="space-y-2">
+            <Label className="text-xs">المبلغ المسلّم</Label>
+            <Input type="number" value={partialAmount} onChange={e => setPartialAmount(e.target.value)} className="bg-secondary border-border h-8 text-sm" placeholder="0" />
+            <Button size="sm" className="w-full" onClick={() => {
+              onChangeStatus(orderId, 'تسليم جزئي', parseFloat(partialAmount) || 0);
+              setOpen(false); setShowPartial(false); setPartialAmount('');
+            }}>تأكيد</Button>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-1">
+            {quickStatuses.map(name => {
+              const st = statuses.find(s => s.name === name);
+              if (!st) return null;
+              return (
+                <Button key={name} size="sm" variant="ghost" className="justify-start text-xs h-8"
+                  onClick={() => {
+                    if (name === 'تسليم جزئي') { setShowPartial(true); return; }
+                    onChangeStatus(orderId, name);
+                    setOpen(false);
+                  }}>
+                  <span className="w-2 h-2 rounded-full ml-2" style={{ backgroundColor: st.color || '#6b7280' }} />
+                  {name}
+                </Button>
+              );
+            })}
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 }

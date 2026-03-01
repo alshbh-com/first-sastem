@@ -22,6 +22,7 @@ export default function CourierCollections() {
   const [orders, setOrders] = useState<any[]>([]);
   const [bonuses, setBonuses] = useState<any[]>([]);
   const [bonusDialogOpen, setBonusDialogOpen] = useState(false);
+  const [bonusType, setBonusType] = useState<'special' | 'office_commission'>('special');
   const [bonusAmount, setBonusAmount] = useState('');
   const [bonusReason, setBonusReason] = useState('');
   const [isClosed, setIsClosed] = useState(false);
@@ -78,8 +79,16 @@ export default function CourierCollections() {
   // Bonuses total
   const totalBonuses = bonuses.reduce((sum, b) => sum + Number(b.amount), 0);
 
-  // Net: totalCollection + rejectShipTotal - commissionTotal - totalBonuses
-  const netDue = totalCollection + rejectShipTotal - commissionTotal - totalBonuses;
+  // Office commission bonuses (عمولة مكتب)
+  const officeCommissionBonuses = bonuses.filter(b => b.reason === '__office_commission__');
+  const totalOfficeCommission = officeCommissionBonuses.reduce((sum, b) => sum + Number(b.amount), 0);
+
+  // Regular bonuses (عمولة خاصة) - exclude office commission
+  const regularBonuses = bonuses.filter(b => b.reason !== '__office_commission__');
+  const totalRegularBonuses = regularBonuses.reduce((sum, b) => sum + Number(b.amount), 0);
+
+  // Net: totalCollection + rejectShipTotal + totalOfficeCommission - commissionTotal - totalRegularBonuses
+  const netDue = totalCollection + rejectShipTotal + totalOfficeCommission - commissionTotal - totalRegularBonuses;
 
   const toggleStatus = (statusId: string) => {
     setCommissionStatuses(prev => prev.includes(statusId) ? prev.filter(s => s !== statusId) : [...prev, statusId]);
@@ -90,11 +99,11 @@ export default function CourierCollections() {
     const { error } = await supabase.from('courier_bonuses').insert({
       courier_id: selectedCourier,
       amount: parseFloat(bonusAmount),
-      reason: bonusReason,
+      reason: bonusType === 'office_commission' ? '__office_commission__' : (bonusReason || 'عمولة خاصة'),
       created_by: user?.id,
     });
     if (error) { toast.error(error.message); return; }
-    toast.success('تم إضافة العمولة');
+    toast.success(bonusType === 'office_commission' ? 'تم إضافة عمولة المكتب' : 'تم إضافة العمولة');
     setBonusDialogOpen(false);
     setBonusAmount(''); setBonusReason('');
     loadCourierData();
@@ -130,7 +139,7 @@ export default function CourierCollections() {
           {/* Summary cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">إجمالي التحصيل</p><p className="text-lg font-bold text-emerald-500">{totalCollection} ج.م</p></CardContent></Card>
-            <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">رفض واخد شحن</p><p className="text-lg font-bold text-amber-500">{rejectShipTotal} ج.م</p></CardContent></Card>
+            <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">عمولة المكتب</p><p className="text-lg font-bold text-amber-500">{rejectShipTotal + totalOfficeCommission} ج.م</p></CardContent></Card>
             <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">العمولة</p><p className="text-lg font-bold text-destructive">{commissionTotal} ج.م</p></CardContent></Card>
             <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">صافي المستحق</p><p className="text-lg font-bold text-primary">{netDue} ج.م</p></CardContent></Card>
           </div>
@@ -139,14 +148,19 @@ export default function CourierCollections() {
           <Card className="bg-card border-border">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-base">حاسبة العمولة</CardTitle>
-              <div className="flex gap-2">
-                <Dialog open={bonusDialogOpen} onOpenChange={setBonusDialogOpen}>
-                  <DialogTrigger asChild><Button size="sm" variant="outline"><Plus className="h-4 w-4 ml-1" />عمولة خاصة</Button></DialogTrigger>
+              <div className="flex gap-2 flex-wrap">
+                <Dialog open={bonusDialogOpen} onOpenChange={v => { setBonusDialogOpen(v); if (!v) setBonusType('special'); }}>
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="outline" onClick={() => { setBonusType('special'); setBonusDialogOpen(true); }}><Plus className="h-4 w-4 ml-1" />عمولة خاصة</Button>
+                    <Button size="sm" variant="outline" onClick={() => { setBonusType('office_commission'); setBonusDialogOpen(true); }}><Plus className="h-4 w-4 ml-1" />عمولة مكتب</Button>
+                  </div>
                   <DialogContent className="bg-card border-border">
-                    <DialogHeader><DialogTitle>إضافة عمولة خاصة</DialogTitle></DialogHeader>
+                    <DialogHeader><DialogTitle>{bonusType === 'office_commission' ? 'إضافة عمولة مكتب' : 'إضافة عمولة خاصة'}</DialogTitle></DialogHeader>
                     <div className="space-y-4">
                       <div><Label>المبلغ</Label><Input type="number" value={bonusAmount} onChange={e => setBonusAmount(e.target.value)} className="bg-secondary border-border" /></div>
-                      <div><Label>السبب</Label><Input value={bonusReason} onChange={e => setBonusReason(e.target.value)} className="bg-secondary border-border" placeholder="مشوار خاص..." /></div>
+                      {bonusType === 'special' && (
+                        <div><Label>السبب</Label><Input value={bonusReason} onChange={e => setBonusReason(e.target.value)} className="bg-secondary border-border" placeholder="مشوار خاص..." /></div>
+                      )}
                       <Button onClick={addBonus} className="w-full">حفظ</Button>
                     </div>
                   </DialogContent>
@@ -181,10 +195,11 @@ export default function CourierCollections() {
           {/* Bonuses */}
           {bonuses.length > 0 && (
             <Card className="bg-card border-border">
-              <CardHeader><CardTitle className="text-base">عمولات خاصة</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-base">العمولات</CardTitle></CardHeader>
               <CardContent className="p-0">
                 <Table>
                   <TableHeader><TableRow className="border-border">
+                    <TableHead className="text-right">النوع</TableHead>
                     <TableHead className="text-right">المبلغ</TableHead>
                     <TableHead className="text-right">السبب</TableHead>
                     <TableHead className="text-right">التاريخ</TableHead>
@@ -192,8 +207,9 @@ export default function CourierCollections() {
                   <TableBody>
                     {bonuses.map(b => (
                       <TableRow key={b.id} className="border-border">
+                        <TableCell className="text-sm">{b.reason === '__office_commission__' ? 'عمولة مكتب' : 'عمولة خاصة'}</TableCell>
                         <TableCell className="font-bold">{b.amount} ج.م</TableCell>
-                        <TableCell>{b.reason || '-'}</TableCell>
+                        <TableCell>{b.reason === '__office_commission__' ? '-' : (b.reason || '-')}</TableCell>
                         <TableCell>{new Date(b.created_at).toLocaleDateString('ar-EG')}</TableCell>
                       </TableRow>
                     ))}

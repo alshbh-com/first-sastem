@@ -20,6 +20,7 @@ export default function OfficeAccounts() {
   const [accounts, setAccounts] = useState<any[]>([]);
   const [period, setPeriod] = useState('all');
   const [payments, setPayments] = useState<any[]>([]);
+  const [officeOrders, setOfficeOrders] = useState<any[]>([]);
 
   // Advance payment dialog
   const [advanceOpen, setAdvanceOpen] = useState(false);
@@ -39,6 +40,24 @@ export default function OfficeAccounts() {
   }, []);
 
   useEffect(() => { loadAccounts(); }, [selectedOffice, period, offices, statuses]);
+
+  // Load office orders when a specific office is selected
+  useEffect(() => {
+    if (selectedOffice !== 'all') {
+      loadOfficeOrders();
+    } else {
+      setOfficeOrders([]);
+    }
+  }, [selectedOffice]);
+
+  const loadOfficeOrders = async () => {
+    const { data } = await supabase
+      .from('orders')
+      .select('tracking_id, status_id')
+      .eq('office_id', selectedOffice)
+      .order('created_at', { ascending: false });
+    setOfficeOrders(data || []);
+  };
 
   const getDateFilter = () => {
     const now = new Date();
@@ -88,18 +107,18 @@ export default function OfficeAccounts() {
 
       const partialOrders = orders.filter(o => o.status_id === partialStatus?.id);
       const partialDeliveredTotal = partialOrders.reduce((sum, o) => sum + Number(o.partial_amount || 0), 0);
-      const partialReturnTotal = partialOrders.reduce((sum, o) => sum + (Number(o.price) - Number(o.partial_amount || 0)), 0);
 
-      const settlement = deliveredTotal + partialDeliveredTotal - (returnedTotal + returnNoShipDeduction);
+      // المستحق = (التسليمات + تسليم جزئي) - (المدفوع مقدم + المرتجع + خصم شحن + العمولة)
+      const settlement = (deliveredTotal + partialDeliveredTotal) - (advancePaid + returnedTotal + returnNoShipDeduction + commission);
+      // المستحق بالمؤجل = المستحق + المؤجل
       const settlementWithPostponed = settlement + postponedTotal;
 
       return {
         id: office.id, name: office.name,
         orderCount: orders.length,
         deliveredTotal, returnedTotal, postponedTotal,
-        returnNoShipDeduction, partialDeliveredTotal, partialReturnTotal,
+        returnNoShipDeduction, partialDeliveredTotal,
         settlement, settlementWithPostponed, advancePaid, commission,
-        netAfterAdvance: settlement - advancePaid,
       };
     }));
 
@@ -142,6 +161,9 @@ export default function OfficeAccounts() {
   const officePaymentsList = payments.filter(p => 
     selectedOffice === 'all' || p.office_id === selectedOffice
   );
+
+  // Get selected office account for summary boxes
+  const selectedAccount = selectedOffice !== 'all' ? accounts.find(a => a.id === selectedOffice) : null;
 
   return (
     <div className="space-y-4">
@@ -195,6 +217,24 @@ export default function OfficeAccounts() {
         </Tabs>
       </div>
 
+      {/* Summary boxes for selected office */}
+      {selectedAccount && (
+        <div className="grid grid-cols-2 gap-4">
+          <Card className="bg-card border-border">
+            <CardContent className="p-4 text-center">
+              <p className="text-sm text-muted-foreground mb-1">المستحق</p>
+              <p className="text-2xl font-bold text-primary">{selectedAccount.settlement} ج.م</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-border">
+            <CardContent className="p-4 text-center">
+              <p className="text-sm text-muted-foreground mb-1">المستحق بالمؤجل</p>
+              <p className="text-2xl font-bold text-emerald-500">{selectedAccount.settlementWithPostponed} ج.م</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       <Card className="bg-card border-border">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -206,7 +246,7 @@ export default function OfficeAccounts() {
                   <TableHead className="text-right">تسليم</TableHead>
                   <TableHead className="text-right">مرتجع</TableHead>
                   <TableHead className="text-right">مؤجل</TableHead>
-                  <TableHead className="text-right hidden sm:table-cell">مرتجع جزئي</TableHead>
+                  <TableHead className="text-right hidden sm:table-cell">تسليم جزئي</TableHead>
                   <TableHead className="text-right hidden sm:table-cell">خصم شحن</TableHead>
                   <TableHead className="text-right">المدفوع مقدم</TableHead>
                   <TableHead className="text-right">العمولة</TableHead>
@@ -224,7 +264,7 @@ export default function OfficeAccounts() {
                     <TableCell className="text-emerald-500 font-bold text-sm">{a.deliveredTotal} ج.م</TableCell>
                     <TableCell className="text-destructive font-bold text-sm">{a.returnedTotal} ج.م</TableCell>
                     <TableCell className="text-amber-500 font-bold text-sm">{a.postponedTotal} ج.م</TableCell>
-                    <TableCell className="text-orange-400 font-bold text-sm hidden sm:table-cell">{a.partialReturnTotal} ج.م</TableCell>
+                    <TableCell className="text-emerald-400 font-bold text-sm hidden sm:table-cell">{a.partialDeliveredTotal} ج.م</TableCell>
                     <TableCell className="text-destructive text-sm hidden sm:table-cell">{a.returnNoShipDeduction} ج.م</TableCell>
                     <TableCell className="text-primary font-bold text-sm">{a.advancePaid} ج.م</TableCell>
                     <TableCell className="text-sm font-bold">{a.commission} ج.م</TableCell>
@@ -237,6 +277,26 @@ export default function OfficeAccounts() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Office orders list when specific office selected */}
+      {selectedOffice !== 'all' && officeOrders.length > 0 && (
+        <Card className="bg-card border-border">
+          <CardContent className="p-4">
+            <h3 className="font-semibold mb-3">أوردرات المكتب ({officeOrders.length})</h3>
+            <div className="flex flex-wrap gap-2">
+              {officeOrders.map((o, i) => {
+                const status = statuses.find(s => s.id === o.status_id);
+                return (
+                  <span key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-mono bg-secondary border border-border">
+                    {status && <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: status.color || '#6b7280' }} />}
+                    {o.tracking_id}
+                  </span>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Payments list */}
       {officePaymentsList.length > 0 && (
@@ -298,7 +358,7 @@ export default function OfficeAccounts() {
 
       <Card className="bg-card border-border p-4">
         <h3 className="font-semibold mb-2">معادلة صافي الحساب:</h3>
-        <p className="text-sm text-muted-foreground">المستحق = (التسليمات + تسليم جزئي) - (المرتجع + خصم شحن مرتجع دون شحن/رفض)</p>
+        <p className="text-sm text-muted-foreground">المستحق = (التسليمات + تسليم جزئي) - (المدفوع مقدم + المرتجع + خصم شحن + العمولة)</p>
         <p className="text-sm text-muted-foreground">المستحق بالمؤجل = المستحق + المؤجل</p>
       </Card>
     </div>

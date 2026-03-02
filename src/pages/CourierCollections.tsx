@@ -8,12 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function CourierCollections() {
-  const { user } = useAuth();
+  const { user, isOwner } = useAuth();
   const [couriers, setCouriers] = useState<any[]>([]);
   const [selectedCourier, setSelectedCourier] = useState('');
   const [statuses, setStatuses] = useState<any[]>([]);
@@ -80,11 +80,11 @@ export default function CourierCollections() {
   const totalBonuses = bonuses.reduce((sum, b) => sum + Number(b.amount), 0);
 
   // Office commission bonuses (عمولة مكتب)
-  const officeCommissionBonuses = bonuses.filter(b => b.reason === '__office_commission__');
+  const officeCommissionBonuses = bonuses.filter(b => b.reason?.startsWith('__office_commission__'));
   const totalOfficeCommission = officeCommissionBonuses.reduce((sum, b) => sum + Number(b.amount), 0);
 
   // Regular bonuses (عمولة خاصة) - exclude office commission
-  const regularBonuses = bonuses.filter(b => b.reason !== '__office_commission__');
+  const regularBonuses = bonuses.filter(b => !b.reason?.startsWith('__office_commission__'));
   const totalRegularBonuses = regularBonuses.reduce((sum, b) => sum + Number(b.amount), 0);
 
   // Net: totalCollection + rejectShipTotal + totalOfficeCommission - commissionTotal - totalRegularBonuses
@@ -99,13 +99,20 @@ export default function CourierCollections() {
     const { error } = await supabase.from('courier_bonuses').insert({
       courier_id: selectedCourier,
       amount: parseFloat(bonusAmount),
-      reason: bonusType === 'office_commission' ? '__office_commission__' : (bonusReason || 'عمولة خاصة'),
+      reason: bonusType === 'office_commission' ? `__office_commission__${bonusReason ? ':' + bonusReason : ''}` : (bonusReason || 'عمولة خاصة'),
       created_by: user?.id,
     });
     if (error) { toast.error(error.message); return; }
     toast.success(bonusType === 'office_commission' ? 'تم إضافة عمولة المكتب' : 'تم إضافة العمولة');
     setBonusDialogOpen(false);
     setBonusAmount(''); setBonusReason('');
+    loadCourierData();
+  };
+
+  const deleteBonus = async (id: string) => {
+    if (!confirm('حذف هذه العمولة؟')) return;
+    await supabase.from('courier_bonuses').delete().eq('id', id);
+    toast.success('تم الحذف');
     loadCourierData();
   };
 
@@ -158,9 +165,7 @@ export default function CourierCollections() {
                     <DialogHeader><DialogTitle>{bonusType === 'office_commission' ? 'إضافة عمولة مكتب' : 'إضافة عمولة خاصة'}</DialogTitle></DialogHeader>
                     <div className="space-y-4">
                       <div><Label>المبلغ</Label><Input type="number" value={bonusAmount} onChange={e => setBonusAmount(e.target.value)} className="bg-secondary border-border" /></div>
-                      {bonusType === 'special' && (
-                        <div><Label>السبب</Label><Input value={bonusReason} onChange={e => setBonusReason(e.target.value)} className="bg-secondary border-border" placeholder="مشوار خاص..." /></div>
-                      )}
+                      <div><Label>{bonusType === 'office_commission' ? 'ملاحظة / السبب' : 'السبب'}</Label><Input value={bonusReason} onChange={e => setBonusReason(e.target.value)} className="bg-secondary border-border" placeholder={bonusType === 'office_commission' ? 'سبب عمولة المكتب...' : 'مشوار خاص...'} /></div>
                       <Button onClick={addBonus} className="w-full">حفظ</Button>
                     </div>
                   </DialogContent>
@@ -203,14 +208,22 @@ export default function CourierCollections() {
                     <TableHead className="text-right">المبلغ</TableHead>
                     <TableHead className="text-right">السبب</TableHead>
                     <TableHead className="text-right">التاريخ</TableHead>
+                    <TableHead className="text-right">إجراءات</TableHead>
                   </TableRow></TableHeader>
                   <TableBody>
                     {bonuses.map(b => (
                       <TableRow key={b.id} className="border-border">
-                        <TableCell className="text-sm">{b.reason === '__office_commission__' ? 'عمولة مكتب' : 'عمولة خاصة'}</TableCell>
+                        <TableCell className="text-sm">{b.reason?.startsWith('__office_commission__') ? 'عمولة مكتب' : 'عمولة خاصة'}</TableCell>
                         <TableCell className="font-bold">{b.amount} ج.م</TableCell>
-                        <TableCell>{b.reason === '__office_commission__' ? '-' : (b.reason || '-')}</TableCell>
+                        <TableCell>{b.reason?.startsWith('__office_commission__') ? (b.reason.split(':')[1] || '-') : (b.reason || '-')}</TableCell>
                         <TableCell>{new Date(b.created_at).toLocaleDateString('ar-EG')}</TableCell>
+                        <TableCell>
+                          {isOwner && (
+                            <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteBonus(b.id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

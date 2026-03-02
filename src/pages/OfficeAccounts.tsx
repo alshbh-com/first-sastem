@@ -10,7 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, Settings2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Plus, Pencil, Trash2, Settings2, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -23,6 +24,7 @@ export default function OfficeAccounts() {
   const [period, setPeriod] = useState('all');
   const [payments, setPayments] = useState<any[]>([]);
   const [officeOrders, setOfficeOrders] = useState<any[]>([]);
+  const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
 
   // Advance payment dialog
   const [advanceOpen, setAdvanceOpen] = useState(false);
@@ -43,12 +45,12 @@ export default function OfficeAccounts() {
 
   useEffect(() => { loadAccounts(); }, [selectedOffice, period, offices, statuses]);
 
-  // Load office orders when a specific office is selected
   useEffect(() => {
     if (selectedOffice !== 'all') {
       loadOfficeOrders();
     } else {
       setOfficeOrders([]);
+      setSelectedOrders([]);
     }
   }, [selectedOffice]);
 
@@ -57,8 +59,10 @@ export default function OfficeAccounts() {
       .from('orders')
       .select('id, tracking_id, status_id, partial_amount')
       .eq('office_id', selectedOffice)
+      .eq('is_closed', false)
       .order('created_at', { ascending: false });
     setOfficeOrders(data || []);
+    setSelectedOrders([]);
   };
 
   const quickStatuses = ['تم التسليم', 'مرتجع', 'مؤجل', 'تسليم جزئي', 'مرتجع دون شحن'];
@@ -75,6 +79,29 @@ export default function OfficeAccounts() {
     toast.success(`تم تغيير الحالة إلى ${statusName}`);
     loadOfficeOrders();
     loadAccounts();
+  };
+
+  const closeSelectedOrders = async () => {
+    if (selectedOrders.length === 0) { toast.error('اختر أوردرات للتقفيل'); return; }
+    if (!confirm(`هل تريد تقفيل ${selectedOrders.length} أوردر؟ ستختفي من الحساب.`)) return;
+    const { error } = await supabase.from('orders').update({ is_closed: true }).in('id', selectedOrders);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`تم تقفيل ${selectedOrders.length} أوردر`);
+    setSelectedOrders([]);
+    loadOfficeOrders();
+    loadAccounts();
+  };
+
+  const toggleOrderSelection = (orderId: string) => {
+    setSelectedOrders(prev => prev.includes(orderId) ? prev.filter(id => id !== orderId) : [...prev, orderId]);
+  };
+
+  const toggleAllOrders = () => {
+    if (selectedOrders.length === officeOrders.length) {
+      setSelectedOrders([]);
+    } else {
+      setSelectedOrders(officeOrders.map(o => o.id));
+    }
   };
 
   const getDateFilter = () => {
@@ -106,7 +133,7 @@ export default function OfficeAccounts() {
     const { data: allPayments } = await supabase.from('office_payments').select('*');
 
     const result = await Promise.all(officeList.map(async (office) => {
-      let query = supabase.from('orders').select('price, delivery_price, status_id, partial_amount').eq('office_id', office.id);
+      let query = supabase.from('orders').select('price, delivery_price, status_id, partial_amount').eq('office_id', office.id).eq('is_closed', false);
       if (dateFilter) query = query.gte('created_at', dateFilter);
       const { data: orders } = await query;
       if (!orders) return null;
@@ -126,9 +153,7 @@ export default function OfficeAccounts() {
       const partialOrders = orders.filter(o => o.status_id === partialStatus?.id);
       const partialDeliveredTotal = partialOrders.reduce((sum, o) => sum + Number(o.partial_amount || 0), 0);
 
-      // المستحق = (التسليمات + تسليم جزئي) - (المدفوع مقدم + المرتجع + خصم شحن + العمولة)
       const settlement = (deliveredTotal + partialDeliveredTotal) - (advancePaid + returnedTotal + returnNoShipDeduction + commission);
-      // المستحق بالمؤجل = المستحق + المؤجل
       const settlementWithPostponed = settlement + postponedTotal;
 
       return {
@@ -180,7 +205,6 @@ export default function OfficeAccounts() {
     selectedOffice === 'all' || p.office_id === selectedOffice
   );
 
-  // Get selected office account for summary boxes
   const selectedAccount = selectedOffice !== 'all' ? accounts.find(a => a.id === selectedOffice) : null;
 
   return (
@@ -235,7 +259,6 @@ export default function OfficeAccounts() {
         </Tabs>
       </div>
 
-      {/* Summary boxes for selected office */}
       {selectedAccount && (
         <div className="grid grid-cols-2 gap-4">
           <Card className="bg-card border-border">
@@ -296,15 +319,28 @@ export default function OfficeAccounts() {
         </CardContent>
       </Card>
 
-      {/* Office orders list when specific office selected */}
+      {/* Office orders with selection for closing */}
       {selectedOffice !== 'all' && officeOrders.length > 0 && (
         <Card className="bg-card border-border">
           <CardContent className="p-4">
-            <h3 className="font-semibold mb-3">أوردرات المكتب ({officeOrders.length})</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold">أوردرات المكتب ({officeOrders.length})</h3>
+              {selectedOrders.length > 0 && (
+                <Button size="sm" variant="destructive" onClick={closeSelectedOrders}>
+                  <Lock className="h-4 w-4 ml-1" />تقفيل ({selectedOrders.length})
+                </Button>
+              )}
+            </div>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="border-border">
+                    <TableHead className="text-right w-10">
+                      <Checkbox
+                        checked={selectedOrders.length === officeOrders.length && officeOrders.length > 0}
+                        onCheckedChange={toggleAllOrders}
+                      />
+                    </TableHead>
                     <TableHead className="text-right">كود الأوردر</TableHead>
                     <TableHead className="text-right">الحالة</TableHead>
                     <TableHead className="text-right">إجراء</TableHead>
@@ -315,6 +351,12 @@ export default function OfficeAccounts() {
                     const status = statuses.find(s => s.id === o.status_id);
                     return (
                       <TableRow key={o.id} className="border-border">
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedOrders.includes(o.id)}
+                            onCheckedChange={() => toggleOrderSelection(o.id)}
+                          />
+                        </TableCell>
                         <TableCell className="font-mono text-xs">{o.tracking_id}</TableCell>
                         <TableCell>
                           {status && (

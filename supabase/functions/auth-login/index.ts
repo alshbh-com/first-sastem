@@ -9,8 +9,6 @@ function codeToEmail(code: string): string {
   return code.replace(/@/g, '_at_').replace(/[^a-zA-Z0-9._-]/g, '_') + '@first.ship'
 }
 
-const OWNER_PASSWORD = '01278006248@01204486263'
-
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })

@@ -106,11 +106,11 @@ export default function DiaryView() {
   if (!diary) return <div className="p-8 text-center">اليومية غير موجودة</div>;
 
   return (
-    <div className="p-4 md:p-6 space-y-4" dir="rtl">
+    <div className="space-y-4" dir="rtl">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(`/diary-offices/${officeId}`)}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(`/accounting-system/offices/${officeId}`)}>
             <ArrowRight className="h-5 w-5" />
           </Button>
           <div>

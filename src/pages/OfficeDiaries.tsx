@@ -152,7 +152,7 @@ export default function OfficeDiaries() {
             )}
           </div>
           <div className="flex gap-1">
-            <Button size="sm" variant="outline" onClick={() => navigate(`/diary-offices/${officeId}/diary/${diary.id}`)}>
+            <Button size="sm" variant="outline" onClick={() => navigate(`/accounting-system/offices/${officeId}/diary/${diary.id}`)}>
               فتح
             </Button>
             <Button size="sm" variant="ghost" onClick={() => toggleClose.mutate(diary)} title={diary.is_closed ? 'إعادة فتح' : 'قفل'}>
@@ -170,10 +170,10 @@ export default function OfficeDiaries() {
   );
 
   return (
-    <div className="p-4 md:p-6 space-y-6" dir="rtl">
+    <div className="space-y-6" dir="rtl">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/diary-offices')}>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/accounting-system')}>
             <ArrowRight className="h-5 w-5" />
           </Button>
           <div>

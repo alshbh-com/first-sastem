@@ -63,9 +63,9 @@ export default function DiaryOffices() {
   if (isLoading) return <div className="p-8 text-center">جاري التحميل...</div>;
 
   return (
-    <div className="p-4 md:p-6 space-y-6" dir="rtl">
+    <div className="space-y-6" dir="rtl">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">المكاتب - نظام اليوميات</h1>
+        <h2 className="text-xl font-bold text-foreground">المكاتب - نظام اليوميات</h2>
         <p className="text-muted-foreground mt-1">اختر مكتب لعرض اليوميات أو ابحث في كل الأوردرات</p>
       </div>
 
@@ -111,7 +111,7 @@ export default function DiaryOffices() {
                       <TableCell className="text-sm font-medium">{d.orders?.price}</TableCell>
                       <TableCell>
                         <Button size="sm" variant="ghost"
-                          onClick={() => navigate(`/diary-offices/${d.diaries?.office_id}/diary/${d.diary_id}`)}>
+                          onClick={() => navigate(`/accounting-system/offices/${d.diaries?.office_id}/diary/${d.diary_id}`)}>
                           فتح
                         </Button>
                       </TableCell>
@@ -132,7 +132,7 @@ export default function DiaryOffices() {
             <Card
               key={office.id}
               className="cursor-pointer hover:shadow-lg transition-shadow border-border"
-              onClick={() => navigate(`/diary-offices/${office.id}`)}
+              onClick={() => navigate(`/accounting-system/offices/${office.id}`)}
             >
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center justify-between text-lg">

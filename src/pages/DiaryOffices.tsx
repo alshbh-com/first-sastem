@@ -111,7 +111,7 @@ export default function DiaryOffices() {
                       <TableCell className="text-sm font-medium">{d.orders?.price}</TableCell>
                       <TableCell>
                         <Button size="sm" variant="ghost"
-                          onClick={() => navigate(`/diary-offices/${d.diaries?.office_id}/diary/${d.diary_id}`)}>
+                          onClick={() => navigate(`/accounting-system/offices/${d.diaries?.office_id}/diary/${d.diary_id}`)}>
                           فتح
                         </Button>
                       </TableCell>
@@ -132,7 +132,7 @@ export default function DiaryOffices() {
             <Card
               key={office.id}
               className="cursor-pointer hover:shadow-lg transition-shadow border-border"
-              onClick={() => navigate(`/diary-offices/${office.id}`)}
+              onClick={() => navigate(`/accounting-system/offices/${office.id}`)}
             >
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center justify-between text-lg">

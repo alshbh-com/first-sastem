@@ -110,7 +110,7 @@ export default function DiaryView() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(`/diary-offices/${officeId}`)}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(`/accounting-system/offices/${officeId}`)}>
             <ArrowRight className="h-5 w-5" />
           </Button>
           <div>

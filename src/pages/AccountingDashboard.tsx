@@ -229,8 +229,8 @@ export default function AccountingDashboard() {
   const getOfficeName = (id: string) => offices.find((o: any) => o.id === id)?.name || 'بدون مكتب';
 
   return (
-    <div className="p-4 md:p-6 space-y-6" dir="rtl">
-      <h1 className="text-2xl font-bold text-foreground">الحسابات</h1>
+    <div className="space-y-6" dir="rtl">
+      <h2 className="text-xl font-bold text-foreground">الحسابات</h2>
 
       {/* Global Filters */}
       <div className="flex flex-wrap gap-3 items-end">

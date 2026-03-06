@@ -63,9 +63,9 @@ export default function DiaryOffices() {
   if (isLoading) return <div className="p-8 text-center">جاري التحميل...</div>;
 
   return (
-    <div className="p-4 md:p-6 space-y-6" dir="rtl">
+    <div className="space-y-6" dir="rtl">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">المكاتب - نظام اليوميات</h1>
+        <h2 className="text-xl font-bold text-foreground">المكاتب - نظام اليوميات</h2>
         <p className="text-muted-foreground mt-1">اختر مكتب لعرض اليوميات أو ابحث في كل الأوردرات</p>
       </div>
 

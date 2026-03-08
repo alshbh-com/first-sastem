@@ -36,6 +36,9 @@ const sections = [
   { title: 'تصدير البيانات', url: '/data-export', icon: FileSpreadsheet, color: 'hsl(142,76%,36%)' },
   { title: 'سجل الحركات', url: '/logs', icon: ScrollText, color: 'hsl(215,20%,60%)' },
   { title: 'الإعدادات', url: '/settings', icon: Settings, color: 'hsl(215,20%,60%)' },
+  { title: 'تقرير المكاتب الجديد', url: '/office-report', icon: FileBarChart, color: 'hsl(217,91%,60%)' },
+  { title: 'سلة المحذوفات', url: '/trash', icon: Trash2, color: 'hsl(0,72%,51%)' },
+  { title: 'سيستم الحسابات', url: '/accounting-system', icon: Calculator, color: 'hsl(270,60%,60%)' },
 ];
 
 export default function Dashboard() {

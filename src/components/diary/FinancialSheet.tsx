@@ -31,6 +31,11 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
   const [partialDialog, setPartialDialog] = useState<{ open: boolean; diaryOrderId: string; order: any } | null>(null);
   const [collectedAmount, setCollectedAmount] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  // Manual financial fields
+  const [cashArrivedEntries, setCashArrivedEntries] = useState<string[]>(['']);
+  const [balance, setBalance] = useState('');
+  const [previousDue, setPreviousDue] = useState('');
+  const [showFinalDue, setShowFinalDue] = useState(true);
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status, partial }: { id: string; status: string; partial?: number }) => {

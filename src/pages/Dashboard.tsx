@@ -43,7 +43,13 @@ const sections = [
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { canView } = usePermissions();
   const [stats, setStats] = useState({ total: 0, open: 0, delivered: 0, returned: 0, todayCount: 0, todayShipping: 0 });
+
+  const visibleSections = useMemo(
+    () => sections.filter((section) => canView(urlToSectionKey(section.url))),
+    [canView]
+  );
 
   useEffect(() => { loadStats(); }, []);
 

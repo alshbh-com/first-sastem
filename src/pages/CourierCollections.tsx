@@ -28,6 +28,7 @@ export default function CourierCollections() {
   const [bonusType, setBonusType] = useState<'special' | 'office_commission'>('special');
   const [bonusAmount, setBonusAmount] = useState('');
   const [bonusReason, setBonusReason] = useState('');
+  const [orderNotes, setOrderNotes] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const load = async () => {
@@ -60,6 +61,10 @@ export default function CourierCollections() {
       .order('created_at', { ascending: false });
     setOrders(orderData || []);
     setSelectedOrders(new Set());
+    // Initialize notes from orders
+    const notes: Record<string, string> = {};
+    (orderData || []).forEach((o: any) => { notes[o.id] = o.notes || ''; });
+    setOrderNotes(notes);
 
     const { data: bonusData } = await supabase
       .from('courier_bonuses')
@@ -82,9 +87,6 @@ export default function CourierCollections() {
   };
 
   const totalCollection = orders.reduce((sum, o) => sum + getCollectedAmount(o), 0);
-  const rejectShipTotal = orders
-    .filter(o => o.status_id === rejectWithShipStatus?.id || o.status_id === halfShipStatus?.id)
-    .reduce((sum, o) => sum + Number(o.shipping_paid || 0), 0);
 
   const rate = parseFloat(commissionPerOrder) || 0;
   const eligibleOrders = orders.filter(o => commissionStatuses.includes(o.status_id));
@@ -140,7 +142,7 @@ export default function CourierCollections() {
     const { error } = await supabase.from('courier_bonuses').insert({
       courier_id: selectedCourier,
       amount: parseFloat(bonusAmount),
-      reason: bonusType === 'office_commission' ? `__office_commission__${bonusReason ? ':' + bonusReason : ''}` : (bonusReason || 'عمولة خاصة'),
+      reason: bonusType === 'office_commission' ? `__office_commission__${bonusReason ? ':' + bonusReason : ''}` : (bonusReason || 'عمولة للمندوب'),
       created_by: user?.id,
     });
     if (error) { toast.error(error.message); return; }
@@ -158,6 +160,17 @@ export default function CourierCollections() {
     logActivity('حذف عمولة مندوب', { bonus_id: id, courier_id: selectedCourier });
     toast.success('تم الحذف');
     loadCourierData();
+  };
+
+  const updateOrderNotes = async (orderId: string, notes: string) => {
+    setOrderNotes(prev => ({ ...prev, [orderId]: notes }));
+  };
+
+  const saveOrderNotes = async (orderId: string) => {
+    const notes = orderNotes[orderId] || '';
+    const { error } = await supabase.from('orders').update({ notes }).eq('id', orderId);
+    if (error) { toast.error('فشل حفظ الملاحظة'); return; }
+    toast.success('تم حفظ الملاحظة');
   };
 
   return (
@@ -178,7 +191,7 @@ export default function CourierCollections() {
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">إجمالي التحصيل</p><p className="text-lg font-bold text-emerald-500">{totalCollection} ج.م</p></CardContent></Card>
-            <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">شحن محصل + عمولة مكتب</p><p className="text-lg font-bold text-amber-500">{rejectShipTotal + totalOfficeCommission} ج.م</p></CardContent></Card>
+            <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">عمولة مكتب</p><p className="text-lg font-bold text-amber-500">{totalOfficeCommission} ج.م</p></CardContent></Card>
             <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">العمولة</p><p className="text-lg font-bold text-destructive">{commissionTotal} ج.م</p></CardContent></Card>
             <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">صافي المستحق</p><p className="text-lg font-bold text-primary">{netDue} ج.م</p></CardContent></Card>
           </div>
@@ -189,11 +202,11 @@ export default function CourierCollections() {
               <div className="flex gap-2 flex-wrap">
                 <Dialog open={bonusDialogOpen} onOpenChange={v => { setBonusDialogOpen(v); if (!v) setBonusType('special'); }}>
                   <div className="flex gap-1">
-                    <Button size="sm" variant="outline" onClick={() => { setBonusType('special'); setBonusDialogOpen(true); }}><Plus className="h-4 w-4 ml-1" />عمولة خاصة</Button>
+                    <Button size="sm" variant="outline" onClick={() => { setBonusType('special'); setBonusDialogOpen(true); }}><Plus className="h-4 w-4 ml-1" />عمولة للمندوب</Button>
                     <Button size="sm" variant="outline" onClick={() => { setBonusType('office_commission'); setBonusDialogOpen(true); }}><Plus className="h-4 w-4 ml-1" />عمولة مكتب</Button>
                   </div>
                   <DialogContent className="bg-card border-border">
-                    <DialogHeader><DialogTitle>{bonusType === 'office_commission' ? 'إضافة عمولة مكتب' : 'إضافة عمولة خاصة'}</DialogTitle></DialogHeader>
+                    <DialogHeader><DialogTitle>{bonusType === 'office_commission' ? 'إضافة عمولة مكتب' : 'إضافة عمولة للمندوب'}</DialogTitle></DialogHeader>
                     <div className="space-y-4">
                       <div><Label>المبلغ</Label><Input type="number" value={bonusAmount} onChange={e => setBonusAmount(e.target.value)} className="bg-secondary border-border" /></div>
                       <div><Label>{bonusType === 'office_commission' ? 'ملاحظة / السبب' : 'السبب'}</Label><Input value={bonusReason} onChange={e => setBonusReason(e.target.value)} className="bg-secondary border-border" placeholder={bonusType === 'office_commission' ? 'سبب عمولة المكتب...' : 'مشوار خاص...'} /></div>
@@ -245,7 +258,7 @@ export default function CourierCollections() {
                   <TableBody>
                     {bonuses.map(b => (
                       <TableRow key={b.id} className="border-border">
-                        <TableCell className="text-sm">{b.reason?.startsWith('__office_commission__') ? 'عمولة مكتب' : 'عمولة خاصة'}</TableCell>
+                        <TableCell className="text-sm">{b.reason?.startsWith('__office_commission__') ? 'عمولة مكتب' : 'عمولة للمندوب'}</TableCell>
                         <TableCell className="font-bold">{b.amount} ج.م</TableCell>
                         <TableCell>{b.reason?.startsWith('__office_commission__') ? (b.reason.split(':')[1] || '-') : (b.reason || '-')}</TableCell>
                         <TableCell>{new Date(b.created_at).toLocaleDateString('ar-EG')}</TableCell>
@@ -279,8 +292,8 @@ export default function CourierCollections() {
                       <TableHead className="text-right">التوصيل</TableHead>
                       <TableHead className="text-right">الإجمالي</TableHead>
                       <TableHead className="text-right">الحالة</TableHead>
-                      <TableHead className="text-right">شحن محصل</TableHead>
                       <TableHead className="text-right">التحصيل</TableHead>
+                      <TableHead className="text-right">ملاحظات</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -302,8 +315,16 @@ export default function CourierCollections() {
                               {o.order_statuses?.name || '-'}
                             </Badge>
                           </TableCell>
-                          <TableCell className="font-bold text-emerald-500">{Number(o.shipping_paid) > 0 ? `${o.shipping_paid} ج.م` : '-'}</TableCell>
                           <TableCell className="font-bold text-primary">{collected > 0 ? `${collected} ج.م` : '-'}</TableCell>
+                          <TableCell>
+                            <Input
+                              value={orderNotes[o.id] || ''}
+                              onChange={(e) => updateOrderNotes(o.id, e.target.value)}
+                              onBlur={() => saveOrderNotes(o.id)}
+                              className="bg-secondary border-border h-7 w-32 text-xs"
+                              placeholder="ملاحظة..."
+                            />
+                          </TableCell>
                         </TableRow>
                       );
                     })}

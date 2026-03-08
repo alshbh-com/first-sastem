@@ -41,6 +41,8 @@ import OfficeDiaries from "@/pages/OfficeDiaries";
 import DiaryView from "@/pages/DiaryView";
 import AccountingDashboard from "@/pages/AccountingDashboard";
 import AccountingLayout from "@/components/AccountingLayout";
+import OfficeReport from "@/pages/OfficeReport";
+import TrashBin from "@/pages/TrashBin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -108,6 +110,8 @@ const App = () => (
               <Route path="/status-management" element={<StatusManagement />} />
               <Route path="/order-notes" element={<OrderNotes />} />
               <Route path="/data-export" element={<DataExport />} />
+              <Route path="/office-report" element={<OfficeReport />} />
+              <Route path="/trash" element={<TrashBin />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

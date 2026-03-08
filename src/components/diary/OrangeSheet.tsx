@@ -14,10 +14,10 @@ import {
 
 const DIARY_STATUSES = [
   'بدون حالة', 'تم التسليم', 'مؤجل', 'مرتجع', 'تسليم جزئي',
-  'فرق شحن', 'تحويلة تسليم', 'رفض دون شحن', 'غرامة مرتجع',
+  'فرق شحن', 'عمولة التسليم', 'رفض دون شحن', 'غرامة مرتجع',
 ];
 
-const RETURN_STATUSES = ['مرتجع', 'فرق شحن', 'تحويلة تسليم', 'رفض دون شحن', 'غرامة مرتجع'];
+const RETURN_STATUSES = ['مرتجع', 'فرق شحن', 'عمولة التسليم', 'رفض دون شحن', 'غرامة مرتجع'];
 
 interface Props {
   diary: any;
@@ -118,10 +118,13 @@ export default function OrangeSheet({ diary, diaryOrders, onCopyOrder }: Props) 
   // Totals
   const totalAmount = filtered.reduce((s: number, d: any) => s + (d.orders?.price || 0) + (d.orders?.delivery_price || 0), 0);
   const totalShipping = filtered.reduce((s: number, d: any) => s + (d.orders?.delivery_price || 0), 0);
+  const totalPickup = filtered.reduce((s: number, d: any) => s + (Number(d.orders?.shipping_paid) || 0), 0);
   const totalDelivered = filtered.filter((d: any) => d.status_inside_diary === 'تم التسليم')
     .reduce((s: number, d: any) => s + (d.orders?.price || 0) + (d.orders?.delivery_price || 0), 0);
   const totalPartialDelivered = filtered.filter((d: any) => d.status_inside_diary === 'تسليم جزئي')
     .reduce((s: number, d: any) => s + (d.partial_amount || 0) + (d.orders?.delivery_price || 0), 0);
+  const totalArrived = totalDelivered + totalPartialDelivered;
+  const totalDue = totalAmount - (totalShipping + totalArrived + totalPickup);
 
   return (
     <>
@@ -154,7 +157,7 @@ export default function OrangeSheet({ diary, diaryOrders, onCopyOrder }: Props) 
               <TableHead className="text-right">عدد القطع</TableHead>
               <TableHead className="text-right">الإجمالي</TableHead>
               <TableHead className="text-right">الشحن</TableHead>
-              <TableHead className="text-right">بنك اب</TableHead>
+              <TableHead className="text-right">بيك اب</TableHead>
               <TableHead className="text-right">الواصل</TableHead>
               <TableHead className="text-right">الحالة</TableHead>
               <TableHead className="text-right">حالة المرتجع</TableHead>
@@ -218,9 +221,15 @@ export default function OrangeSheet({ diary, diaryOrders, onCopyOrder }: Props) 
                 <TableCell colSpan={5} className="text-right">الإجمالي</TableCell>
                 <TableCell>{totalAmount}</TableCell>
                 <TableCell>{totalShipping}</TableCell>
-                <TableCell></TableCell>
-                <TableCell className="text-green-600">{totalDelivered + totalPartialDelivered}</TableCell>
+                <TableCell>{totalPickup}</TableCell>
+                <TableCell className="text-green-600">{totalArrived}</TableCell>
                 <TableCell colSpan={3}></TableCell>
+              </TableRow>
+              <TableRow className="bg-orange-100/50 dark:bg-orange-950/30 font-bold text-sm">
+                <TableCell colSpan={5} className="text-right">المستحق للعميل</TableCell>
+                <TableCell colSpan={7} className="text-primary text-base">
+                  {totalAmount} - ({totalShipping} + {totalArrived} + {totalPickup}) = <span className="text-lg">{totalDue}</span>
+                </TableCell>
               </TableRow>
             </TableFooter>
           )}

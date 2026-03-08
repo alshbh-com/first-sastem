@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import AddOrderDialog from '@/components/AddOrderDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activityLogger';
+import { moveToTrash } from '@/lib/trashUtils';
 
 export default function Orders() {
   const { isOwner } = useAuth();
@@ -111,10 +112,12 @@ export default function Orders() {
 
   const deleteSelected = async () => {
     if (selected.size === 0) { toast.error('اختر أوردرات أولاً'); return; }
-    if (!confirm(`هل تريد حذف ${selected.size} أوردر نهائياً؟`)) return;
-    const { error } = await supabase.from('orders').delete().in('id', Array.from(selected));
+    if (!confirm(`هل تريد نقل ${selected.size} أوردر إلى سلة المحذوفات؟`)) return;
+    const ids = Array.from(selected);
+    moveToTrash(ids);
+    const { error } = await supabase.from('orders').update({ is_closed: true }).in('id', ids);
     if (error) { toast.error(error.message); return; }
-    logActivity('حذف أوردرات', { count: selected.size });
+    logActivity('نقل أوردرات لسلة المحذوفات', { count: selected.size });
     toast.success(`تم حذف ${selected.size} أوردر`);
     setSelected(new Set());
     loadOrders();

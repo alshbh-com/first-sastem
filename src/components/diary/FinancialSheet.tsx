@@ -8,17 +8,17 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { logActivity } from '@/lib/activityLogger';
-import { Copy } from 'lucide-react';
+import { Copy, Plus } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 
 const DIARY_STATUSES = [
   'بدون حالة', 'تم التسليم', 'مؤجل', 'مرتجع', 'تسليم جزئي',
-  'فرق شحن', 'تحويلة تسليم', 'رفض دون شحن', 'غرامة مرتجع',
+  'فرق شحن', 'عمولة التسليم', 'رفض دون شحن', 'غرامة مرتجع',
 ];
 
-const RETURN_STATUSES = ['مرتجع', 'فرق شحن', 'تحويلة تسليم', 'رفض دون شحن', 'غرامة مرتجع'];
+const RETURN_STATUSES = ['مرتجع', 'فرق شحن', 'عمولة التسليم', 'رفض دون شحن', 'غرامة مرتجع'];
 
 interface Props {
   diary: any;
@@ -31,6 +31,11 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
   const [partialDialog, setPartialDialog] = useState<{ open: boolean; diaryOrderId: string; order: any } | null>(null);
   const [collectedAmount, setCollectedAmount] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  // Manual financial fields
+  const [cashArrivedEntries, setCashArrivedEntries] = useState<string[]>(['']);
+  const [balance, setBalance] = useState('');
+  const [previousDue, setPreviousDue] = useState('');
+  const [showFinalDue, setShowFinalDue] = useState(true);
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status, partial }: { id: string; status: string; partial?: number }) => {
@@ -110,7 +115,7 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
       returned: status === 'تسليم جزئي' ? (price - partial) : (RETURN_STATUSES.includes(status) ? price : 0),
       partial: status === 'تسليم جزئي' ? partial : 0,
       shippingDiff: status === 'فرق شحن' ? price : 0,
-      transferDelivery: status === 'تحويلة تسليم' ? price : 0,
+      transferDelivery: status === 'عمولة التسليم' ? price : 0,
       refuseNoShipping: status === 'رفض دون شحن' ? price : 0,
       returnPenalty: status === 'غرامة مرتجع' ? price : 0,
       returnStatus: RETURN_STATUSES.includes(status) || status === 'تسليم جزئي' ? status : '',
@@ -172,7 +177,7 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
               <TableHead className="text-right">مرتجع</TableHead>
               <TableHead className="text-right">تسليم جزئي</TableHead>
               <TableHead className="text-right">فرق شحن</TableHead>
-              <TableHead className="text-right">تحويلة تسليم</TableHead>
+              <TableHead className="text-right">عمولة التسليم</TableHead>
               <TableHead className="text-right">رفض دون شحن</TableHead>
               <TableHead className="text-right">غرامة مرتجع</TableHead>
               <TableHead className="text-right">الحالة</TableHead>
@@ -283,6 +288,92 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
           <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-3 text-center">
             <p className="text-xs text-muted-foreground">تسليم جزئي</p>
             <p className="text-lg font-bold text-blue-600">{totals.partial}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Manual Financial Summary */}
+      {filteredOrders.length > 0 && (
+        <div className="mt-4 border rounded-lg p-4 space-y-4 bg-muted/20">
+          <h3 className="font-bold text-foreground">الملخص المالي</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Left side - Cash entries */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">الواصل نقدي</label>
+                <Button size="sm" variant="outline" onClick={() => setCashArrivedEntries(prev => [...prev, ''])}>
+                  <Plus className="h-3 w-3 ml-1" /> إضافة
+                </Button>
+              </div>
+              {cashArrivedEntries.map((val, idx) => (
+                <div key={idx} className="flex gap-2 items-center">
+                  <Input
+                    type="number"
+                    value={val}
+                    onChange={(e) => {
+                      const updated = [...cashArrivedEntries];
+                      updated[idx] = e.target.value;
+                      setCashArrivedEntries(updated);
+                    }}
+                    className="h-8 text-sm"
+                    placeholder={`واصل نقدي ${idx + 1}`}
+                  />
+                  {cashArrivedEntries.length > 1 && (
+                    <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => setCashArrivedEntries(prev => prev.filter((_, i) => i !== idx))}>×</Button>
+                  )}
+                </div>
+              ))}
+              <div className="text-sm font-medium">
+                إجمالي الواصل نقدي: <strong>{cashArrivedEntries.reduce((s, v) => s + (parseFloat(v) || 0), 0)}</strong>
+              </div>
+            </div>
+
+            {/* Right side - Summary calculations */}
+            <div className="space-y-3">
+              {(() => {
+                const totalCashArrived = cashArrivedEntries.reduce((s, v) => s + (parseFloat(v) || 0), 0);
+                const balanceNum = parseFloat(balance) || 0;
+                const previousDueNum = parseFloat(previousDue) || 0;
+                const diaryDiff = totals.price - totalCashArrived;
+                const finalDue = (diaryDiff + previousDueNum) - (balanceNum + totals.returned + totals.shippingDiff + totals.transferDelivery + totals.refuseNoShipping + totals.returnPenalty);
+                const finalWithPostponed = finalDue + totals.postponed;
+
+                return (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm w-36">الواصل:</label>
+                      <span className="font-bold">{totalCashArrived}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm w-36">الرصيد:</label>
+                      <Input type="number" value={balance} onChange={e => setBalance(e.target.value)} className="h-8 text-sm w-36" placeholder="0" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm w-36">مستحق سابق للعميل:</label>
+                      <Input type="number" value={previousDue} onChange={e => setPreviousDue(e.target.value)} className="h-8 text-sm w-36" placeholder="0" />
+                    </div>
+                    <div className="border-t border-border pt-2 space-y-1 text-sm">
+                      <div>فرق اليومية = {totals.price} - {totalCashArrived} = <strong>{diaryDiff}</strong></div>
+                      <div>المستحق = ({diaryDiff} + {previousDueNum}) - ({balanceNum} + {totals.returned} + {totals.shippingDiff} + {totals.transferDelivery} + {totals.refuseNoShipping} + {totals.returnPenalty}) = <strong className="text-primary">{finalDue}</strong></div>
+                    </div>
+                    <div className="border-t border-border pt-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-bold">المستحق بالنزول = {finalDue} + {totals.postponed} = <span className="text-lg text-primary">{finalWithPostponed}</span></span>
+                        <Button size="sm" variant="ghost" onClick={() => setShowFinalDue(!showFinalDue)}>
+                          {showFinalDue ? 'إخفاء' : 'عرض'}
+                        </Button>
+                      </div>
+                      {showFinalDue && (
+                        <div className="mt-2 p-3 bg-primary/10 rounded-lg text-center">
+                          <p className="text-xs text-muted-foreground">المستحق النهائي بالنزول</p>
+                          <p className="text-2xl font-bold text-primary">{finalWithPostponed}</p>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
           </div>
         </div>
       )}

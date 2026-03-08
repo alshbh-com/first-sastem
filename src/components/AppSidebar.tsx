@@ -3,7 +3,7 @@ import {
   Truck, Wallet, CreditCard, ScrollText, Settings, LogOut, Archive, Building,
   PackageSearch, Search, Printer, DollarSign, MapPin, Users, BarChart3,
   TrendingUp, Calendar, UserCheck, MessageSquare, Locate, FileSpreadsheet,
-  CircleDot, Calculator, Contact, ClipboardList
+  CircleDot, Calculator, Contact, ClipboardList, Trash2, FileBarChart
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -42,6 +42,7 @@ const accountingItems = [
 const reportsItems = [
   { title: 'التقرير اليومي', url: '/daily-report', icon: Calendar },
   { title: 'التقارير المالية', url: '/financial-reports', icon: BarChart3 },
+  { title: 'تقرير المكاتب', url: '/office-report', icon: FileBarChart },
   { title: 'إحصائيات المناديب', url: '/courier-stats', icon: UserCheck },
   { title: 'إحصائيات المكاتب', url: '/office-stats', icon: TrendingUp },
   { title: 'تقرير الأرباح', url: '/profit-report', icon: Calculator },
@@ -53,6 +54,7 @@ const toolsItems = [
   { title: 'ملاحظات الأوردرات', url: '/order-notes', icon: MessageSquare },
   { title: 'تصدير البيانات', url: '/data-export', icon: FileSpreadsheet },
   { title: 'سجل الحركات', url: '/logs', icon: ScrollText },
+  { title: 'سلة المحذوفات', url: '/trash', icon: Trash2 },
   { title: 'الإعدادات', url: '/settings', icon: Settings },
   { title: 'سيستم الحسابات', url: '/accounting-system', icon: Calculator },
 ];

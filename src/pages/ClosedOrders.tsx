@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Search, Trash2, Unlock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { moveToTrash } from '@/lib/trashUtils';
 
 export default function ClosedOrders() {
   const { isOwner } = useAuth();
@@ -28,10 +29,18 @@ export default function ClosedOrders() {
     setOrders(data || []);
   };
 
-  const filtered = orders.filter(o =>
-    !search || o.tracking_id?.includes(search) || o.customer_name?.includes(search) || 
-    o.customer_phone?.includes(search) || o.barcode?.includes(search) || o.customer_code?.includes(search)
-  );
+  const filtered = orders.filter(o => {
+    if (!search) return true;
+    const term = search.toLowerCase();
+    return (
+      o.tracking_id?.toLowerCase().includes(term) || 
+      o.customer_name?.toLowerCase().includes(term) || 
+      o.customer_phone?.includes(search) || 
+      o.barcode?.includes(search) || 
+      o.customer_code?.toLowerCase().includes(term) ||
+      o.address?.toLowerCase().includes(term)
+    );
+  });
 
   const toggleSelect = (id: string) => {
     setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -43,9 +52,10 @@ export default function ClosedOrders() {
 
   const deleteSelected = async () => {
     if (selected.size === 0) return;
-    if (!confirm(`حذف ${selected.size} أوردر نهائياً؟`)) return;
-    await supabase.from('orders').delete().in('id', Array.from(selected));
-    toast.success('تم الحذف');
+    if (!confirm(`نقل ${selected.size} أوردر إلى سلة المحذوفات؟`)) return;
+    const ids = Array.from(selected);
+    moveToTrash(ids);
+    toast.success('تم النقل إلى سلة المحذوفات');
     setSelected(new Set());
     loadOrders();
   };

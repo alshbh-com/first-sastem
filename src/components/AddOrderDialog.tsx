@@ -184,7 +184,7 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
             </div>
             <div className="space-y-2">
               <Label>المكتب *</Label>
-              <Select value={form.office_id} onValueChange={v => set('office_id', v)}>
+              <Select key={`office-${offices.length}`} value={form.office_id} onValueChange={v => set('office_id', v)}>
                 <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder="اختر مكتب (إجباري)" /></SelectTrigger>
                 <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
               </Select>

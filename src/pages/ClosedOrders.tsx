@@ -28,10 +28,18 @@ export default function ClosedOrders() {
     setOrders(data || []);
   };
 
-  const filtered = orders.filter(o =>
-    !search || o.tracking_id?.includes(search) || o.customer_name?.includes(search) || 
-    o.customer_phone?.includes(search) || o.barcode?.includes(search) || o.customer_code?.includes(search)
-  );
+  const filtered = orders.filter(o => {
+    if (!search) return true;
+    const term = search.toLowerCase();
+    return (
+      o.tracking_id?.toLowerCase().includes(term) || 
+      o.customer_name?.toLowerCase().includes(term) || 
+      o.customer_phone?.includes(search) || 
+      o.barcode?.includes(search) || 
+      o.customer_code?.toLowerCase().includes(term) ||
+      o.address?.toLowerCase().includes(term)
+    );
+  });
 
   const toggleSelect = (id: string) => {
     setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });

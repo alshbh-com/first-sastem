@@ -40,6 +40,7 @@ export const ALL_SECTIONS = [
   { key: 'data-export', label: 'تصدير البيانات', url: '/data-export' },
   { key: 'logs', label: 'سجل الحركات', url: '/logs' },
   { key: 'settings', label: 'الإعدادات', url: '/settings' },
+  { key: 'accounting-system', label: 'سيستم الحسابات', url: '/accounting-system' },
 ];
 
 export function urlToSectionKey(url: string): string {

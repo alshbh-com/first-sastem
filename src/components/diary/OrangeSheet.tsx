@@ -154,7 +154,7 @@ export default function OrangeSheet({ diary, diaryOrders, onCopyOrder }: Props) 
               <TableHead className="text-right">عدد القطع</TableHead>
               <TableHead className="text-right">الإجمالي</TableHead>
               <TableHead className="text-right">الشحن</TableHead>
-              <TableHead className="text-right">بنك اب</TableHead>
+              <TableHead className="text-right">بيك اب</TableHead>
               <TableHead className="text-right">الواصل</TableHead>
               <TableHead className="text-right">الحالة</TableHead>
               <TableHead className="text-right">حالة المرتجع</TableHead>

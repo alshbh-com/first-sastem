@@ -196,7 +196,7 @@ export default function OfficeSettlement() {
               <Input type="number" value={pickupRate} onChange={e => setPickupRate(e.target.value)} className="bg-secondary border-border" placeholder="0" />
             </div>
             <div className="text-sm font-medium">البيك اب = {pickupUnits} × {pickupRateNum} = <span className="font-bold">{pickupTotal}</span></div>
-            <div className="text-sm font-medium">المستحق = {totalAmount} - ({pickupTotal} + {totalArrived}) = <span className="font-bold">{due}</span></div>
+            <div className="text-sm font-medium">المستحق = {totalAmount} - ({totalShipping} + {totalArrived} + {pickupTotal}) = <span className="font-bold">{due}</span></div>
           </div>
         </CardContent>
       </Card>

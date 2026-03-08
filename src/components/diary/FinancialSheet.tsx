@@ -110,7 +110,7 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
       returned: status === 'تسليم جزئي' ? (price - partial) : (RETURN_STATUSES.includes(status) ? price : 0),
       partial: status === 'تسليم جزئي' ? partial : 0,
       shippingDiff: status === 'فرق شحن' ? price : 0,
-      transferDelivery: status === 'تحويلة تسليم' ? price : 0,
+      transferDelivery: status === 'عمولة التسليم' ? price : 0,
       refuseNoShipping: status === 'رفض دون شحن' ? price : 0,
       returnPenalty: status === 'غرامة مرتجع' ? price : 0,
       returnStatus: RETURN_STATUSES.includes(status) || status === 'تسليم جزئي' ? status : '',

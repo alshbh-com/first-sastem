@@ -41,6 +41,8 @@ import OfficeDiaries from "@/pages/OfficeDiaries";
 import DiaryView from "@/pages/DiaryView";
 import AccountingDashboard from "@/pages/AccountingDashboard";
 import AccountingLayout from "@/components/AccountingLayout";
+import OfficeReport from "@/pages/OfficeReport";
+import TrashBin from "@/pages/TrashBin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();

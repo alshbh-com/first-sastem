@@ -68,6 +68,24 @@ export type Database = {
         }
         Relationships: []
       }
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string | null
+          value: string
+        }
+        Insert: {
+          key: string
+          updated_at?: string | null
+          value?: string
+        }
+        Update: {
+          key?: string
+          updated_at?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
       cash_flow_entries: {
         Row: {
           amount: number
@@ -350,6 +368,13 @@ export type Database = {
           diary_id: string
           id: string
           locked_status: boolean | null
+          manual_arrived: number | null
+          manual_delivery_commission: number | null
+          manual_pickup: number | null
+          manual_reject_no_ship: number | null
+          manual_return_penalty: number | null
+          manual_return_status: string | null
+          manual_shipping_diff: number | null
           n_column: string | null
           notes: string | null
           order_id: string
@@ -363,6 +388,13 @@ export type Database = {
           diary_id: string
           id?: string
           locked_status?: boolean | null
+          manual_arrived?: number | null
+          manual_delivery_commission?: number | null
+          manual_pickup?: number | null
+          manual_reject_no_ship?: number | null
+          manual_return_penalty?: number | null
+          manual_return_status?: string | null
+          manual_shipping_diff?: number | null
           n_column?: string | null
           notes?: string | null
           order_id: string
@@ -376,6 +408,13 @@ export type Database = {
           diary_id?: string
           id?: string
           locked_status?: boolean | null
+          manual_arrived?: number | null
+          manual_delivery_commission?: number | null
+          manual_pickup?: number | null
+          manual_reject_no_ship?: number | null
+          manual_return_penalty?: number | null
+          manual_return_status?: string | null
+          manual_shipping_diff?: number | null
           n_column?: string | null
           notes?: string | null
           order_id?: string

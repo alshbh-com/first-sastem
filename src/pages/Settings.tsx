@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { UserPlus } from 'lucide-react';
+import { UserPlus, Lock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,13 +24,48 @@ export default function Settings() {
   const [newUserRole, setNewUserRole] = useState<string>('courier');
   const [creatingUser, setCreatingUser] = useState(false);
 
-  useEffect(() => { loadStatuses(); }, []);
+  // Accounting password
+  const [accountingPassword, setAccountingPassword] = useState('');
+  const [currentAccountingPassword, setCurrentAccountingPassword] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
+
+  useEffect(() => {
+    loadStatuses();
+    loadAccountingPassword();
+  }, []);
 
   const loadStatuses = async () => {
     const { data } = await supabase.from('order_statuses').select('*').order('sort_order');
     setStatuses(data || []);
   };
 
+  const loadAccountingPassword = async () => {
+    const { data } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'accounting_password')
+      .maybeSingle();
+    if (data?.value) {
+      setCurrentAccountingPassword(data.value);
+      setAccountingPassword(data.value);
+    }
+  };
+
+  const saveAccountingPassword = async () => {
+    setSavingPassword(true);
+    const { error } = await supabase
+      .from('app_settings')
+      .upsert({ key: 'accounting_password', value: accountingPassword, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+    setSavingPassword(false);
+    if (error) {
+      toast.error('فشل حفظ كلمة المرور');
+      return;
+    }
+    setCurrentAccountingPassword(accountingPassword);
+    // Clear session so password is required again
+    sessionStorage.removeItem('accounting_verified');
+    toast.success(accountingPassword ? 'تم حفظ كلمة مرور سيستم الحسابات' : 'تم إزالة كلمة المرور');
+  };
 
   const createUser = async () => {
     if (!newUserName || !newUserCode) return;
@@ -63,6 +98,40 @@ export default function Settings() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">الإعدادات</h1>
+
+      {/* Accounting Password - Owner only */}
+      {isOwner && (
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Lock className="h-5 w-5 text-primary" />
+              كلمة مرور سيستم الحسابات
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">حدد كلمة مرور للدخول إلى سيستم الحسابات. اتركها فارغة لإلغاء الحماية.</p>
+            <div className="flex gap-2 items-end max-w-sm">
+              <div className="flex-1 space-y-1">
+                <Label>كلمة المرور</Label>
+                <Input
+                  type="text"
+                  value={accountingPassword}
+                  onChange={(e) => setAccountingPassword(e.target.value)}
+                  className="bg-secondary border-border"
+                  placeholder="أدخل كلمة المرور..."
+                  dir="ltr"
+                />
+              </div>
+              <Button onClick={saveAccountingPassword} disabled={savingPassword}>
+                {savingPassword ? 'جاري الحفظ...' : 'حفظ'}
+              </Button>
+            </div>
+            {currentAccountingPassword && (
+              <p className="text-xs text-muted-foreground">كلمة المرور الحالية مفعّلة ✅</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Order Statuses */}
       <Card className="bg-card border-border">

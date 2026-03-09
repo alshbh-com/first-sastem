@@ -437,6 +437,132 @@ export default function CourierOrders() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Floating Chat Button */}
+      {!showChat && (
+        <button
+          onClick={() => setShowChat(true)}
+          className="fixed bottom-6 left-6 z-50 w-14 h-14 rounded-full bg-[hsl(142,70%,28%)] text-white shadow-lg hover:bg-[hsl(142,70%,22%)] transition-all flex items-center justify-center"
+        >
+          <MessageSquare className="h-6 w-6" />
+          {chatContacts.reduce((s, c) => s + (c.unread || 0), 0) > 0 && (
+            <span className="absolute -top-1 -right-1 bg-destructive text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+              {chatContacts.reduce((s: number, c: any) => s + (c.unread || 0), 0)}
+            </span>
+          )}
+        </button>
+      )}
+
+      {/* Chat Panel - WhatsApp Style */}
+      {showChat && (
+        <div className="fixed bottom-6 left-6 z-50 w-[340px] sm:w-[380px] h-[480px] rounded-2xl overflow-hidden shadow-2xl border border-border flex flex-col bg-card">
+          {/* Header */}
+          <div className="bg-[hsl(142,70%,28%)] text-white p-3 flex items-center justify-between shrink-0">
+            {chatTarget ? (
+              <div className="flex items-center gap-2">
+                <button onClick={() => setChatTarget(null)} className="hover:bg-white/20 rounded p-1">←</button>
+                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold">
+                  {chatContacts.find(c => c.id === chatTarget)?.name?.charAt(0) || '?'}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">{chatContacts.find(c => c.id === chatTarget)?.name}</p>
+                  <p className="text-[10px] opacity-80">{chatContacts.find(c => c.id === chatTarget)?.role}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                <span className="font-bold text-sm">الدردشة مع الإدارة</span>
+              </div>
+            )}
+            <button onClick={() => { setShowChat(false); setChatTarget(null); }} className="hover:bg-white/20 rounded p-1.5">
+              ✕
+            </button>
+          </div>
+
+          {!chatTarget ? (
+            /* Contact list */
+            <div className="flex-1 overflow-y-auto">
+              {chatContacts.length === 0 && (
+                <p className="text-center text-muted-foreground text-sm py-12">لا يوجد جهات اتصال</p>
+              )}
+              {chatContacts.map((c, i) => (
+                <button
+                  key={c.id}
+                  onClick={() => setChatTarget(c.id)}
+                  className={`w-full p-3 flex items-center gap-3 text-right hover:bg-accent/40 transition-colors ${i < chatContacts.length - 1 ? 'border-b border-border' : ''}`}
+                >
+                  <div className="w-10 h-10 rounded-full bg-[hsl(142,70%,28%)]/10 flex items-center justify-center shrink-0 text-[hsl(142,70%,28%)] font-bold">
+                    {c.name?.charAt(0)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-sm">{c.name}</span>
+                      {c.unread > 0 && (
+                        <span className="bg-[hsl(142,70%,28%)] text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center">{c.unread}</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">{c.role}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <>
+              {/* Messages */}
+              <div
+                ref={chatScrollRef}
+                className="flex-1 overflow-y-auto p-3 space-y-1"
+                style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%239C92AC\' fill-opacity=\'0.04\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }}
+              >
+                {chatMessages.length === 0 && (
+                  <div className="flex items-center justify-center h-full">
+                    <span className="bg-accent/80 text-muted-foreground text-xs px-3 py-1 rounded-full">ابدأ المحادثة 💬</span>
+                  </div>
+                )}
+                {chatMessages.map((m: any) => {
+                  const isMine = m.sender_id === user?.id;
+                  return (
+                    <div key={m.id} className={`flex ${isMine ? 'justify-start' : 'justify-end'} mb-1`}>
+                      <div className={`relative max-w-[80%] rounded-lg px-3 py-2 text-sm shadow-sm ${
+                        isMine
+                          ? 'bg-[hsl(142,60%,85%)] text-[hsl(142,70%,15%)] rounded-tl-none'
+                          : 'bg-card text-card-foreground rounded-tr-none border border-border'
+                      }`}>
+                        <p className="leading-relaxed">{m.message}</p>
+                        <div className={`flex items-center gap-1 mt-0.5 text-[10px] opacity-50 ${isMine ? 'justify-end' : 'justify-start'}`}>
+                          <span>{new Date(m.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</span>
+                          {isMine && (m.is_read
+                            ? <span className="text-[hsl(217,91%,60%)]">✓✓</span>
+                            : <span>✓</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Input */}
+              <div className="p-2 bg-muted/30 border-t border-border shrink-0 flex gap-2 items-center">
+                <Input
+                  value={chatMsg}
+                  onChange={e => setChatMsg(e.target.value)}
+                  placeholder="اكتب رسالة..."
+                  className="bg-card text-sm h-9 rounded-full border-border"
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMsg(); } }}
+                />
+                <button
+                  onClick={sendChatMsg}
+                  disabled={chatSending || !chatMsg.trim()}
+                  className="h-9 w-9 shrink-0 rounded-full bg-[hsl(142,70%,28%)] hover:bg-[hsl(142,70%,22%)] text-white flex items-center justify-center disabled:opacity-50"
+                >
+                  <Send className="h-4 w-4" />
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

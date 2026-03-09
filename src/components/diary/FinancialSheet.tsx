@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
@@ -30,11 +30,33 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
   const [partialDialog, setPartialDialog] = useState<{ open: boolean; diaryOrderId: string; order: any } | null>(null);
   const [collectedAmount, setCollectedAmount] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  // Manual financial fields
+
+  // Local state for manual inputs (prevents re-render reset on every keystroke)
+  const [localFields, setLocalFields] = useState<Record<string, Record<string, string>>>({});
+
+  // Financial summary - persisted to diary
   const [cashArrivedEntries, setCashArrivedEntries] = useState<string[]>(['']);
   const [balance, setBalance] = useState('');
   const [previousDue, setPreviousDue] = useState('');
-  const [showFinalDue, setShowFinalDue] = useState(true);
+
+  // Load persisted financial data from diary
+  useEffect(() => {
+    if (diary) {
+      const entries = (diary as any).cash_arrived_entries;
+      if (Array.isArray(entries) && entries.length > 0) {
+        setCashArrivedEntries(entries.map(String));
+      }
+      const bal = (diary as any).balance;
+      if (bal) setBalance(String(bal));
+      const prev = (diary as any).previous_due;
+      if (prev) setPreviousDue(String(prev));
+    }
+  }, [diary?.id]);
+
+  // Save financial summary to diary (debounced via onBlur)
+  const saveFinancialSummary = useCallback(async (field: string, value: any) => {
+    await supabase.from('diaries').update({ [field]: value } as any).eq('id', diary.id);
+  }, [diary?.id]);
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status, partial }: { id: string; status: string; partial?: number }) => {
@@ -60,13 +82,21 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
     onSuccess: () => qc.invalidateQueries({ queryKey: ['diary-orders', diary.id] }),
   });
 
-  const updateManualField = useMutation({
-    mutationFn: async ({ id, field, value }: { id: string; field: string; value: any }) => {
-      const { error } = await supabase.from('diary_orders').update({ [field]: value } as any).eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['diary-orders', diary.id] }),
-  });
+  // Save manual field on blur
+  const saveManualField = async (id: string, field: string, value: string) => {
+    const numVal = field === 'manual_return_status' ? value : (parseFloat(value) || 0);
+    await supabase.from('diary_orders').update({ [field]: numVal } as any).eq('id', id);
+    qc.invalidateQueries({ queryKey: ['diary-orders', diary.id] });
+  };
+
+  const getLocalValue = (id: string, field: string, dbValue: any) => {
+    if (localFields[id]?.[field] !== undefined) return localFields[id][field];
+    return dbValue != null && dbValue !== 0 ? String(dbValue) : '';
+  };
+
+  const setLocalValue = (id: string, field: string, value: string) => {
+    setLocalFields(prev => ({ ...prev, [id]: { ...(prev[id] || {}), [field]: value } }));
+  };
 
   const handleStatusChange = (diaryOrder: any, newStatus: string) => {
     if (diary.lock_status_updates) {
@@ -93,26 +123,20 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
       toast.warning('تحذير: المبلغ المحصل أقل من مصاريف الشحن!');
     }
     const partialDelivery = Math.max(0, collected - shipping);
-    updateStatus.mutate({
-      id: partialDialog.diaryOrderId,
-      status: 'تسليم جزئي',
-      partial: partialDelivery,
-    });
+    updateStatus.mutate({ id: partialDialog.diaryOrderId, status: 'تسليم جزئي', partial: partialDelivery });
     setPartialDialog(null);
   };
 
-  // Row calculation - uses manual values if set, otherwise auto-calculated from status
   const calcRow = (dOrder: any) => {
     const price = dOrder.orders?.price || 0;
     const status = dOrder.status_inside_diary;
     const partial = dOrder.partial_amount || 0;
-    const manualPickup = Number((dOrder as any).manual_pickup) || 0;
-    const manualArrived = Number((dOrder as any).manual_arrived) || 0;
-    const manualShippingDiff = Number((dOrder as any).manual_shipping_diff) || 0;
-    const manualDeliveryCommission = Number((dOrder as any).manual_delivery_commission) || 0;
-    const manualRejectNoShip = Number((dOrder as any).manual_reject_no_ship) || 0;
-    const manualReturnPenalty = Number((dOrder as any).manual_return_penalty) || 0;
-    const manualReturnStatus = (dOrder as any).manual_return_status || '';
+    const manualPickup = Number(dOrder.manual_pickup) || 0;
+    const manualShippingDiff = Number(dOrder.manual_shipping_diff) || 0;
+    const manualDeliveryCommission = Number(dOrder.manual_delivery_commission) || 0;
+    const manualRejectNoShip = Number(dOrder.manual_reject_no_ship) || 0;
+    const manualReturnPenalty = Number(dOrder.manual_return_penalty) || 0;
+    const manualReturnStatus = dOrder.manual_return_status || '';
 
     return {
       price,
@@ -125,24 +149,17 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
       refuseNoShipping: manualRejectNoShip || (status === 'رفض دون شحن' ? price : 0),
       returnPenalty: manualReturnPenalty || (status === 'غرامة مرتجع' ? price : 0),
       pickup: manualPickup,
-      arrived: manualArrived,
       returnStatus: manualReturnStatus || (RETURN_STATUSES.includes(status) || status === 'تسليم جزئي' ? status : ''),
     };
   };
 
-  // Filter
   const filteredOrders = diaryOrders.filter((dOrder: any) => {
     if (!searchTerm) return true;
     const o = dOrder.orders;
     const term = searchTerm.toLowerCase();
-    return (
-      o?.customer_name?.toLowerCase().includes(term) ||
-      o?.barcode?.toLowerCase().includes(term) ||
-      o?.customer_code?.toLowerCase().includes(term)
-    );
+    return o?.customer_name?.toLowerCase().includes(term) || o?.barcode?.toLowerCase().includes(term) || o?.customer_code?.toLowerCase().includes(term);
   });
 
-  // Totals
   const totals = filteredOrders.reduce(
     (acc: any, dOrder: any) => {
       const row = calcRow(dOrder);
@@ -156,10 +173,24 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
       acc.refuseNoShipping += row.refuseNoShipping;
       acc.returnPenalty += row.returnPenalty;
       acc.pickup += row.pickup;
-      acc.arrived += row.arrived;
       return acc;
     },
-    { price: 0, executed: 0, postponed: 0, returned: 0, partial: 0, shippingDiff: 0, transferDelivery: 0, refuseNoShipping: 0, returnPenalty: 0, pickup: 0, arrived: 0 }
+    { price: 0, executed: 0, postponed: 0, returned: 0, partial: 0, shippingDiff: 0, transferDelivery: 0, refuseNoShipping: 0, returnPenalty: 0, pickup: 0 }
+  );
+
+  const renderManualInput = (dOrder: any, field: string, dbValue: any, width = 'w-16', isText = false) => (
+    <Input
+      type={isText ? 'text' : 'number'}
+      className={`${width} h-7 text-xs p-1`}
+      value={getLocalValue(dOrder.id, field, dbValue)}
+      onChange={(e) => setLocalValue(dOrder.id, field, e.target.value)}
+      onBlur={() => {
+        const val = localFields[dOrder.id]?.[field];
+        if (val !== undefined) saveManualField(dOrder.id, field, val);
+      }}
+      disabled={diary.lock_status_updates}
+      placeholder={isText ? '-' : '0'}
+    />
   );
 
   return (
@@ -187,7 +218,6 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
               <TableHead className="text-right">مرتجع</TableHead>
               <TableHead className="text-right">تسليم جزئي</TableHead>
               <TableHead className="text-right">بيك اب</TableHead>
-              <TableHead className="text-right">الواصل</TableHead>
               <TableHead className="text-right">فرق شحن</TableHead>
               <TableHead className="text-right">عمولة التسليم</TableHead>
               <TableHead className="text-right">رفض دون شحن</TableHead>
@@ -200,7 +230,7 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
           <TableBody>
             {filteredOrders.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={18} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={17} className="text-center py-8 text-muted-foreground">
                   لا توجد أوردرات في هذه اليومية
                 </TableCell>
               </TableRow>
@@ -216,8 +246,12 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
                       <Input
                         className="w-8 h-7 text-center p-0 text-xs"
                         maxLength={1}
-                        value={dOrder.n_column || ''}
-                        onChange={(e) => updateNColumn.mutate({ id: dOrder.id, value: e.target.value })}
+                        value={getLocalValue(dOrder.id, 'n_column', dOrder.n_column)}
+                        onChange={(e) => setLocalValue(dOrder.id, 'n_column', e.target.value)}
+                        onBlur={() => {
+                          const val = localFields[dOrder.id]?.n_column;
+                          if (val !== undefined) updateNColumn.mutate({ id: dOrder.id, value: val });
+                        }}
                         disabled={diary.lock_status_updates}
                       />
                     </TableCell>
@@ -227,97 +261,25 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
                     <TableCell className="text-sm text-yellow-600 font-medium">{row.postponed || ''}</TableCell>
                     <TableCell className="text-sm text-red-600 font-medium">{row.returned || ''}</TableCell>
                     <TableCell className="text-sm text-blue-600 font-medium">{row.partial || ''}</TableCell>
-                    {/* Manual: pickup */}
-                    <TableCell>
-                      <Input
-                        type="number"
-                        className="w-16 h-7 text-xs p-1"
-                        value={(dOrder as any).manual_pickup || ''}
-                        onChange={(e) => updateManualField.mutate({ id: dOrder.id, field: 'manual_pickup', value: parseFloat(e.target.value) || 0 })}
-                        disabled={diary.lock_status_updates}
-                        placeholder="0"
-                      />
-                    </TableCell>
-                    {/* Manual: arrived */}
-                    <TableCell>
-                      <Input
-                        type="number"
-                        className="w-16 h-7 text-xs p-1"
-                        value={(dOrder as any).manual_arrived || ''}
-                        onChange={(e) => updateManualField.mutate({ id: dOrder.id, field: 'manual_arrived', value: parseFloat(e.target.value) || 0 })}
-                        disabled={diary.lock_status_updates}
-                        placeholder="0"
-                      />
-                    </TableCell>
-                    {/* Manual: shipping diff */}
-                    <TableCell>
-                      <Input
-                        type="number"
-                        className="w-16 h-7 text-xs p-1"
-                        value={(dOrder as any).manual_shipping_diff || ''}
-                        onChange={(e) => updateManualField.mutate({ id: dOrder.id, field: 'manual_shipping_diff', value: parseFloat(e.target.value) || 0 })}
-                        disabled={diary.lock_status_updates}
-                        placeholder="0"
-                      />
-                    </TableCell>
-                    {/* Manual: delivery commission */}
-                    <TableCell>
-                      <Input
-                        type="number"
-                        className="w-16 h-7 text-xs p-1"
-                        value={(dOrder as any).manual_delivery_commission || ''}
-                        onChange={(e) => updateManualField.mutate({ id: dOrder.id, field: 'manual_delivery_commission', value: parseFloat(e.target.value) || 0 })}
-                        disabled={diary.lock_status_updates}
-                        placeholder="0"
-                      />
-                    </TableCell>
-                    {/* Manual: reject no ship */}
-                    <TableCell>
-                      <Input
-                        type="number"
-                        className="w-16 h-7 text-xs p-1"
-                        value={(dOrder as any).manual_reject_no_ship || ''}
-                        onChange={(e) => updateManualField.mutate({ id: dOrder.id, field: 'manual_reject_no_ship', value: parseFloat(e.target.value) || 0 })}
-                        disabled={diary.lock_status_updates}
-                        placeholder="0"
-                      />
-                    </TableCell>
-                    {/* Manual: return penalty */}
-                    <TableCell>
-                      <Input
-                        type="number"
-                        className="w-16 h-7 text-xs p-1"
-                        value={(dOrder as any).manual_return_penalty || ''}
-                        onChange={(e) => updateManualField.mutate({ id: dOrder.id, field: 'manual_return_penalty', value: parseFloat(e.target.value) || 0 })}
-                        disabled={diary.lock_status_updates}
-                        placeholder="0"
-                      />
-                    </TableCell>
+                    {renderManualInput(dOrder, 'manual_pickup', dOrder.manual_pickup)}
+                    {renderManualInput(dOrder, 'manual_shipping_diff', dOrder.manual_shipping_diff)}
+                    {renderManualInput(dOrder, 'manual_delivery_commission', dOrder.manual_delivery_commission)}
+                    {renderManualInput(dOrder, 'manual_reject_no_ship', dOrder.manual_reject_no_ship)}
+                    {renderManualInput(dOrder, 'manual_return_penalty', dOrder.manual_return_penalty)}
                     <TableCell>
                       <Select
                         value={dOrder.status_inside_diary}
                         onValueChange={(v) => handleStatusChange(dOrder, v)}
                         disabled={diary.lock_status_updates}
                       >
-                        <SelectTrigger className="h-7 text-xs w-28">
-                          <SelectValue />
-                        </SelectTrigger>
+                        <SelectTrigger className="h-7 text-xs w-28"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          {DIARY_STATUSES.map((s) => (
-                            <SelectItem key={s} value={s}>{s}</SelectItem>
-                          ))}
+                          {DIARY_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    {/* Manual return status */}
                     <TableCell>
-                      <Input
-                        className="w-20 h-7 text-xs p-1"
-                        value={(dOrder as any).manual_return_status || row.returnStatus || ''}
-                        onChange={(e) => updateManualField.mutate({ id: dOrder.id, field: 'manual_return_status', value: e.target.value })}
-                        disabled={diary.lock_status_updates}
-                        placeholder="-"
-                      />
+                      {renderManualInput(dOrder, 'manual_return_status', dOrder.manual_return_status || row.returnStatus, 'w-20', true)}
                     </TableCell>
                     <TableCell>
                       <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onCopyOrder(dOrder.order_id)}>
@@ -339,7 +301,6 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
                 <TableCell className="text-red-600">{totals.returned}</TableCell>
                 <TableCell className="text-blue-600">{totals.partial}</TableCell>
                 <TableCell>{totals.pickup}</TableCell>
-                <TableCell>{totals.arrived}</TableCell>
                 <TableCell className="text-orange-600">{totals.shippingDiff}</TableCell>
                 <TableCell className="text-purple-600">{totals.transferDelivery}</TableCell>
                 <TableCell className="text-gray-600">{totals.refuseNoShipping}</TableCell>
@@ -353,7 +314,7 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
 
       {/* Summary Cards */}
       {filteredOrders.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 mt-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
           <div className="bg-muted/50 rounded-lg p-3 text-center">
             <p className="text-xs text-muted-foreground">عدد الأوردرات</p>
             <p className="text-lg font-bold">{filteredOrders.length}</p>
@@ -370,14 +331,10 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
             <p className="text-xs text-muted-foreground">إجمالي المرتجع</p>
             <p className="text-lg font-bold text-red-600">{totals.returned}</p>
           </div>
-          <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-3 text-center">
-            <p className="text-xs text-muted-foreground">تسليم جزئي</p>
-            <p className="text-lg font-bold text-blue-600">{totals.partial}</p>
-          </div>
         </div>
       )}
 
-      {/* Manual Financial Summary */}
+      {/* Manual Financial Summary - PERSISTED */}
       {filteredOrders.length > 0 && (
         <div className="mt-4 border rounded-lg p-4 space-y-4 bg-muted/20">
           <h3 className="font-bold text-foreground">الملخص المالي</h3>
@@ -386,7 +343,11 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium">الواصل نقدي</label>
-                <Button size="sm" variant="outline" onClick={() => setCashArrivedEntries(prev => [...prev, ''])}>
+                <Button size="sm" variant="outline" onClick={() => {
+                  const updated = [...cashArrivedEntries, ''];
+                  setCashArrivedEntries(updated);
+                  saveFinancialSummary('cash_arrived_entries', updated);
+                }}>
                   <Plus className="h-3 w-3 ml-1" /> إضافة
                 </Button>
               </div>
@@ -400,11 +361,16 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
                       updated[idx] = e.target.value;
                       setCashArrivedEntries(updated);
                     }}
+                    onBlur={() => saveFinancialSummary('cash_arrived_entries', cashArrivedEntries)}
                     className="h-8 text-sm"
                     placeholder={`واصل نقدي ${idx + 1}`}
                   />
                   {cashArrivedEntries.length > 1 && (
-                    <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => setCashArrivedEntries(prev => prev.filter((_, i) => i !== idx))}>×</Button>
+                    <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => {
+                      const updated = cashArrivedEntries.filter((_, i) => i !== idx);
+                      setCashArrivedEntries(updated);
+                      saveFinancialSummary('cash_arrived_entries', updated);
+                    }}>×</Button>
                   )}
                 </div>
               ))}
@@ -421,7 +387,6 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
                 const previousDueNum = parseFloat(previousDue) || 0;
                 const diaryDiff = totals.price - totalCashArrived;
                 const finalDue = (diaryDiff + previousDueNum) - (balanceNum + totals.returned + totals.shippingDiff + totals.transferDelivery + totals.refuseNoShipping + totals.returnPenalty);
-                const finalWithPostponed = finalDue + totals.postponed;
 
                 return (
                   <>
@@ -431,29 +396,19 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
                     </div>
                     <div className="flex items-center gap-2">
                       <label className="text-sm w-36">الرصيد:</label>
-                      <Input type="number" value={balance} onChange={e => setBalance(e.target.value)} className="h-8 text-sm w-36" placeholder="0" />
+                      <Input type="number" value={balance} onChange={e => setBalance(e.target.value)}
+                        onBlur={() => saveFinancialSummary('balance', parseFloat(balance) || 0)}
+                        className="h-8 text-sm w-36" placeholder="0" />
                     </div>
                     <div className="flex items-center gap-2">
                       <label className="text-sm w-36">مستحق سابق للعميل:</label>
-                      <Input type="number" value={previousDue} onChange={e => setPreviousDue(e.target.value)} className="h-8 text-sm w-36" placeholder="0" />
+                      <Input type="number" value={previousDue} onChange={e => setPreviousDue(e.target.value)}
+                        onBlur={() => saveFinancialSummary('previous_due', parseFloat(previousDue) || 0)}
+                        className="h-8 text-sm w-36" placeholder="0" />
                     </div>
                     <div className="border-t border-border pt-2 space-y-1 text-sm">
                       <div>فرق اليومية = {totals.price} - {totalCashArrived} = <strong>{diaryDiff}</strong></div>
-                      <div>المستحق = ({diaryDiff} + {previousDueNum}) - ({balanceNum} + {totals.returned} + {totals.shippingDiff} + {totals.transferDelivery} + {totals.refuseNoShipping} + {totals.returnPenalty}) = <strong className="text-primary">{finalDue}</strong></div>
-                    </div>
-                    <div className="border-t border-border pt-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-bold">المستحق بالنزول = {finalDue} + {totals.postponed} = <span className="text-lg text-primary">{finalWithPostponed}</span></span>
-                        <Button size="sm" variant="ghost" onClick={() => setShowFinalDue(!showFinalDue)}>
-                          {showFinalDue ? 'إخفاء' : 'عرض'}
-                        </Button>
-                      </div>
-                      {showFinalDue && (
-                        <div className="mt-2 p-3 bg-primary/10 rounded-lg text-center">
-                          <p className="text-xs text-muted-foreground">المستحق النهائي بالنزول</p>
-                          <p className="text-2xl font-bold text-primary">{finalWithPostponed}</p>
-                        </div>
-                      )}
+                      <div>المستحق = ({diaryDiff} + {previousDueNum}) - ({balanceNum} + {totals.returned} + {totals.shippingDiff} + {totals.transferDelivery} + {totals.refuseNoShipping} + {totals.returnPenalty}) = <strong className="text-primary text-lg">{finalDue}</strong></div>
                     </div>
                   </>
                 );
@@ -466,9 +421,7 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
       {/* Partial Delivery Dialog */}
       <Dialog open={!!partialDialog?.open} onOpenChange={(o) => !o && setPartialDialog(null)}>
         <DialogContent dir="rtl">
-          <DialogHeader>
-            <DialogTitle>تسليم جزئي</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>تسليم جزئي</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div className="bg-muted/50 p-3 rounded text-sm space-y-1">
               <div>سعر الأوردر: <strong>{partialDialog?.order?.price}</strong></div>
@@ -476,21 +429,12 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
             </div>
             <div>
               <label className="text-sm font-medium">المبلغ المحصل من العميل</label>
-              <Input
-                type="number"
-                value={collectedAmount}
-                onChange={(e) => setCollectedAmount(e.target.value)}
-                placeholder="أدخل المبلغ المحصل"
-                className="mt-1"
-              />
+              <Input type="number" value={collectedAmount} onChange={(e) => setCollectedAmount(e.target.value)} placeholder="أدخل المبلغ المحصل" className="mt-1" />
             </div>
             {collectedAmount && parseFloat(collectedAmount) > 0 && (
               <div className="text-sm space-y-1 bg-blue-50 dark:bg-blue-950/20 p-3 rounded border">
                 <div>تسليم جزئي = <strong>{Math.max(0, parseFloat(collectedAmount) - (partialDialog?.order?.delivery_price || 0))}</strong></div>
                 <div>مرتجع = <strong>{(partialDialog?.order?.price || 0) - Math.max(0, parseFloat(collectedAmount) - (partialDialog?.order?.delivery_price || 0))}</strong></div>
-                {parseFloat(collectedAmount) < (partialDialog?.order?.delivery_price || 0) && (
-                  <div className="text-destructive font-medium mt-2">⚠️ المبلغ المحصل أقل من مصاريف الشحن!</div>
-                )}
               </div>
             )}
           </div>

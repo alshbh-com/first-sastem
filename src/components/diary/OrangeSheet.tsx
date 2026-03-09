@@ -33,6 +33,24 @@ export default function OrangeSheet({ diary, diaryOrders, onCopyOrder }: Props) 
   const [partialDialog, setPartialDialog] = useState<{ open: boolean; diaryOrderId: string; order: any } | null>(null);
   const [collectedAmount, setCollectedAmount] = useState('');
 
+  // Local state for editable fields
+  const [localFields, setLocalFields] = useState<Record<string, Record<string, string>>>({});
+
+  const getLocalValue = (id: string, field: string, dbValue: any) => {
+    if (localFields[id]?.[field] !== undefined) return localFields[id][field];
+    return dbValue != null && dbValue !== 0 ? String(dbValue) : '';
+  };
+
+  const setLocalValue = (id: string, field: string, value: string) => {
+    setLocalFields(prev => ({ ...prev, [id]: { ...(prev[id] || {}), [field]: value } }));
+  };
+
+  const saveField = async (id: string, field: string, value: string) => {
+    const numVal = parseFloat(value) || 0;
+    await supabase.from('diary_orders').update({ [field]: numVal } as any).eq('id', id);
+    qc.invalidateQueries({ queryKey: ['diary-orders', diary.id] });
+  };
+
   const { data: searchResults = [] } = useQuery({
     queryKey: ['search-orders-orange', searchBarcode],
     queryFn: async () => {
@@ -107,7 +125,6 @@ export default function OrangeSheet({ diary, diaryOrders, onCopyOrder }: Props) 
     setPartialDialog(null);
   };
 
-  // Filter
   const filtered = diaryOrders.filter((dOrder: any) => {
     if (!filterTerm) return true;
     const o = dOrder.orders;
@@ -115,15 +132,38 @@ export default function OrangeSheet({ diary, diaryOrders, onCopyOrder }: Props) 
     return o?.customer_name?.toLowerCase().includes(t) || o?.barcode?.toLowerCase().includes(t) || o?.address?.toLowerCase().includes(t);
   });
 
-  // Totals
-  const totalAmount = filtered.reduce((s: number, d: any) => s + (d.orders?.price || 0) + (d.orders?.delivery_price || 0), 0);
-  const totalShipping = filtered.reduce((s: number, d: any) => s + (d.orders?.delivery_price || 0), 0);
-  const totalPickup = filtered.reduce((s: number, d: any) => s + (Number(d.orders?.shipping_paid) || 0), 0);
-  const totalDelivered = filtered.filter((d: any) => d.status_inside_diary === 'تم التسليم')
-    .reduce((s: number, d: any) => s + (d.orders?.price || 0) + (d.orders?.delivery_price || 0), 0);
-  const totalPartialDelivered = filtered.filter((d: any) => d.status_inside_diary === 'تسليم جزئي')
-    .reduce((s: number, d: any) => s + (d.partial_amount || 0) + (d.orders?.delivery_price || 0), 0);
-  const totalArrived = totalDelivered + totalPartialDelivered;
+  // Use manual overrides if available
+  const getAmount = (dOrder: any) => {
+    const manual = Number((dOrder as any).manual_total_amount);
+    if (manual > 0) return manual;
+    return (dOrder.orders?.price || 0) + (dOrder.orders?.delivery_price || 0);
+  };
+
+  const getShipping = (dOrder: any) => {
+    const manual = Number((dOrder as any).manual_shipping_amount);
+    if (manual > 0) return manual;
+    return dOrder.orders?.delivery_price || 0;
+  };
+
+  const getPickup = (dOrder: any) => {
+    const manual = Number(dOrder.manual_pickup);
+    if (manual > 0) return manual;
+    return Number(dOrder.orders?.shipping_paid) || 0;
+  };
+
+  const getArrived = (dOrder: any) => {
+    const manual = Number(dOrder.manual_arrived);
+    if (manual > 0) return manual;
+    const total = getAmount(dOrder);
+    if (dOrder.status_inside_diary === 'تم التسليم') return total;
+    if (dOrder.status_inside_diary === 'تسليم جزئي') return (dOrder.partial_amount || 0) + getShipping(dOrder);
+    return 0;
+  };
+
+  const totalAmount = filtered.reduce((s: number, d: any) => s + getAmount(d), 0);
+  const totalShipping = filtered.reduce((s: number, d: any) => s + getShipping(d), 0);
+  const totalPickup = filtered.reduce((s: number, d: any) => s + getPickup(d), 0);
+  const totalArrived = filtered.reduce((s: number, d: any) => s + getArrived(d), 0);
   const totalDue = totalAmount - (totalShipping + totalArrived + totalPickup);
 
   return (
@@ -134,12 +174,7 @@ export default function OrangeSheet({ diary, diaryOrders, onCopyOrder }: Props) 
           <span className="text-sm text-muted-foreground">({filtered.length} أوردر)</span>
         </div>
         <div className="flex gap-2">
-          <Input
-            placeholder="بحث..."
-            value={filterTerm}
-            onChange={(e) => setFilterTerm(e.target.value)}
-            className="w-48 h-8 text-sm"
-          />
+          <Input placeholder="بحث..." value={filterTerm} onChange={(e) => setFilterTerm(e.target.value)} className="w-48 h-8 text-sm" />
           <Button size="sm" onClick={() => setAddDialogOpen(true)} disabled={diary.prevent_new_orders || diary.is_closed}>
             <Plus className="h-4 w-4 ml-1" /> إضافة أوردر
           </Button>
@@ -172,10 +207,8 @@ export default function OrangeSheet({ diary, diaryOrders, onCopyOrder }: Props) 
             ) : (
               filtered.map((dOrder: any, idx: number) => {
                 const order = dOrder.orders;
-                const total = (order?.price || 0) + (order?.delivery_price || 0);
                 const isReturn = RETURN_STATUSES.includes(dOrder.status_inside_diary) || dOrder.status_inside_diary === 'تسليم جزئي';
-                const deliveredAmount = dOrder.status_inside_diary === 'تم التسليم' ? total :
-                  dOrder.status_inside_diary === 'تسليم جزئي' ? (dOrder.partial_amount || 0) + (order?.delivery_price || 0) : 0;
+                const arrivedVal = getArrived(dOrder);
 
                 return (
                   <TableRow key={dOrder.id}>
@@ -184,23 +217,67 @@ export default function OrangeSheet({ diary, diaryOrders, onCopyOrder }: Props) 
                     <TableCell className="text-sm font-medium">{order?.customer_name}</TableCell>
                     <TableCell className="text-sm text-muted-foreground max-w-[150px] truncate">{order?.address}</TableCell>
                     <TableCell className="text-sm text-center">{order?.quantity}</TableCell>
-                    <TableCell className="text-sm font-medium">{total}</TableCell>
-                    <TableCell className="text-sm">{order?.delivery_price}</TableCell>
-                    <TableCell className="text-sm">{order?.shipping_paid || 0}</TableCell>
-                    <TableCell className="text-sm font-medium text-green-600">{deliveredAmount || ''}</TableCell>
+                    {/* Editable: الإجمالي */}
+                    <TableCell>
+                      <Input
+                        type="number"
+                        className="w-20 h-7 text-xs p-1"
+                        value={getLocalValue(dOrder.id, 'manual_total_amount', (dOrder as any).manual_total_amount || ((order?.price || 0) + (order?.delivery_price || 0)))}
+                        onChange={(e) => setLocalValue(dOrder.id, 'manual_total_amount', e.target.value)}
+                        onBlur={() => {
+                          const val = localFields[dOrder.id]?.manual_total_amount;
+                          if (val !== undefined) saveField(dOrder.id, 'manual_total_amount', val);
+                        }}
+                      />
+                    </TableCell>
+                    {/* Editable: الشحن */}
+                    <TableCell>
+                      <Input
+                        type="number"
+                        className="w-20 h-7 text-xs p-1"
+                        value={getLocalValue(dOrder.id, 'manual_shipping_amount', (dOrder as any).manual_shipping_amount || (order?.delivery_price || 0))}
+                        onChange={(e) => setLocalValue(dOrder.id, 'manual_shipping_amount', e.target.value)}
+                        onBlur={() => {
+                          const val = localFields[dOrder.id]?.manual_shipping_amount;
+                          if (val !== undefined) saveField(dOrder.id, 'manual_shipping_amount', val);
+                        }}
+                      />
+                    </TableCell>
+                    {/* Editable: بيك اب */}
+                    <TableCell>
+                      <Input
+                        type="number"
+                        className="w-16 h-7 text-xs p-1"
+                        value={getLocalValue(dOrder.id, 'manual_pickup', dOrder.manual_pickup || (Number(order?.shipping_paid) || 0))}
+                        onChange={(e) => setLocalValue(dOrder.id, 'manual_pickup', e.target.value)}
+                        onBlur={() => {
+                          const val = localFields[dOrder.id]?.manual_pickup;
+                          if (val !== undefined) saveField(dOrder.id, 'manual_pickup', val);
+                        }}
+                      />
+                    </TableCell>
+                    {/* Editable: الواصل */}
+                    <TableCell>
+                      <Input
+                        type="number"
+                        className="w-20 h-7 text-xs p-1 text-green-600 font-medium"
+                        value={getLocalValue(dOrder.id, 'manual_arrived', dOrder.manual_arrived || arrivedVal)}
+                        onChange={(e) => setLocalValue(dOrder.id, 'manual_arrived', e.target.value)}
+                        onBlur={() => {
+                          const val = localFields[dOrder.id]?.manual_arrived;
+                          if (val !== undefined) saveField(dOrder.id, 'manual_arrived', val);
+                        }}
+                      />
+                    </TableCell>
                     <TableCell>
                       <Select
                         value={dOrder.status_inside_diary}
                         onValueChange={(v) => handleStatusChange(dOrder, v)}
                         disabled={diary.lock_status_updates}
                       >
-                        <SelectTrigger className="h-7 text-xs w-28">
-                          <SelectValue />
-                        </SelectTrigger>
+                        <SelectTrigger className="h-7 text-xs w-28"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          {DIARY_STATUSES.map((s) => (
-                            <SelectItem key={s} value={s}>{s}</SelectItem>
-                          ))}
+                          {DIARY_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </TableCell>

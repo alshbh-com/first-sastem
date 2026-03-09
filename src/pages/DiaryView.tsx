@@ -20,6 +20,7 @@ export default function DiaryView() {
   const qc = useQueryClient();
   const [copyDialogOpen, setCopyDialogOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [activeSheet, setActiveSheet] = useState<'financial' | 'orange'>('financial');
 
   const { data: diary, isLoading: diaryLoading } = useQuery({
     queryKey: ['diary', diaryId],
@@ -155,7 +156,7 @@ export default function DiaryView() {
           </Button>
 
           {/* Export */}
-          <Button size="sm" variant="outline" onClick={() => exportDiaryToPDF(diary, diaryOrders, office?.name || '')}>
+          <Button size="sm" variant="outline" onClick={() => exportDiaryToPDF(diary, diaryOrders, office?.name || '', activeSheet)}>
             <Download className="h-4 w-4 ml-1" /> PDF
           </Button>
           <Button size="sm" variant="outline" onClick={() => exportDiaryToExcel(diary, diaryOrders, office?.name || '')}>
@@ -178,7 +179,7 @@ export default function DiaryView() {
       </div>
 
       {/* Sheets */}
-      <Tabs defaultValue="financial" dir="rtl">
+      <Tabs value={activeSheet} onValueChange={(v) => setActiveSheet(v as 'financial' | 'orange')} dir="rtl">
         <TabsList>
           <TabsTrigger value="financial">الشيت المالي</TabsTrigger>
           <TabsTrigger value="orange">الشيت البرتقالي</TabsTrigger>

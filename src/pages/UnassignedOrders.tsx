@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { UserPlus, UserMinus, Trash2, Lock } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { UserPlus, UserMinus, Trash2, Lock, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activityLogger';
@@ -19,6 +20,7 @@ export default function UnassignedOrders() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [assignCourier, setAssignCourier] = useState('');
   const [filterCourier, setFilterCourier] = useState('unassigned');
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     loadOrders();
@@ -44,9 +46,23 @@ export default function UnassignedOrders() {
   };
 
   const filtered = orders.filter(o => {
-    if (filterCourier === 'unassigned') return !o.courier_id;
-    if (filterCourier === 'all') return true;
-    return o.courier_id === filterCourier;
+    const matchCourier = filterCourier === 'all' ? true :
+      filterCourier === 'unassigned' ? !o.courier_id :
+      o.courier_id === filterCourier;
+    
+    if (!matchCourier) return false;
+    if (!search) return true;
+    
+    const term = search.toLowerCase();
+    return (
+      o.tracking_id?.toLowerCase().includes(term) ||
+      o.customer_name?.toLowerCase().includes(term) ||
+      o.customer_phone?.includes(search) ||
+      o.barcode?.includes(search) ||
+      o.customer_code?.toLowerCase().includes(term) ||
+      o.address?.toLowerCase().includes(term) ||
+      o.product_name?.toLowerCase().includes(term)
+    );
   });
 
   const toggleSelect = (id: string) => {
@@ -62,7 +78,6 @@ export default function UnassignedOrders() {
     const courierStatus = statuses.find(s => s.name === 'قيد التوصيل');
     const updateData: any = { courier_id: assignCourier };
     if (courierStatus) updateData.status_id = courierStatus.id;
-    
     const { error } = await supabase.from('orders').update(updateData).in('id', Array.from(selected));
     if (error) { toast.error(error.message); return; }
     logActivity('تعيين أوردرات لمندوب من جميع الأوردرات', { count: selected.size, courier_id: assignCourier });
@@ -73,9 +88,7 @@ export default function UnassignedOrders() {
 
   const unassignCourier = async () => {
     if (selected.size === 0) { toast.error('اختر أوردرات أولاً'); return; }
-    const updateData: any = { courier_id: null, status_id: null };
-    
-    const { error } = await supabase.from('orders').update(updateData).in('id', Array.from(selected));
+    const { error } = await supabase.from('orders').update({ courier_id: null, status_id: null } as any).in('id', Array.from(selected));
     if (error) { toast.error(error.message); return; }
     logActivity('إلغاء تعيين أوردرات من جميع الأوردرات', { count: selected.size });
     toast.success(`تم إلغاء تعيين ${selected.size} أوردر`);
@@ -114,6 +127,10 @@ export default function UnassignedOrders() {
       <h1 className="text-xl sm:text-2xl font-bold">جميع الأوردرات الغير مقفلة</h1>
 
       <div className="flex flex-wrap gap-2 items-end">
+        <div className="relative flex-1 min-w-[180px] max-w-xs">
+          <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input placeholder="بحث بالباركود أو الاسم أو الهاتف أو العنوان..." value={search} onChange={e => setSearch(e.target.value)} className="pr-9 bg-secondary border-border" />
+        </div>
         <Select value={filterCourier} onValueChange={setFilterCourier}>
           <SelectTrigger className="w-44 bg-secondary border-border"><SelectValue placeholder="فلتر" /></SelectTrigger>
           <SelectContent>

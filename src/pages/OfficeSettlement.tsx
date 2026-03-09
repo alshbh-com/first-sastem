@@ -5,7 +5,10 @@ import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, Table
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Download, Share2, Lock, Unlock, Ban, Check } from 'lucide-react';
+import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
+import { format } from 'date-fns';
 
 interface SettlementRow {
   id: string;
@@ -35,6 +38,11 @@ export default function OfficeSettlement() {
   const [offices, setOffices] = useState<any[]>([]);
   const [statuses, setStatuses] = useState<any[]>([]);
   const [selectedOffice, setSelectedOffice] = useState<string>('all');
+
+  // Diary-like controls
+  const [isLocked, setIsLocked] = useState(false);
+  const [isClosed, setIsClosed] = useState(false);
+  const [preventAdd, setPreventAdd] = useState(false);
 
   useEffect(() => {
     supabase.from('offices').select('id, name').order('name').then(({ data }) => setOffices(data || []));
@@ -68,14 +76,18 @@ export default function OfficeSettlement() {
     }
   }, [selectedOffice]);
 
-  const addRow = () => setRows(prev => [...prev, newRow()]);
+  const addRow = () => {
+    if (preventAdd) { toast.error('الإضافة ممنوعة'); return; }
+    setRows(prev => [...prev, newRow()]);
+  };
 
   const removeRow = (id: string) => {
-    if (rows.length <= 1) return;
+    if (rows.length <= 1 || isLocked) return;
     setRows(prev => prev.filter(r => r.id !== id));
   };
 
   const updateRow = (id: string, field: keyof SettlementRow, value: string) => {
+    if (isLocked) return;
     setRows(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r));
   };
 
@@ -83,6 +95,7 @@ export default function OfficeSettlement() {
     r.code.trim() !== '' || r.name.trim() !== '' || r.status_id || r.amount.trim() !== '' || r.shipping.trim() !== '' || r.arrived.trim() !== ''
   );
 
+  const officeName = offices.find(o => o.id === selectedOffice)?.name || 'تقفيلة';
   const pickupUnits = usedRows.length;
   const totalPieces = rows.reduce((sum, r) => sum + (parseFloat(r.pieces) || 0), 0);
   const totalAmount = rows.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
@@ -93,26 +106,112 @@ export default function OfficeSettlement() {
   const pickupTotal = pickupUnits * pickupRateNum;
   const due = totalAmount - (totalShipping + totalArrived + pickupTotal);
 
+  const exportToPDF = () => {
+    const w = window.open('', '_blank');
+    if (!w) return;
+    const statusName = (sid: string) => statuses.find(s => s.id === sid)?.name || '-';
+    const tableRows = rows.map((r, i) => `<tr>
+      <td>${i + 1}</td><td>${r.code}</td><td>${r.name}</td><td>${statusName(r.status_id)}</td>
+      <td>${r.pieces}</td><td>${r.amount}</td><td>${r.shipping}</td><td>${r.arrived}</td>
+    </tr>`).join('');
+
+    w.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8">
+    <title>تقفيلة ${officeName}</title>
+    <style>
+      @page { size: A4 landscape; margin: 8mm; }
+      body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 11px; margin: 0; padding: 10px; }
+      .header { text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 10px; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border: 1px solid #333; padding: 4px 6px; text-align: right; font-size: 10px; }
+      th { background: #f0f0f0; font-weight: bold; }
+      .total-row { background: #e8f4e8; font-weight: bold; }
+      .summary { margin-top: 12px; border: 2px solid #000; padding: 8px; font-size: 12px; }
+    </style></head><body>
+    <div class="header">تقفيلة ${officeName} | ${format(new Date(), 'dd/MM/yyyy')}</div>
+    <table>
+      <thead><tr><th>#</th><th>الكود</th><th>الاسم</th><th>الحالة</th><th>القطع</th><th>المبلغ</th><th>الشحن</th><th>الواصل</th></tr></thead>
+      <tbody>${tableRows}
+        <tr class="total-row"><td colspan="4">الإجمالي (${pickupUnits} أوردر)</td><td>${totalPieces}</td><td>${totalAmount}</td><td>${totalShipping}</td><td>${totalArrived}</td></tr>
+      </tbody>
+    </table>
+    <div class="summary">
+      <div>البيك اب = ${pickupUnits} × ${pickupRateNum} = <strong>${pickupTotal}</strong></div>
+      <div>المستحق = ${totalAmount} - (${totalShipping} + ${totalArrived} + ${pickupTotal}) = <strong>${due}</strong></div>
+    </div>
+    </body></html>`);
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 500);
+  };
+
+  const exportToExcel = () => {
+    const statusName = (sid: string) => statuses.find(s => s.id === sid)?.name || '-';
+    const data = rows.map((r, i) => ({
+      '#': i + 1, 'الكود': r.code, 'الاسم': r.name, 'الحالة': statusName(r.status_id),
+      'القطع': r.pieces, 'المبلغ': r.amount, 'الشحن': r.shipping, 'الواصل': r.arrived,
+    }));
+    data.push({ '#': '' as any, 'الكود': '', 'الاسم': 'الإجمالي', 'الحالة': '', 'القطع': String(totalPieces), 'المبلغ': String(totalAmount), 'الشحن': String(totalShipping), 'الواصل': String(totalArrived) });
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'تقفيلة');
+    XLSX.writeFile(wb, `تقفيلة-${officeName}-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+  };
+
+  const shareWhatsApp = () => {
+    const statusName = (sid: string) => statuses.find(s => s.id === sid)?.name || '-';
+    let text = `📋 *تقفيلة ${officeName}*\n📅 ${format(new Date(), 'dd/MM/yyyy')}\n━━━━━━━━━━━━━━━━━━\n\n`;
+    rows.forEach((r, i) => {
+      if (r.name || r.code) text += `${i + 1}. ${r.name} | ${r.code} | ${statusName(r.status_id)} | ${r.amount} | شحن: ${r.shipping} | واصل: ${r.arrived}\n`;
+    });
+    text += `\n━━━━━━━━━━━━━━━━━━\n`;
+    text += `📊 *الإجمالي* (${pickupUnits} أوردر)\n`;
+    text += `💰 المبلغ: ${totalAmount} | الشحن: ${totalShipping} | الواصل: ${totalArrived}\n`;
+    text += `📦 البيك اب: ${pickupUnits} × ${pickupRateNum} = ${pickupTotal}\n`;
+    text += `✅ المستحق: ${due}\n`;
+    window.open(`https://web.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-xl sm:text-2xl font-bold">تقفيلة المكاتب</h1>
-        <div className="flex gap-2 items-center">
+        <div className="flex flex-wrap gap-2 items-center">
           <Select value={selectedOffice} onValueChange={setSelectedOffice}>
-            <SelectTrigger className="w-[200px] bg-secondary border-border">
-              <SelectValue placeholder="اختر مكتب..." />
-            </SelectTrigger>
+            <SelectTrigger className="w-[200px] bg-secondary border-border"><SelectValue placeholder="اختر مكتب..." /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">كل المكاتب</SelectItem>
-              {offices.map(o => (
-                <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
-              ))}
+              {offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Button size="sm" onClick={addRow}>
+          <Button size="sm" onClick={addRow} disabled={preventAdd}>
             <Plus className="h-4 w-4 ml-1" />إضافة صف
           </Button>
         </div>
+      </div>
+
+      {/* Controls toolbar */}
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" variant={isClosed ? 'default' : 'secondary'} onClick={() => setIsClosed(!isClosed)}>
+          {isClosed ? <Unlock className="h-4 w-4 ml-1" /> : <Lock className="h-4 w-4 ml-1" />}
+          {isClosed ? 'إعادة فتح' : 'قفل الشيت'}
+        </Button>
+        <Button size="sm" variant={isLocked ? 'destructive' : 'outline'} onClick={() => setIsLocked(!isLocked)}>
+          {isLocked ? <Unlock className="h-4 w-4 ml-1" /> : <Lock className="h-4 w-4 ml-1" />}
+          {isLocked ? 'إلغاء التجميد' : 'تجميد'}
+        </Button>
+        <Button size="sm" variant={preventAdd ? 'secondary' : 'outline'} onClick={() => setPreventAdd(!preventAdd)}>
+          {preventAdd ? <Check className="h-4 w-4 ml-1" /> : <Ban className="h-4 w-4 ml-1" />}
+          {preventAdd ? 'السماح بالإضافة' : 'منع الإضافة'}
+        </Button>
+        <Button size="sm" variant="outline" onClick={exportToPDF}>
+          <Download className="h-4 w-4 ml-1" /> PDF
+        </Button>
+        <Button size="sm" variant="outline" onClick={exportToExcel}>
+          <Download className="h-4 w-4 ml-1" /> Excel
+        </Button>
+        <Button size="sm" variant="outline" onClick={shareWhatsApp}>
+          <Share2 className="h-4 w-4 ml-1" /> واتساب
+        </Button>
       </div>
 
       <Card className="bg-card border-border">
@@ -137,13 +236,13 @@ export default function OfficeSettlement() {
                   <TableRow key={row.id} className="border-border">
                     <TableCell className="text-sm text-muted-foreground">{idx + 1}</TableCell>
                     <TableCell>
-                      <Input value={row.code} onChange={e => updateRow(row.id, 'code', e.target.value)} className="bg-secondary border-border h-8 w-28" placeholder="-" />
+                      <Input value={row.code} onChange={e => updateRow(row.id, 'code', e.target.value)} className="bg-secondary border-border h-8 w-28" placeholder="-" disabled={isLocked} />
                     </TableCell>
                     <TableCell>
-                      <Input value={row.name} onChange={e => updateRow(row.id, 'name', e.target.value)} className="bg-secondary border-border h-8 w-36" placeholder="-" />
+                      <Input value={row.name} onChange={e => updateRow(row.id, 'name', e.target.value)} className="bg-secondary border-border h-8 w-36" placeholder="-" disabled={isLocked} />
                     </TableCell>
                     <TableCell>
-                      <Select value={row.status_id} onValueChange={(v) => updateRow(row.id, 'status_id', v)}>
+                      <Select value={row.status_id} onValueChange={(v) => updateRow(row.id, 'status_id', v)} disabled={isLocked}>
                         <SelectTrigger className="bg-secondary border-border h-8 w-36"><SelectValue placeholder="الحالة" /></SelectTrigger>
                         <SelectContent>
                           {statuses.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
@@ -151,19 +250,19 @@ export default function OfficeSettlement() {
                       </Select>
                     </TableCell>
                     <TableCell>
-                      <Input type="number" value={row.pieces} onChange={e => updateRow(row.id, 'pieces', e.target.value)} className="bg-secondary border-border h-8 w-24" placeholder="0" />
+                      <Input type="number" value={row.pieces} onChange={e => updateRow(row.id, 'pieces', e.target.value)} className="bg-secondary border-border h-8 w-24" placeholder="0" disabled={isLocked} />
                     </TableCell>
                     <TableCell>
-                      <Input type="number" value={row.amount} onChange={e => updateRow(row.id, 'amount', e.target.value)} className="bg-secondary border-border h-8 w-32" placeholder="0" />
+                      <Input type="number" value={row.amount} onChange={e => updateRow(row.id, 'amount', e.target.value)} className="bg-secondary border-border h-8 w-32" placeholder="0" disabled={isLocked} />
                     </TableCell>
                     <TableCell>
-                      <Input type="number" value={row.shipping} onChange={e => updateRow(row.id, 'shipping', e.target.value)} className="bg-secondary border-border h-8 w-28" placeholder="0" />
+                      <Input type="number" value={row.shipping} onChange={e => updateRow(row.id, 'shipping', e.target.value)} className="bg-secondary border-border h-8 w-28" placeholder="0" disabled={isLocked} />
                     </TableCell>
                     <TableCell>
-                      <Input type="number" value={row.arrived} onChange={e => updateRow(row.id, 'arrived', e.target.value)} className="bg-secondary border-border h-8 w-28" placeholder="0" />
+                      <Input type="number" value={row.arrived} onChange={e => updateRow(row.id, 'arrived', e.target.value)} className="bg-secondary border-border h-8 w-28" placeholder="0" disabled={isLocked} />
                     </TableCell>
                     <TableCell>
-                      <Button size="icon" variant="ghost" className="text-destructive h-8 w-8" onClick={() => removeRow(row.id)} disabled={rows.length <= 1}>
+                      <Button size="icon" variant="ghost" className="text-destructive h-8 w-8" onClick={() => removeRow(row.id)} disabled={rows.length <= 1 || isLocked}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </TableCell>
@@ -193,10 +292,10 @@ export default function OfficeSettlement() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">رقم البيك اب</p>
-              <Input type="number" value={pickupRate} onChange={e => setPickupRate(e.target.value)} className="bg-secondary border-border" placeholder="0" />
+              <Input type="number" value={pickupRate} onChange={e => setPickupRate(e.target.value)} className="bg-secondary border-border" placeholder="0" disabled={isLocked} />
             </div>
             <div className="text-sm font-medium">البيك اب = {pickupUnits} × {pickupRateNum} = <span className="font-bold">{pickupTotal}</span></div>
-            <div className="text-sm font-medium">المستحق = {totalAmount} - ({totalShipping} + {totalArrived} + {pickupTotal}) = <span className="font-bold">{due}</span></div>
+            <div className="text-sm font-medium">المستحق = {totalAmount} - ({totalShipping} + {totalArrived} + {pickupTotal}) = <span className="font-bold text-primary text-lg">{due}</span></div>
           </div>
         </CardContent>
       </Card>

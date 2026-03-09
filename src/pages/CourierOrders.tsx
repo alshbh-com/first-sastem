@@ -253,7 +253,11 @@ export default function CourierOrders() {
                           {idx < orders.length - 1 && <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => moveOrder(idx, 1)}>↓</Button>}
                         </div>
                       </TableCell>
-                      <TableCell className="font-mono text-xs">{order.customer_code || '-'}</TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {order.customer_code || '-'}
+                        {order.priority === 'urgent' && <Badge variant="destructive" className="mr-1 text-xs">عاجل</Badge>}
+                        {order.priority === 'vip' && <Badge className="mr-1 text-xs bg-amber-500">VIP</Badge>}
+                      </TableCell>
                       <TableCell className="text-sm">{order.customer_name}</TableCell>
                       <TableCell className="text-sm truncate max-w-[120px]">{order.address || '-'}</TableCell>
                       <TableCell className="text-sm">{order.product_name}</TableCell>

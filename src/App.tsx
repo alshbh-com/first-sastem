@@ -26,6 +26,7 @@ import UsersPage from "@/pages/UsersPage";
 import CourierOrders from "@/pages/CourierOrders";
 import FinancialReports from "@/pages/FinancialReports";
 import CourierStats from "@/pages/CourierStats";
+import CourierTracking from "@/pages/CourierTracking";
 import OfficeStats from "@/pages/OfficeStats";
 import CustomersPage from "@/pages/CustomersPage";
 import TrackingPage from "@/pages/TrackingPage";
@@ -104,6 +105,7 @@ const App = () => (
               <Route path="/settings" element={<Settings />} />
               <Route path="/financial-reports" element={<FinancialReports />} />
               <Route path="/courier-stats" element={<CourierStats />} />
+              <Route path="/courier-tracking" element={<CourierTracking />} />
               <Route path="/office-stats" element={<OfficeStats />} />
               <Route path="/daily-report" element={<DailyReport />} />
               <Route path="/profit-report" element={<ProfitReport />} />

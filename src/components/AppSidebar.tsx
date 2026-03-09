@@ -3,7 +3,7 @@ import {
   Truck, Wallet, CreditCard, ScrollText, Settings, LogOut, Archive, Building,
   PackageSearch, Search, Printer, DollarSign, MapPin, Users, BarChart3,
   TrendingUp, Calendar, UserCheck, MessageSquare, Locate, FileSpreadsheet,
-  CircleDot, Calculator, Contact, ClipboardList, Trash2, FileBarChart
+  CircleDot, Calculator, Contact, ClipboardList, Trash2, FileBarChart, Navigation2
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -44,6 +44,7 @@ const reportsItems = [
   { title: 'التقارير المالية', url: '/financial-reports', icon: BarChart3 },
   { title: 'تقرير المكاتب الجديد', url: '/office-report', icon: FileBarChart },
   { title: 'إحصائيات المناديب', url: '/courier-stats', icon: UserCheck },
+  { title: 'تتبع المناديب', url: '/courier-tracking', icon: Navigation2 },
   { title: 'إحصائيات المكاتب', url: '/office-stats', icon: TrendingUp },
   { title: 'تقرير الأرباح', url: '/profit-report', icon: Calculator },
 ];

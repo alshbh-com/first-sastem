@@ -315,6 +315,8 @@ export type Database = {
       }
       diaries: {
         Row: {
+          balance: number | null
+          cash_arrived_entries: Json | null
           closed_at: string | null
           created_at: string
           diary_date: string
@@ -325,8 +327,11 @@ export type Database = {
           lock_status_updates: boolean
           office_id: string
           prevent_new_orders: boolean
+          previous_due: number | null
         }
         Insert: {
+          balance?: number | null
+          cash_arrived_entries?: Json | null
           closed_at?: string | null
           created_at?: string
           diary_date?: string
@@ -337,8 +342,11 @@ export type Database = {
           lock_status_updates?: boolean
           office_id: string
           prevent_new_orders?: boolean
+          previous_due?: number | null
         }
         Update: {
+          balance?: number | null
+          cash_arrived_entries?: Json | null
           closed_at?: string | null
           created_at?: string
           diary_date?: string
@@ -349,6 +357,7 @@ export type Database = {
           lock_status_updates?: boolean
           office_id?: string
           prevent_new_orders?: boolean
+          previous_due?: number | null
         }
         Relationships: [
           {
@@ -374,7 +383,9 @@ export type Database = {
           manual_reject_no_ship: number | null
           manual_return_penalty: number | null
           manual_return_status: string | null
+          manual_shipping_amount: number | null
           manual_shipping_diff: number | null
+          manual_total_amount: number | null
           n_column: string | null
           notes: string | null
           order_id: string
@@ -394,7 +405,9 @@ export type Database = {
           manual_reject_no_ship?: number | null
           manual_return_penalty?: number | null
           manual_return_status?: string | null
+          manual_shipping_amount?: number | null
           manual_shipping_diff?: number | null
+          manual_total_amount?: number | null
           n_column?: string | null
           notes?: string | null
           order_id: string
@@ -414,7 +427,9 @@ export type Database = {
           manual_reject_no_ship?: number | null
           manual_return_penalty?: number | null
           manual_return_status?: string | null
+          manual_shipping_amount?: number | null
           manual_shipping_diff?: number | null
+          manual_total_amount?: number | null
           n_column?: string | null
           notes?: string | null
           order_id?: string

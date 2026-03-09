@@ -2,19 +2,18 @@ import { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Progress } from '@/components/ui/progress';
 import { usePermissions, urlToSectionKey } from '@/hooks/usePermissions';
 import {
   Package, PackageSearch, Archive, Search, Building2, MapPin, Box,
   Truck, Wallet, Building, DollarSign, Printer, ScrollText, Settings, Users,
   BarChart3, UserCheck, TrendingUp, Calendar, Locate, MessageSquare, FileSpreadsheet,
   CircleDot, Calculator, Contact, Clock, CheckCircle2, XCircle, FileBarChart, Trash2,
-  Navigation2, Send, User, Phone, Check, CheckCheck, AlertTriangle
+  Send, User, Check, CheckCheck, X
 } from 'lucide-react';
 
 const sections = [
@@ -38,6 +37,7 @@ const sections = [
   { title: 'إحصائيات المكاتب', url: '/office-stats', icon: TrendingUp, color: 'hsl(142,76%,36%)' },
   { title: 'تقرير الأرباح', url: '/profit-report', icon: Calculator, color: 'hsl(0,72%,51%)' },
   { title: 'تتبع الشحنات', url: '/tracking', icon: Locate, color: 'hsl(270,60%,60%)' },
+  { title: 'تتبع المناديب', url: '/courier-tracking', icon: Truck, color: 'hsl(142,76%,36%)' },
   { title: 'الطباعة', url: '/print', icon: Printer, color: 'hsl(215,20%,60%)' },
   { title: 'ملاحظات الأوردرات', url: '/order-notes', icon: MessageSquare, color: 'hsl(200,70%,50%)' },
   { title: 'تصدير البيانات', url: '/data-export', icon: FileSpreadsheet, color: 'hsl(142,76%,36%)' },
@@ -47,12 +47,6 @@ const sections = [
   { title: 'سلة المحذوفات', url: '/trash', icon: Trash2, color: 'hsl(0,72%,51%)' },
   { title: 'سيستم الحسابات', url: '/accounting-system', icon: Calculator, color: 'hsl(270,60%,60%)' },
 ];
-
-interface CourierSummary {
-  id: string; name: string; phone: string;
-  totalOrders: number; delivered: number; returned: number; pending: number;
-  successRate: number; isOnline: boolean; lastUpdate?: string;
-}
 
 interface ChatContact {
   id: string; name: string; role: string; unread: number;
@@ -65,10 +59,8 @@ export default function Dashboard() {
   const { canView } = usePermissions();
   const [stats, setStats] = useState({ total: 0, open: 0, delivered: 0, returned: 0, todayCount: 0, todayShipping: 0 });
 
-  // Courier tracking state
-  const [courierSummaries, setCourierSummaries] = useState<CourierSummary[]>([]);
-
   // Chat state
+  const [chatOpen, setChatOpen] = useState(false);
   const [chatContacts, setChatContacts] = useState<ChatContact[]>([]);
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<any[]>([]);
@@ -83,14 +75,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     loadStats();
-    loadCourierTracking();
     loadChatContacts();
-  }, []);
-
-  // Auto-refresh courier tracking
-  useEffect(() => {
-    const interval = setInterval(loadCourierTracking, 30000);
-    return () => clearInterval(interval);
   }, []);
 
   // Chat realtime
@@ -115,6 +100,12 @@ export default function Dashboard() {
     return () => { supabase.removeChannel(channel); };
   }, [selectedChat]);
 
+  // Refresh unread count periodically
+  useEffect(() => {
+    const interval = setInterval(loadChatContacts, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     if (chatScrollRef.current) chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
   }, [chatMessages]);
@@ -138,39 +129,6 @@ export default function Dashboard() {
       return s;
     }, 0);
     setStats({ total: all.length, open: all.filter(o => !o.is_closed).length, delivered: all.filter(o => deliveredIds.includes(o.status_id)).length, returned: all.filter(o => returnedIds.includes(o.status_id)).length, todayCount: todayOrders.length, todayShipping });
-  };
-
-  const loadCourierTracking = async () => {
-    const [rolesRes, ordersRes, statusRes, locRes] = await Promise.all([
-      supabase.from('user_roles').select('user_id').eq('role', 'courier'),
-      supabase.from('orders').select('id, courier_id, status_id').not('courier_id', 'is', null).eq('is_closed', false),
-      supabase.from('order_statuses').select('id, name'),
-      supabase.from('courier_locations' as any).select('*'),
-    ]);
-    const courierIds = (rolesRes.data || []).map(r => r.user_id);
-    if (courierIds.length === 0) return;
-
-    const { data: profiles } = await supabase.from('profiles').select('id, full_name, phone').in('id', courierIds);
-    const orders = ordersRes.data || [];
-    const sts = statusRes.data || [];
-    const locations = locRes.data || [];
-    const deliveredIds = sts.filter(s => s.name === 'تم التسليم' || s.name === 'تسليم جزئي').map(s => s.id);
-    const returnedIds = sts.filter(s => ['رفض ولم يدفع شحن', 'رفض ودفع شحن', 'تهرب', 'ملغي', 'لم يرد'].includes(s.name)).map(s => s.id);
-
-    const summaries: CourierSummary[] = (profiles || []).map(p => {
-      const co = orders.filter(o => o.courier_id === p.id);
-      const del = co.filter(o => deliveredIds.includes(o.status_id)).length;
-      const ret = co.filter(o => returnedIds.includes(o.status_id)).length;
-      const loc = locations.find((l: any) => l.courier_id === p.id) as any;
-      const isOnline = loc ? (Date.now() - new Date(loc.updated_at).getTime()) < 600000 : false;
-      return {
-        id: p.id, name: p.full_name || 'بدون اسم', phone: p.phone || '-',
-        totalOrders: co.length, delivered: del, returned: ret, pending: co.length - del - ret,
-        successRate: co.length > 0 ? Math.round((del / co.length) * 100) : 0,
-        isOnline, lastUpdate: loc?.updated_at as string | undefined,
-      };
-    }).sort((a, b) => b.pending - a.pending);
-    setCourierSummaries(summaries);
   };
 
   const loadChatContacts = async () => {
@@ -224,7 +182,6 @@ export default function Dashboard() {
   };
 
   const totalUnread = chatContacts.reduce((s, c) => s + c.unread, 0);
-  const onlineCouriers = courierSummaries.filter(c => c.isOnline).length;
   const selectedContactInfo = chatContacts.find(c => c.id === selectedChat);
 
   return (
@@ -265,114 +222,92 @@ export default function Dashboard() {
         </CardContent></Card>
       </div>
 
-      {/* Courier Tracking + Chat side by side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Courier Tracking Widget */}
-        <Card className="bg-card border-border">
-          <CardHeader className="p-3 pb-2 flex flex-row items-center justify-between">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Navigation2 className="h-4 w-4 text-primary" />
-              تتبع المناديب
-              <Badge variant="outline" className="text-xs">{onlineCouriers} متصل</Badge>
-            </CardTitle>
-            <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate('/courier-tracking')}>
-              عرض الكل
-            </Button>
-          </CardHeader>
-          <CardContent className="p-2">
-            <ScrollArea className="h-[320px]">
-              <div className="space-y-2 px-1">
-                {courierSummaries.length === 0 && (
-                  <p className="text-center text-muted-foreground text-sm py-8">لا يوجد مناديب</p>
-                )}
-                {courierSummaries.map(c => (
-                  <div key={c.id} className={`p-3 rounded-lg border border-border hover:bg-accent/30 transition-colors ${c.isOnline ? 'bg-primary/5' : ''}`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${c.isOnline ? 'bg-success' : 'bg-muted-foreground'}`} />
-                        <span className="font-medium text-sm">{c.name}</span>
-                      </div>
-                      <Badge variant={c.successRate >= 70 ? 'default' : c.successRate >= 40 ? 'secondary' : 'destructive'} className="text-xs">
-                        {c.successRate}%
-                      </Badge>
-                    </div>
-                    <div className="flex justify-between text-xs mb-1.5">
-                      <span className="text-muted-foreground">التقدم ({c.delivered + c.returned}/{c.totalOrders})</span>
-                      <span>{c.totalOrders > 0 ? Math.round(((c.delivered + c.returned) / c.totalOrders) * 100) : 0}%</span>
-                    </div>
-                    <Progress value={c.totalOrders > 0 ? ((c.delivered + c.returned) / c.totalOrders) * 100 : 0} className="h-1.5 mb-2" />
-                    <div className="grid grid-cols-3 gap-1 text-center text-xs">
-                      <span className="text-warning font-bold">{c.pending} معلق</span>
-                      <span className="text-success font-bold">{c.delivered} تسليم</span>
-                      <span className="text-destructive font-bold">{c.returned} مرتجع</span>
-                    </div>
-                    {!c.isOnline && c.totalOrders > 0 && (
-                      <p className="text-xs text-destructive flex items-center gap-1 mt-1">
-                        <AlertTriangle className="h-3 w-3" /> غير متصل
-                        {c.lastUpdate && ` - ${Math.round((Date.now() - new Date(c.lastUpdate).getTime()) / 60000)} دقيقة`}
-                      </p>
+      {/* Section shortcuts */}
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        {visibleSections.map((s) => (
+          <Card key={s.url} className="bg-card border-border cursor-pointer hover:bg-secondary/50 transition-colors active:scale-95" onClick={() => navigate(s.url)}>
+            <CardContent className="flex flex-col items-center gap-2 p-3 sm:p-4">
+              <div className="rounded-xl p-2.5" style={{ backgroundColor: s.color + '20' }}>
+                <s.icon className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: s.color }} />
+              </div>
+              <span className="text-xs sm:text-sm font-medium text-center leading-tight">{s.title}</span>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Floating Chat Button */}
+      <div className="fixed bottom-6 left-6 z-50">
+        {!chatOpen && (
+          <button
+            onClick={() => setChatOpen(true)}
+            className="relative w-14 h-14 rounded-full bg-[hsl(142,70%,28%)] text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center"
+          >
+            <MessageSquare className="h-6 w-6" />
+            {totalUnread > 0 && (
+              <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                {totalUnread}
+              </span>
+            )}
+          </button>
+        )}
+
+        {/* Chat Window */}
+        {chatOpen && (
+          <div className="w-[340px] sm:w-[380px] h-[480px] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-4 fade-in duration-200">
+            {!selectedChat ? (
+              <>
+                {/* Contacts Header */}
+                <div className="bg-[hsl(142,70%,28%)] text-white p-3 flex items-center justify-between shrink-0">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5" />
+                    <span className="font-bold text-sm">المحادثات</span>
+                    {totalUnread > 0 && (
+                      <span className="bg-white text-[hsl(142,70%,28%)] text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[20px] text-center">{totalUnread}</span>
                     )}
                   </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-
-        {/* Chat Widget - WhatsApp Style */}
-        <Card className="bg-card border-border overflow-hidden">
-          <CardHeader className="p-0">
-            <div className="bg-[hsl(142,70%,28%)] text-white p-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                <span className="font-bold text-sm">المحادثات</span>
-                {totalUnread > 0 && (
-                  <span className="bg-white text-[hsl(142,70%,28%)] text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[20px] text-center">{totalUnread}</span>
-                )}
-              </div>
-              <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 text-xs h-7" onClick={() => navigate('/chat')}>
-                فتح الكل
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            {!selectedChat ? (
-              <ScrollArea className="h-[340px]">
-                {chatContacts.length === 0 && (
-                  <p className="text-center text-muted-foreground text-sm py-12">لا يوجد محادثات</p>
-                )}
-                {chatContacts.map((c, i) => (
-                  <button
-                    key={c.id}
-                    onClick={() => setSelectedChat(c.id)}
-                    className={`w-full p-3 flex items-center gap-3 text-right hover:bg-accent/40 transition-colors ${i < chatContacts.length - 1 ? 'border-b border-border' : ''}`}
-                  >
-                    <div className="w-10 h-10 rounded-full bg-[hsl(142,70%,28%)]/10 flex items-center justify-center shrink-0">
-                      <User className="h-5 w-5 text-[hsl(142,70%,28%)]" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-sm truncate">{c.name}</span>
-                        <span className="text-[10px] text-muted-foreground">
-                          {c.lastTime && new Date(c.lastTime).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+                  <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 h-7 w-7" onClick={() => setChatOpen(false)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                {/* Contacts List */}
+                <ScrollArea className="flex-1">
+                  {chatContacts.length === 0 && (
+                    <p className="text-center text-muted-foreground text-sm py-12">لا يوجد محادثات</p>
+                  )}
+                  {chatContacts.map((c, i) => (
+                    <button
+                      key={c.id}
+                      onClick={() => setSelectedChat(c.id)}
+                      className={`w-full p-3 flex items-center gap-3 text-right hover:bg-accent/40 transition-colors ${i < chatContacts.length - 1 ? 'border-b border-border' : ''}`}
+                    >
+                      <div className="w-10 h-10 rounded-full bg-[hsl(142,70%,28%)]/10 flex items-center justify-center shrink-0">
+                        <User className="h-5 w-5 text-[hsl(142,70%,28%)]" />
                       </div>
-                      <div className="flex items-center justify-between mt-0.5">
-                        <p className="text-xs text-muted-foreground truncate max-w-[180px]">
-                          {c.lastMessage || c.role}
-                        </p>
-                        {c.unread > 0 && (
-                          <span className="bg-[hsl(142,70%,28%)] text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center">{c.unread}</span>
-                        )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-sm truncate">{c.name}</span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {c.lastTime && new Date(c.lastTime).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between mt-0.5">
+                          <p className="text-xs text-muted-foreground truncate max-w-[180px]">
+                            {c.lastMessage || c.role}
+                          </p>
+                          {c.unread > 0 && (
+                            <span className="bg-[hsl(142,70%,28%)] text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center">{c.unread}</span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </button>
-                ))}
-              </ScrollArea>
+                    </button>
+                  ))}
+                </ScrollArea>
+              </>
             ) : (
-              <div className="flex flex-col h-[340px]">
-                {/* WhatsApp-style header */}
-                <div className="bg-[hsl(142,70%,28%)] text-white flex items-center gap-2 p-2 shrink-0">
+              <>
+                {/* Chat Header */}
+                <div className="bg-[hsl(142,70%,28%)] text-white flex items-center gap-2 p-2.5 shrink-0">
                   <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 h-7 w-7" onClick={() => setSelectedChat(null)}>
                     ←
                   </Button>
@@ -383,8 +318,11 @@ export default function Dashboard() {
                     <p className="text-sm font-semibold">{selectedContactInfo?.name}</p>
                     <p className="text-[10px] opacity-80">{selectedContactInfo?.role}</p>
                   </div>
+                  <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 h-7 w-7" onClick={() => setChatOpen(false)}>
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
-                {/* Messages with WhatsApp wallpaper */}
+                {/* Messages */}
                 <div
                   ref={chatScrollRef}
                   className="flex-1 overflow-y-auto p-3 space-y-1"
@@ -417,7 +355,7 @@ export default function Dashboard() {
                     );
                   })}
                 </div>
-                {/* WhatsApp-style input */}
+                {/* Input */}
                 <div className="p-2 bg-muted/30 border-t border-border shrink-0 flex gap-2 items-center">
                   <Input
                     value={newMsg}
@@ -435,24 +373,10 @@ export default function Dashboard() {
                     <Send className="h-4 w-4" />
                   </Button>
                 </div>
-              </div>
+              </>
             )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Section shortcuts */}
-      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-        {visibleSections.map((s) => (
-          <Card key={s.url} className="bg-card border-border cursor-pointer hover:bg-secondary/50 transition-colors active:scale-95" onClick={() => navigate(s.url)}>
-            <CardContent className="flex flex-col items-center gap-2 p-3 sm:p-4">
-              <div className="rounded-xl p-2.5" style={{ backgroundColor: s.color + '20' }}>
-                <s.icon className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: s.color }} />
-              </div>
-              <span className="text-xs sm:text-sm font-medium text-center leading-tight">{s.title}</span>
-            </CardContent>
-          </Card>
-        ))}
+          </div>
+        )}
       </div>
     </div>
   );

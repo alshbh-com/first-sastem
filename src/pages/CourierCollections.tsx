@@ -293,7 +293,7 @@ export default function CourierCollections() {
                       <TableHead className="text-right">الإجمالي</TableHead>
                       <TableHead className="text-right">الحالة</TableHead>
                       <TableHead className="text-right">التحصيل</TableHead>
-                      <TableHead className="text-right">ملاحظات</TableHead>
+                      <TableHead className="text-right">تعليق</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

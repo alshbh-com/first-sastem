@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -46,11 +46,30 @@ export default function OfficeSettlement() {
   const [isLocked, setIsLocked] = useState(false);
   const [isClosed, setIsClosed] = useState(false);
   const [preventAdd, setPreventAdd] = useState(false);
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isLoadingRef = useRef(false);
+
+  // Auto-save with debounce
+  const triggerAutoSave = useCallback(() => {
+    if (!selectedOffice || selectedOffice === 'all' || isLoadingRef.current) return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(() => {
+      saveToDbSilent();
+    }, 1500);
+  }, [selectedOffice, closingDate, rows, pickupRate, isLocked, isClosed, preventAdd]);
 
   useEffect(() => {
     supabase.from('offices').select('id, name').order('name').then(({ data }) => setOffices(data || []));
     supabase.from('order_statuses').select('id, name').order('sort_order').then(({ data }) => setStatuses(data || []));
   }, []);
+
+  // Trigger auto-save when data changes
+  useEffect(() => {
+    if (selectedOffice && selectedOffice !== 'all' && !isLoadingRef.current) {
+      triggerAutoSave();
+    }
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [rows, pickupRate, isLocked, isClosed, preventAdd]);
 
   // Load saved closing data
   useEffect(() => {
@@ -71,6 +90,7 @@ export default function OfficeSettlement() {
   };
 
   const loadClosingData = async () => {
+    isLoadingRef.current = true;
     // Try to load from DB first
     const { data, error } = await supabase
       .from('office_daily_closings')
@@ -90,6 +110,7 @@ export default function OfficeSettlement() {
       const jsonData = saved.data_json;
       if (jsonData && Array.isArray(jsonData) && jsonData.length > 0) {
         setRows(jsonData);
+        isLoadingRef.current = false;
         return;
       }
     } else {
@@ -116,6 +137,30 @@ export default function OfficeSettlement() {
     } else {
       setRows([newRow()]);
     }
+    isLoadingRef.current = false;
+  };
+
+  // Silent auto-save (no toast unless error)
+  const saveToDbSilent = async () => {
+    if (!selectedOffice || selectedOffice === 'all') return;
+    try {
+      const payload = {
+        office_id: selectedOffice,
+        closing_date: closingDate,
+        data_json: rows,
+        pickup_rate: parseFloat(pickupRate) || 0,
+        is_locked: isLocked,
+        is_closed: isClosed,
+        prevent_add: preventAdd,
+        updated_at: new Date().toISOString(),
+      };
+      if (closingId) {
+        await supabase.from('office_daily_closings').update(payload as any).eq('id', closingId);
+      } else {
+        const { data } = await supabase.from('office_daily_closings').insert(payload as any).select().single();
+        if (data) setClosingId((data as any).id);
+      }
+    } catch { /* silent */ }
   };
 
   const saveToDb = async () => {

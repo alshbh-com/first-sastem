@@ -161,7 +161,7 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
         orderData.tracking_id = 'temp';
         orderData.confirmation_status = 'awaiting_confirmation';
 
-        const { data: inserted, error } = await supabase.from('orders').insert(orderData).select('barcode, tracking_id, confirmation_token').single();
+        const { data: inserted, error } = await supabase.from('orders').insert(orderData).select('id, barcode, tracking_id, confirmation_token').single();
         if (error) throw error;
 
         if (form.product_id && qty > 0) {

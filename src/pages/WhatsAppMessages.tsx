@@ -342,6 +342,7 @@ export default function WhatsAppMessages() {
                   {serverStatus === 'connected' ? '✅ واتساب متصل ويعمل تلقائياً' :
                    serverStatus === 'pairing_code_ready' ? '📱 أدخل كود الربط في واتساب' :
                    serverStatus === 'connecting' ? '⏳ جاري الاتصال...' :
+                   serverStatus === 'waiting_for_pairing' ? '📱 في انتظار إدخال الكود...' :
                    !savedServerUrl ? '⚠️ السيرفر غير مُعد - اضغط إعدادات السيرفر' :
                    '❌ السيرفر غير متصل'}
                 </p>

@@ -104,7 +104,7 @@ export default function OfficeReport() {
                       <TableRow key={o.id} className="border-border">
                         <TableCell className="text-sm">{idx + 1}</TableCell>
                         <TableCell className="text-sm font-medium">{o.customer_name}</TableCell>
-                        <TableCell className="font-mono text-xs">{o.customer_code || o.barcode || '-'}</TableCell>
+                        <TableCell className="font-mono text-xs">{o.customer_code || '-'}</TableCell>
                         <TableCell className="text-sm font-bold">{o.price} ج.م</TableCell>
                         <TableCell>
                           <Badge style={{ backgroundColor: o.order_statuses?.color }} className="text-xs">

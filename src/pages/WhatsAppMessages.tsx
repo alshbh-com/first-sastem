@@ -29,6 +29,28 @@ interface WhatsAppMessage {
   };
 }
 
+const toLatinDigits = (value: string) =>
+  value
+    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
+    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)));
+
+const normalizePairingPhone = (value: string) => {
+  let normalized = toLatinDigits(value).trim();
+  normalized = normalized.replace(/\s+/g, "");
+  normalized = normalized.replace(/^\+/, "");
+  normalized = normalized.replace(/^00/, "");
+  normalized = normalized.replace(/\D/g, "");
+
+  // تسهيل إدخال الرقم المحلي المصري: 01XXXXXXXXX -> 20XXXXXXXXXX
+  if (/^01\d{9}$/.test(normalized)) {
+    normalized = `20${normalized.slice(1)}`;
+  }
+
+  return normalized;
+};
+
+const isValidPairingPhone = (value: string) => /^\d{10,15}$/.test(value);
+
 export default function WhatsAppMessages() {
   const [messages, setMessages] = useState<WhatsAppMessage[]>([]);
   const [loading, setLoading] = useState(true);

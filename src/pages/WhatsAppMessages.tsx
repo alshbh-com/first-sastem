@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,10 +36,13 @@ export default function WhatsAppMessages() {
   const [confirmationFilter, setConfirmationFilter] = useState('all');
   const [serverUrl, setServerUrl] = useState('');
   const [savedServerUrl, setSavedServerUrl] = useState('');
-  const [serverStatus, setServerStatus] = useState<'unknown' | 'connected' | 'disconnected' | 'qr_ready'>('unknown');
+  const [serverStatus, setServerStatus] = useState<'unknown' | 'connected' | 'connecting' | 'disconnected' | 'qr_ready'>('unknown');
   const [qrData, setQrData] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
   const [savingUrl, setSavingUrl] = useState(false);
+  const [statusDetails, setStatusDetails] = useState<{ rawStatus?: string; lastDisconnectReason?: string | number | null; queueLength?: number }>({});
+  const statusCheckRef = useRef(0);
 
   const fetchMessages = async () => {
     setLoading(true);
@@ -76,22 +79,102 @@ export default function WhatsAppMessages() {
   };
 
   const checkServerStatus = async (url?: string) => {
-    const checkUrl = url || savedServerUrl;
-    if (!checkUrl) { setServerStatus('unknown'); return; }
+    const checkUrl = (url || savedServerUrl).replace(/\/+$/, '');
+    const requestId = ++statusCheckRef.current;
+
+    if (!checkUrl) {
+      setServerStatus('unknown');
+      setQrData(null);
+      return;
+    }
+
     try {
-      const res = await fetch(`${checkUrl}/qr-data`);
-      const data = await res.json();
-      if (data.connected) {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), 7000);
+      const statusResponse = await fetch(`${checkUrl}/status`, { signal: controller.signal });
+      window.clearTimeout(timeoutId);
+
+      if (!statusResponse.ok) {
+        throw new Error(`status_http_${statusResponse.status}`);
+      }
+
+      const statusData = await statusResponse.json();
+      if (requestId !== statusCheckRef.current) return;
+
+      setStatusDetails({
+        rawStatus: statusData.status,
+        lastDisconnectReason: statusData.lastDisconnectReason,
+        queueLength: statusData.queueLength,
+      });
+
+      if (statusData.connected) {
         setServerStatus('connected');
         setQrData(null);
-      } else if (data.qr) {
-        setServerStatus('qr_ready');
-        setQrData(data.qr);
-      } else {
-        setServerStatus('disconnected');
+        return;
       }
-    } catch {
+
+      if (statusData.qrAvailable) {
+        const qrResponse = await fetch(`${checkUrl}/qr-data`);
+        if (qrResponse.ok) {
+          const qrDataResponse = await qrResponse.json();
+          if (requestId !== statusCheckRef.current) return;
+          if (qrDataResponse.qr) {
+            setServerStatus('qr_ready');
+            setQrData(qrDataResponse.qr);
+            return;
+          }
+        }
+      }
+
+      if (['connecting', 'reconnecting'].includes(statusData.status)) {
+        setServerStatus('connecting');
+        setQrData(null);
+        return;
+      }
+
       setServerStatus('disconnected');
+      setQrData(null);
+    } catch (error) {
+      try {
+        const fallbackResponse = await fetch(`${checkUrl}/qr-data`);
+        if (!fallbackResponse.ok) {
+          throw new Error(`qr_http_${fallbackResponse.status}`);
+        }
+
+        const fallbackData = await fallbackResponse.json();
+        if (requestId !== statusCheckRef.current) return;
+
+        setStatusDetails((prev) => ({ ...prev, rawStatus: fallbackData.status ?? prev.rawStatus }));
+
+        if (fallbackData.connected) {
+          setServerStatus('connected');
+          setQrData(null);
+          return;
+        }
+
+        if (fallbackData.qr) {
+          setServerStatus('qr_ready');
+          setQrData(fallbackData.qr);
+          return;
+        }
+
+        if (['connecting', 'reconnecting'].includes(fallbackData.status)) {
+          setServerStatus('connecting');
+          setQrData(null);
+          return;
+        }
+
+        setServerStatus('disconnected');
+        setQrData(null);
+      } catch {
+        if (requestId !== statusCheckRef.current) return;
+        setServerStatus('disconnected');
+        setQrData(null);
+        setStatusDetails((prev) => ({
+          ...prev,
+          lastDisconnectReason: prev.lastDisconnectReason ?? (error instanceof Error ? error.message : 'fetch_failed'),
+        }));
+      }
     }
   };
 
@@ -100,10 +183,11 @@ export default function WhatsAppMessages() {
     fetchServerUrl();
   }, []);
 
-  // Auto-refresh server status every 5 seconds when QR is showing
+  // Auto-refresh server status
   useEffect(() => {
-    if (serverStatus !== 'qr_ready' && serverStatus !== 'disconnected') return;
-    const interval = setInterval(() => checkServerStatus(), 5000);
+    if (!savedServerUrl) return;
+    const intervalMs = serverStatus === 'connected' ? 15000 : 5000;
+    const interval = setInterval(() => checkServerStatus(), intervalMs);
     return () => clearInterval(interval);
   }, [serverStatus, savedServerUrl]);
 
@@ -226,6 +310,7 @@ export default function WhatsAppMessages() {
       <Card className={`border-2 ${
         serverStatus === 'connected' ? 'border-green-300 bg-green-50/50' :
         serverStatus === 'qr_ready' ? 'border-blue-300 bg-blue-50/50' :
+        serverStatus === 'connecting' ? 'border-border bg-muted/40' :
         savedServerUrl ? 'border-red-300 bg-red-50/50' :
         'border-yellow-300 bg-yellow-50/50'
       }`}>
@@ -236,6 +321,8 @@ export default function WhatsAppMessages() {
                 <Wifi className="h-6 w-6 text-green-600" />
               ) : serverStatus === 'qr_ready' ? (
                 <QrCode className="h-6 w-6 text-blue-600" />
+              ) : serverStatus === 'connecting' ? (
+                <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
               ) : (
                 <WifiOff className="h-6 w-6 text-red-600" />
               )}
@@ -243,16 +330,59 @@ export default function WhatsAppMessages() {
                 <p className="font-bold">
                   {serverStatus === 'connected' ? '✅ واتساب متصل ويعمل تلقائياً' :
                    serverStatus === 'qr_ready' ? '📱 امسح QR Code لربط واتساب' :
+                   serverStatus === 'connecting' ? '⏳ جاري تجهيز QR من السيرفر...' :
                    !savedServerUrl ? '⚠️ السيرفر غير مُعد - اضغط إعدادات السيرفر' :
                    '❌ السيرفر غير متصل'}
                 </p>
                 {savedServerUrl && (
                   <p className="text-xs text-muted-foreground" dir="ltr">{savedServerUrl}</p>
                 )}
+                {statusDetails.rawStatus && (
+                  <p className="text-xs text-muted-foreground mt-1">الحالة الفعلية من السيرفر: {statusDetails.rawStatus}</p>
+                )}
               </div>
             </div>
             {savedServerUrl && (
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
+                <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="outline">
+                      <QrCode className="h-3 w-3 ml-1" />
+                      عرض الحالة و QR
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="bg-card border-border max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>حالة السيرفر و QR مباشرة</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-3">
+                      <div className="text-sm text-muted-foreground">
+                        {serverStatus === 'connected' ? 'السيرفر متصل الآن.' :
+                         serverStatus === 'qr_ready' ? 'QR جاهز للمسح.' :
+                         serverStatus === 'connecting' ? 'السيرفر يحاول توليد QR...' :
+                         'السيرفر غير متصل حالياً.'}
+                      </div>
+
+                      <iframe
+                        src={`${savedServerUrl}/qr`}
+                        title="WhatsApp QR Viewer"
+                        className="w-full h-[420px] rounded-md border"
+                        loading="lazy"
+                      />
+
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <p className="text-xs text-muted-foreground">
+                          سبب آخر فصل: {statusDetails.lastDisconnectReason ?? 'غير متوفر'}
+                          {typeof statusDetails.queueLength === 'number' ? ` • الطابور: ${statusDetails.queueLength}` : ''}
+                        </p>
+                        <Button size="sm" variant="outline" onClick={() => checkServerStatus()}>
+                          تحديث الحالة
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
                 <Button size="sm" variant="outline" onClick={() => window.open(`${savedServerUrl}/qr`, '_blank')}>
                   <ExternalLink className="h-3 w-3 ml-1" />
                   فتح QR

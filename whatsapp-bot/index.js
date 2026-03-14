@@ -7,6 +7,15 @@ const pino = require('pino');
 
 const app = express();
 app.use(express.json());
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
+  next();
+});
 
 let sock = null;
 let qrCodeData = null;
@@ -14,6 +23,7 @@ let connectionStatus = 'disconnected';
 let lastDisconnectReason = null;
 let messageQueue = [];
 let isProcessingQueue = false;
+let reconnectTimer = null;
 
 const AUTH_DIR = path.join(process.cwd(), 'auth_session');
 
@@ -27,6 +37,16 @@ function clearAuthSession() {
   } catch (err) {
     console.error('⚠️ Failed to clear auth_session:', err.message);
   }
+}
+
+function scheduleReconnect(delayMs = 5000) {
+  if (reconnectTimer) return;
+
+  connectionStatus = 'reconnecting';
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    connectWhatsApp();
+  }, delayMs);
 }
 
 async function connectWhatsApp() {
@@ -54,21 +74,24 @@ async function connectWhatsApp() {
     if (connection === 'close') {
       const reason = lastDisconnect?.error?.output?.statusCode;
       lastDisconnectReason = reason ?? 'unknown';
-      connectionStatus = 'disconnected';
 
       if (reason === DisconnectReason.loggedOut) {
         console.log('🔐 Session logged out. Resetting auth and regenerating QR...');
         qrCodeData = null;
         clearAuthSession();
-        setTimeout(connectWhatsApp, 2000);
+        scheduleReconnect(2000);
         return;
       }
 
-      console.log('🔄 Reconnecting...');
-      setTimeout(connectWhatsApp, 5000);
+      console.log(`🔄 Reconnecting... (reason: ${lastDisconnectReason})`);
+      scheduleReconnect(5000);
     }
 
     if (connection === 'open') {
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
       connectionStatus = 'connected';
       lastDisconnectReason = null;
       qrCodeData = null;
@@ -185,6 +208,9 @@ app.get('/qr-data', (req, res) => {
     connected: connectionStatus === 'connected',
     qr: qrCodeData,
     status: connectionStatus,
+    qrAvailable: !!qrCodeData,
+    queueLength: messageQueue.length,
+    lastDisconnectReason,
   });
 });
 
@@ -193,7 +219,7 @@ app.post('/reset-session', (req, res) => {
   clearAuthSession();
   qrCodeData = null;
   connectionStatus = 'reconnecting';
-  setTimeout(connectWhatsApp, 1000);
+  scheduleReconnect(1000);
   res.json({ success: true, message: 'Session reset. New QR will be generated.' });
 });
 

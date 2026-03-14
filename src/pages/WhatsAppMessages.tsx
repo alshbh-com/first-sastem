@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { openWhatsApp } from '@/lib/whatsappMessage';
-import { MessageSquare, RefreshCw, Send, Search, Settings2, Wifi, WifiOff, Phone, ExternalLink, QrCode } from 'lucide-react';
+import { MessageSquare, RefreshCw, Send, Search, Settings2, Wifi, WifiOff, Phone, ExternalLink, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface WhatsAppMessage {
@@ -36,12 +36,14 @@ export default function WhatsAppMessages() {
   const [confirmationFilter, setConfirmationFilter] = useState('all');
   const [serverUrl, setServerUrl] = useState('');
   const [savedServerUrl, setSavedServerUrl] = useState('');
-  const [serverStatus, setServerStatus] = useState<'unknown' | 'connected' | 'connecting' | 'disconnected' | 'qr_ready'>('unknown');
-  const [qrData, setQrData] = useState<string | null>(null);
+  const [serverStatus, setServerStatus] = useState<'unknown' | 'connected' | 'connecting' | 'disconnected' | 'pairing_code_ready'>('unknown');
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [viewerOpen, setViewerOpen] = useState(false);
+  const [pairingOpen, setPairingOpen] = useState(false);
   const [savingUrl, setSavingUrl] = useState(false);
-  const [statusDetails, setStatusDetails] = useState<{ rawStatus?: string; lastDisconnectReason?: string | number | null; queueLength?: number }>({});
+  const [statusDetails, setStatusDetails] = useState<{ rawStatus?: string; lastDisconnectReason?: string | number | null; queueLength?: number; pairingCode?: string | null }>({});
+  const [pairingPhone, setPairingPhone] = useState('');
+  const [pairingCode, setPairingCode] = useState<string | null>(null);
+  const [requestingCode, setRequestingCode] = useState(false);
   const statusCheckRef = useRef(0);
 
   const fetchMessages = async () => {
@@ -84,7 +86,6 @@ export default function WhatsAppMessages() {
 
     if (!checkUrl) {
       setServerStatus('unknown');
-      setQrData(null);
       return;
     }
 
@@ -94,9 +95,7 @@ export default function WhatsAppMessages() {
       const statusResponse = await fetch(`${checkUrl}/status`, { signal: controller.signal });
       window.clearTimeout(timeoutId);
 
-      if (!statusResponse.ok) {
-        throw new Error(`status_http_${statusResponse.status}`);
-      }
+      if (!statusResponse.ok) throw new Error(`http_${statusResponse.status}`);
 
       const statusData = await statusResponse.json();
       if (requestId !== statusCheckRef.current) return;
@@ -105,76 +104,30 @@ export default function WhatsAppMessages() {
         rawStatus: statusData.status,
         lastDisconnectReason: statusData.lastDisconnectReason,
         queueLength: statusData.queueLength,
+        pairingCode: statusData.pairingCode,
       });
 
       if (statusData.connected) {
         setServerStatus('connected');
-        setQrData(null);
+        setPairingCode(null);
         return;
       }
 
-      if (statusData.qrAvailable) {
-        const qrResponse = await fetch(`${checkUrl}/qr-data`);
-        if (qrResponse.ok) {
-          const qrDataResponse = await qrResponse.json();
-          if (requestId !== statusCheckRef.current) return;
-          if (qrDataResponse.qr) {
-            setServerStatus('qr_ready');
-            setQrData(qrDataResponse.qr);
-            return;
-          }
-        }
+      if (statusData.pairingCode) {
+        setServerStatus('pairing_code_ready');
+        setPairingCode(statusData.pairingCode);
+        return;
       }
 
       if (['connecting', 'reconnecting'].includes(statusData.status)) {
         setServerStatus('connecting');
-        setQrData(null);
         return;
       }
 
       setServerStatus('disconnected');
-      setQrData(null);
-    } catch (error) {
-      try {
-        const fallbackResponse = await fetch(`${checkUrl}/qr-data`);
-        if (!fallbackResponse.ok) {
-          throw new Error(`qr_http_${fallbackResponse.status}`);
-        }
-
-        const fallbackData = await fallbackResponse.json();
-        if (requestId !== statusCheckRef.current) return;
-
-        setStatusDetails((prev) => ({ ...prev, rawStatus: fallbackData.status ?? prev.rawStatus }));
-
-        if (fallbackData.connected) {
-          setServerStatus('connected');
-          setQrData(null);
-          return;
-        }
-
-        if (fallbackData.qr) {
-          setServerStatus('qr_ready');
-          setQrData(fallbackData.qr);
-          return;
-        }
-
-        if (['connecting', 'reconnecting'].includes(fallbackData.status)) {
-          setServerStatus('connecting');
-          setQrData(null);
-          return;
-        }
-
-        setServerStatus('disconnected');
-        setQrData(null);
-      } catch {
-        if (requestId !== statusCheckRef.current) return;
-        setServerStatus('disconnected');
-        setQrData(null);
-        setStatusDetails((prev) => ({
-          ...prev,
-          lastDisconnectReason: prev.lastDisconnectReason ?? (error instanceof Error ? error.message : 'fetch_failed'),
-        }));
-      }
+    } catch {
+      if (requestId !== statusCheckRef.current) return;
+      setServerStatus('disconnected');
     }
   };
 
@@ -183,7 +136,6 @@ export default function WhatsAppMessages() {
     fetchServerUrl();
   }, []);
 
-  // Auto-refresh server status
   useEffect(() => {
     if (!savedServerUrl) return;
     const intervalMs = serverStatus === 'connected' ? 15000 : 5000;
@@ -204,6 +156,48 @@ export default function WhatsAppMessages() {
     checkServerStatus(cleanUrl);
     setSavingUrl(false);
     setSettingsOpen(false);
+  };
+
+  const requestPairingCode = async () => {
+    if (!pairingPhone.trim() || !savedServerUrl) return;
+    setRequestingCode(true);
+    setPairingCode(null);
+
+    try {
+      const res = await fetch(`${savedServerUrl}/request-pairing-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: pairingPhone.trim() }),
+      });
+      const data = await res.json();
+
+      if (data.alreadyConnected) {
+        toast.success('واتساب متصل بالفعل!');
+        setServerStatus('connected');
+        setPairingOpen(false);
+      } else if (data.success && data.code) {
+        setPairingCode(data.code);
+        setServerStatus('pairing_code_ready');
+        toast.success('تم توليد كود الربط! أدخله في واتساب');
+      } else {
+        toast.error(data.error || 'فشل في توليد الكود');
+      }
+    } catch {
+      toast.error('فشل الاتصال بالسيرفر');
+    }
+    setRequestingCode(false);
+  };
+
+  const handleResetSession = async () => {
+    if (!savedServerUrl) return;
+    try {
+      await fetch(`${savedServerUrl}/reset-session`, { method: 'POST' });
+      toast.success('تم إعادة تعيين الجلسة');
+      setPairingCode(null);
+      checkServerStatus();
+    } catch {
+      toast.error('فشل الاتصال بالسيرفر');
+    }
   };
 
   const filteredMessages = messages.filter(msg => {
@@ -284,13 +278,13 @@ export default function WhatsAppMessages() {
                   <Label>رابط السيرفر</Label>
                   <Input
                     className="bg-secondary border-border"
-                    placeholder="https://whatsapp-bot-xxxx.onrender.com"
+                    placeholder="https://whatsapp-bot-xxxx.up.railway.app"
                     value={serverUrl}
                     onChange={e => setServerUrl(e.target.value)}
                     dir="ltr"
                   />
                   <p className="text-xs text-muted-foreground">
-                    الصق هنا رابط سيرفر واتساب اللي نشرته على Render.com
+                    الصق هنا رابط سيرفر واتساب اللي نشرته على Railway
                   </p>
                 </div>
                 <Button onClick={saveServerUrl} disabled={savingUrl} className="w-full">
@@ -308,29 +302,29 @@ export default function WhatsAppMessages() {
 
       {/* Server Status Card */}
       <Card className={`border-2 ${
-        serverStatus === 'connected' ? 'border-green-300 bg-green-50/50' :
-        serverStatus === 'qr_ready' ? 'border-blue-300 bg-blue-50/50' :
+        serverStatus === 'connected' ? 'border-green-500/50 bg-green-500/5' :
+        serverStatus === 'pairing_code_ready' ? 'border-blue-500/50 bg-blue-500/5' :
         serverStatus === 'connecting' ? 'border-border bg-muted/40' :
-        savedServerUrl ? 'border-red-300 bg-red-50/50' :
-        'border-yellow-300 bg-yellow-50/50'
+        savedServerUrl ? 'border-red-500/50 bg-red-500/5' :
+        'border-yellow-500/50 bg-yellow-500/5'
       }`}>
         <CardContent className="p-4">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3">
               {serverStatus === 'connected' ? (
-                <Wifi className="h-6 w-6 text-green-600" />
-              ) : serverStatus === 'qr_ready' ? (
-                <QrCode className="h-6 w-6 text-blue-600" />
+                <Wifi className="h-6 w-6 text-green-500" />
+              ) : serverStatus === 'pairing_code_ready' ? (
+                <Link2 className="h-6 w-6 text-blue-500" />
               ) : serverStatus === 'connecting' ? (
                 <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
               ) : (
-                <WifiOff className="h-6 w-6 text-red-600" />
+                <WifiOff className="h-6 w-6 text-red-500" />
               )}
               <div>
                 <p className="font-bold">
                   {serverStatus === 'connected' ? '✅ واتساب متصل ويعمل تلقائياً' :
-                   serverStatus === 'qr_ready' ? '📱 امسح QR Code لربط واتساب' :
-                   serverStatus === 'connecting' ? '⏳ جاري تجهيز QR من السيرفر...' :
+                   serverStatus === 'pairing_code_ready' ? '📱 أدخل كود الربط في واتساب' :
+                   serverStatus === 'connecting' ? '⏳ جاري الاتصال...' :
                    !savedServerUrl ? '⚠️ السيرفر غير مُعد - اضغط إعدادات السيرفر' :
                    '❌ السيرفر غير متصل'}
                 </p>
@@ -338,45 +332,81 @@ export default function WhatsAppMessages() {
                   <p className="text-xs text-muted-foreground" dir="ltr">{savedServerUrl}</p>
                 )}
                 {statusDetails.rawStatus && (
-                  <p className="text-xs text-muted-foreground mt-1">الحالة الفعلية من السيرفر: {statusDetails.rawStatus}</p>
+                  <p className="text-xs text-muted-foreground mt-1">الحالة: {statusDetails.rawStatus}</p>
                 )}
               </div>
             </div>
             {savedServerUrl && (
               <div className="flex gap-2 flex-wrap">
-                <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
+                {/* Pairing Code Button */}
+                <Dialog open={pairingOpen} onOpenChange={setPairingOpen}>
                   <DialogTrigger asChild>
-                    <Button size="sm" variant="outline">
-                      <QrCode className="h-3 w-3 ml-1" />
-                      عرض الحالة و QR
+                    <Button size="sm" variant={serverStatus === 'connected' ? 'outline' : 'default'}>
+                      <Link2 className="h-3 w-3 ml-1" />
+                      ربط بكود الهاتف
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="bg-card border-border max-w-2xl">
+                  <DialogContent className="bg-card border-border max-w-md">
                     <DialogHeader>
-                      <DialogTitle>حالة السيرفر و QR مباشرة</DialogTitle>
+                      <DialogTitle>ربط واتساب بكود الهاتف</DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-3">
-                      <div className="text-sm text-muted-foreground">
-                        {serverStatus === 'connected' ? 'السيرفر متصل الآن.' :
-                         serverStatus === 'qr_ready' ? 'QR جاهز للمسح.' :
-                         serverStatus === 'connecting' ? 'السيرفر يحاول توليد QR...' :
-                         'السيرفر غير متصل حالياً.'}
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>رقم الهاتف (مع كود الدولة)</Label>
+                        <Input
+                          className="bg-secondary border-border text-lg tracking-wider"
+                          placeholder="20XXXXXXXXXX"
+                          value={pairingPhone}
+                          onChange={e => setPairingPhone(e.target.value)}
+                          dir="ltr"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          مثال: 201012345678 (مصر) - بدون + أو 00
+                        </p>
                       </div>
 
-                      <iframe
-                        src={`${savedServerUrl}/qr`}
-                        title="WhatsApp QR Viewer"
-                        className="w-full h-[420px] rounded-md border"
-                        loading="lazy"
-                      />
+                      <Button
+                        onClick={requestPairingCode}
+                        disabled={requestingCode || !pairingPhone.trim()}
+                        className="w-full"
+                      >
+                        {requestingCode ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 ml-2 animate-spin" />
+                            جاري التوليد...
+                          </>
+                        ) : 'توليد كود الربط'}
+                      </Button>
 
-                      <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <p className="text-xs text-muted-foreground">
-                          سبب آخر فصل: {statusDetails.lastDisconnectReason ?? 'غير متوفر'}
-                          {typeof statusDetails.queueLength === 'number' ? ` • الطابور: ${statusDetails.queueLength}` : ''}
-                        </p>
-                        <Button size="sm" variant="outline" onClick={() => checkServerStatus()}>
-                          تحديث الحالة
+                      {/* Show Pairing Code */}
+                      {pairingCode && (
+                        <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg text-center space-y-3">
+                          <p className="text-sm font-medium">كود الربط الخاص بك:</p>
+                          <p className="text-4xl font-bold tracking-[0.5em] text-blue-500" dir="ltr">
+                            {pairingCode}
+                          </p>
+                          <div className="text-xs text-muted-foreground space-y-1">
+                            <p>1. افتح واتساب على هاتفك</p>
+                            <p>2. اذهب إلى الإعدادات ← الأجهزة المرتبطة</p>
+                            <p>3. اضغط "ربط جهاز"</p>
+                            <p>4. اضغط "الربط برقم الهاتف بدلاً من ذلك"</p>
+                            <p>5. أدخل الكود أعلاه</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {serverStatus === 'connected' && (
+                        <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg text-center">
+                          <p className="text-sm font-bold text-green-500">✅ تم الربط بنجاح!</p>
+                        </div>
+                      )}
+
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" className="flex-1" onClick={handleResetSession}>
+                          إعادة تعيين الجلسة
+                        </Button>
+                        <Button variant="outline" size="sm" className="flex-1" onClick={() => checkServerStatus()}>
+                          فحص الاتصال
                         </Button>
                       </div>
                     </div>
@@ -385,7 +415,7 @@ export default function WhatsAppMessages() {
 
                 <Button size="sm" variant="outline" onClick={() => window.open(`${savedServerUrl}/qr`, '_blank')}>
                   <ExternalLink className="h-3 w-3 ml-1" />
-                  فتح QR
+                  فتح صفحة السيرفر
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => checkServerStatus()}>
                   فحص الاتصال
@@ -394,12 +424,12 @@ export default function WhatsAppMessages() {
             )}
           </div>
 
-          {/* Inline QR Display */}
-          {serverStatus === 'qr_ready' && qrData && (
-            <div className="mt-4 flex flex-col items-center gap-3 p-4 bg-white rounded-lg">
-              <p className="text-sm font-medium">امسح من واتساب: الإعدادات ← الأجهزة المرتبطة ← ربط جهاز</p>
-              <img src={qrData} alt="WhatsApp QR Code" className="w-64 h-64 rounded-lg" />
-              <p className="text-xs text-muted-foreground">يتحدث تلقائياً كل 5 ثوانٍ...</p>
+          {/* Inline Pairing Code Display */}
+          {serverStatus === 'pairing_code_ready' && pairingCode && !pairingOpen && (
+            <div className="mt-4 flex flex-col items-center gap-3 p-4 bg-card rounded-lg border">
+              <p className="text-sm font-medium">أدخل هذا الكود في واتساب: الإعدادات ← الأجهزة المرتبطة ← ربط جهاز ← الربط برقم الهاتف</p>
+              <p className="text-4xl font-bold tracking-[0.5em] text-blue-500" dir="ltr">{pairingCode}</p>
+              <p className="text-xs text-muted-foreground">يتم فحص الاتصال تلقائياً...</p>
             </div>
           )}
         </CardContent>
@@ -409,11 +439,11 @@ export default function WhatsAppMessages() {
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
         {[
           { label: 'الإجمالي', value: stats.total, color: '' },
-          { label: 'مُرسل', value: stats.sent, color: 'text-blue-600' },
-          { label: 'مؤكد', value: stats.confirmed, color: 'text-green-600' },
-          { label: 'ملغي', value: stats.cancelled, color: 'text-red-600' },
-          { label: 'مؤجل', value: stats.delayed, color: 'text-yellow-600' },
-          { label: 'بانتظار', value: stats.awaiting, color: 'text-orange-600' },
+          { label: 'مُرسل', value: stats.sent, color: 'text-blue-500' },
+          { label: 'مؤكد', value: stats.confirmed, color: 'text-green-500' },
+          { label: 'ملغي', value: stats.cancelled, color: 'text-red-500' },
+          { label: 'مؤجل', value: stats.delayed, color: 'text-yellow-500' },
+          { label: 'بانتظار', value: stats.awaiting, color: 'text-orange-500' },
         ].map(s => (
           <Card key={s.label}>
             <CardContent className="p-3 text-center">
@@ -500,19 +530,16 @@ export default function WhatsAppMessages() {
             <h3 className="text-lg font-bold">🚀 دليل الإعداد السريع</h3>
             <ol className="space-y-3 text-sm list-decimal list-inside">
               <li className="leading-relaxed">
-                <strong>أنشئ حساب GitHub</strong> - افتح <a href="https://github.com" target="_blank" className="text-primary underline">github.com</a> وأنشئ ريبو جديد اسمه <code className="bg-secondary px-1 rounded">whatsapp-bot</code>
+                <strong>أنشئ حساب GitHub</strong> - ارفع ملفات مجلد <code className="bg-secondary px-1 rounded">whatsapp-bot</code>
               </li>
               <li className="leading-relaxed">
-                <strong>ارفع الملفات</strong> - ارفع ملفي <code className="bg-secondary px-1 rounded">package.json</code> و <code className="bg-secondary px-1 rounded">index.js</code> من مجلد <code className="bg-secondary px-1 rounded">whatsapp-bot</code>
+                <strong>انشر على Railway</strong> - افتح <a href="https://railway.app" target="_blank" className="text-primary underline">railway.app</a> ← New Project ← Deploy from GitHub
               </li>
               <li className="leading-relaxed">
-                <strong>انشر على Render</strong> - افتح <a href="https://render.com" target="_blank" className="text-primary underline">render.com</a> ← New+ ← Web Service ← اختر الريبو ← Instance: Free ← Deploy
+                <strong>الصق الرابط</strong> - انسخ رابط Railway والصقه في "إعدادات السيرفر"
               </li>
               <li className="leading-relaxed">
-                <strong>الصق الرابط</strong> - انسخ رابط Render والصقه في "إعدادات السيرفر" أعلاه
-              </li>
-              <li className="leading-relaxed">
-                <strong>امسح QR</strong> - اضغط "فتح QR" وامسح الكود من واتساب
+                <strong>اربط بكود الهاتف</strong> - اضغط "ربط بكود الهاتف" وأدخل رقمك
               </li>
             </ol>
             <p className="text-xs text-muted-foreground">بعد الإعداد، كل أوردر جديد هيروح رسالة واتساب تلقائياً للعميل! 🎉</p>

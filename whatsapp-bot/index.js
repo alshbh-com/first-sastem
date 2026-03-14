@@ -29,6 +29,27 @@ let isPairingMode = false;
 const AUTH_DIR = path.join(process.cwd(), 'auth_session');
 const MESSAGE_DELAY = 3000;
 
+function toLatinDigits(value = '') {
+  return value
+    .replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+    .replace(/[۰-۹]/g, d => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)));
+}
+
+function normalizePhoneNumber(value = '') {
+  let normalized = toLatinDigits(String(value)).trim();
+  normalized = normalized.replace(/\s+/g, '');
+  normalized = normalized.replace(/^\+/, '');
+  normalized = normalized.replace(/^00/, '');
+  normalized = normalized.replace(/\D/g, '');
+
+  // Convenience for Egypt local format: 01XXXXXXXXX -> 20XXXXXXXXXX
+  if (/^01\d{9}$/.test(normalized)) {
+    normalized = `20${normalized.slice(1)}`;
+  }
+
+  return normalized;
+}
+
 function clearAuthSession() {
   try {
     fs.rmSync(AUTH_DIR, { recursive: true, force: true });

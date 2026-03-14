@@ -63,4 +63,37 @@
     @apply bg-background text-foreground;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   }
+
+  /* Stronger borders for cards, tables, inputs on desktop */
+  @media (min-width: 768px) {
+    .border,
+    [class*="border-"] {
+      border-style: solid;
+    }
+
+    table {
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    table th,
+    table td {
+      border-bottom: 1.5px solid hsl(var(--border));
+    }
+
+    table thead th {
+      border-bottom: 2px solid hsl(var(--border));
+    }
+
+    .rounded-lg,
+    .rounded-md {
+      border-width: 1.5px;
+    }
+
+    input,
+    textarea,
+    select {
+      border-width: 1.5px;
+    }
+  }
 }

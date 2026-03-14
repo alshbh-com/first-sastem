@@ -36,7 +36,7 @@ export default function WhatsAppMessages() {
   const [confirmationFilter, setConfirmationFilter] = useState('all');
   const [serverUrl, setServerUrl] = useState('');
   const [savedServerUrl, setSavedServerUrl] = useState('');
-  const [serverStatus, setServerStatus] = useState<'unknown' | 'connected' | 'connecting' | 'disconnected' | 'pairing_code_ready'>('unknown');
+  const [serverStatus, setServerStatus] = useState<'unknown' | 'connected' | 'connecting' | 'disconnected' | 'pairing_code_ready' | 'waiting_for_pairing'>('unknown');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [pairingOpen, setPairingOpen] = useState(false);
   const [savingUrl, setSavingUrl] = useState(false);
@@ -113,13 +113,25 @@ export default function WhatsAppMessages() {
         return;
       }
 
+      // Keep pairing code from server OR from local state
       if (statusData.pairingCode) {
         setServerStatus('pairing_code_ready');
         setPairingCode(statusData.pairingCode);
         return;
       }
 
-      if (['connecting', 'reconnecting'].includes(statusData.status)) {
+      // If we have a local pairing code and server is in pairing/reconnecting mode, keep showing it
+      if (pairingCode && ['waiting_for_pairing', 'reconnecting', 'connecting', 'pairing_code_ready'].includes(statusData.status)) {
+        setServerStatus('pairing_code_ready');
+        return;
+      }
+
+      if (['connecting', 'reconnecting', 'waiting_for_pairing'].includes(statusData.status)) {
+        // If we had a pairing code, keep showing it
+        if (pairingCode) {
+          setServerStatus('pairing_code_ready');
+          return;
+        }
         setServerStatus('connecting');
         return;
       }
@@ -127,6 +139,11 @@ export default function WhatsAppMessages() {
       setServerStatus('disconnected');
     } catch {
       if (requestId !== statusCheckRef.current) return;
+      // Don't mark as disconnected if we have a pairing code
+      if (pairingCode) {
+        setServerStatus('pairing_code_ready');
+        return;
+      }
       setServerStatus('disconnected');
     }
   };
@@ -325,6 +342,7 @@ export default function WhatsAppMessages() {
                   {serverStatus === 'connected' ? '✅ واتساب متصل ويعمل تلقائياً' :
                    serverStatus === 'pairing_code_ready' ? '📱 أدخل كود الربط في واتساب' :
                    serverStatus === 'connecting' ? '⏳ جاري الاتصال...' :
+                   serverStatus === 'waiting_for_pairing' ? '📱 في انتظار إدخال الكود...' :
                    !savedServerUrl ? '⚠️ السيرفر غير مُعد - اضغط إعدادات السيرفر' :
                    '❌ السيرفر غير متصل'}
                 </p>

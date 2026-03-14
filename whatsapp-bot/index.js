@@ -88,6 +88,10 @@ async function connectWhatsApp() {
     }
 
     if (connection === 'open') {
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
       connectionStatus = 'connected';
       lastDisconnectReason = null;
       qrCodeData = null;

@@ -36,10 +36,13 @@ export default function WhatsAppMessages() {
   const [confirmationFilter, setConfirmationFilter] = useState('all');
   const [serverUrl, setServerUrl] = useState('');
   const [savedServerUrl, setSavedServerUrl] = useState('');
-  const [serverStatus, setServerStatus] = useState<'unknown' | 'connected' | 'disconnected' | 'qr_ready'>('unknown');
+  const [serverStatus, setServerStatus] = useState<'unknown' | 'connected' | 'connecting' | 'disconnected' | 'qr_ready'>('unknown');
   const [qrData, setQrData] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
   const [savingUrl, setSavingUrl] = useState(false);
+  const [statusDetails, setStatusDetails] = useState<{ rawStatus?: string; lastDisconnectReason?: string | number | null; queueLength?: number }>({});
+  const statusCheckRef = useRef(0);
 
   const fetchMessages = async () => {
     setLoading(true);

@@ -14,6 +14,7 @@ let connectionStatus = 'disconnected';
 let lastDisconnectReason = null;
 let messageQueue = [];
 let isProcessingQueue = false;
+let reconnectTimer = null;
 
 const AUTH_DIR = path.join(process.cwd(), 'auth_session');
 

@@ -183,10 +183,11 @@ export default function WhatsAppMessages() {
     fetchServerUrl();
   }, []);
 
-  // Auto-refresh server status every 5 seconds when QR is showing
+  // Auto-refresh server status
   useEffect(() => {
-    if (serverStatus !== 'qr_ready' && serverStatus !== 'disconnected') return;
-    const interval = setInterval(() => checkServerStatus(), 5000);
+    if (!savedServerUrl) return;
+    const intervalMs = serverStatus === 'connected' ? 15000 : 5000;
+    const interval = setInterval(() => checkServerStatus(), intervalMs);
     return () => clearInterval(interval);
   }, [serverStatus, savedServerUrl]);
 

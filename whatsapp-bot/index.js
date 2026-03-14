@@ -219,7 +219,7 @@ app.post('/reset-session', (req, res) => {
   clearAuthSession();
   qrCodeData = null;
   connectionStatus = 'reconnecting';
-  setTimeout(connectWhatsApp, 1000);
+  scheduleReconnect(1000);
   res.json({ success: true, message: 'Session reset. New QR will be generated.' });
 });
 

@@ -648,7 +648,7 @@ export const themes: Theme[] = [
       sidebarPrimaryForeground: '0 0% 100%',
       sidebarAccent: '166 25% 94%',
       sidebarAccentForeground: '166 15% 10%',
-      sidebarBorder: '166 15% 90%',
+      sidebarBorder: '166 15% 84%',
     },
   },
   {

@@ -61,7 +61,7 @@ export const themes: Theme[] = [
       accentForeground: '0 0% 10%',
       destructive: '0 72% 51%',
       destructiveForeground: '0 0% 100%',
-      border: '220 13% 91%',
+      border: '220 13% 85%',
       input: '220 13% 91%',
       ring: '217 91% 50%',
       sidebarBackground: '0 0% 98%',

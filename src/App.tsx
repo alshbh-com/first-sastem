@@ -120,6 +120,7 @@ const App = () => (
               <Route path="/office-report" element={<OfficeReport />} />
               <Route path="/trash" element={<TrashBin />} />
               <Route path="/themes" element={<ThemesPage />} />
+              <Route path="/whatsapp-messages" element={<WhatsAppMessages />} />
               <Route path="/chat" element={<InternalChat />} />
             </Route>
             <Route path="*" element={<NotFound />} />

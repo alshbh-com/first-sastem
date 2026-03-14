@@ -36,7 +36,7 @@ export default function WhatsAppMessages() {
   const [confirmationFilter, setConfirmationFilter] = useState('all');
   const [serverUrl, setServerUrl] = useState('');
   const [savedServerUrl, setSavedServerUrl] = useState('');
-  const [serverStatus, setServerStatus] = useState<'unknown' | 'connected' | 'connecting' | 'disconnected' | 'pairing_code_ready'>('unknown');
+  const [serverStatus, setServerStatus] = useState<'unknown' | 'connected' | 'connecting' | 'disconnected' | 'pairing_code_ready' | 'waiting_for_pairing'>('unknown');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [pairingOpen, setPairingOpen] = useState(false);
   const [savingUrl, setSavingUrl] = useState(false);

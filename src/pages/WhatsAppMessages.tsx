@@ -406,11 +406,11 @@ export default function WhatsAppMessages() {
                           className="bg-secondary border-border text-lg tracking-wider"
                           placeholder="20XXXXXXXXXX"
                           value={pairingPhone}
-                          onChange={e => setPairingPhone(e.target.value)}
+                          onChange={e => setPairingPhone(toLatinDigits(e.target.value))}
                           dir="ltr"
                         />
                         <p className="text-xs text-muted-foreground">
-                          مثال: 201012345678 (مصر) - بدون + أو 00
+                          مثال: 201012345678 (مصر) — لازم يكون نفس الرقم المفتوح عليه واتساب الآن
                         </p>
                       </div>
 

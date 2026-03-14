@@ -173,7 +173,7 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
         logActivity('إضافة أوردر جديد', { customer: orderData.customer_name, barcode: inserted?.barcode });
         toast.success('تم إضافة الأوردر بنجاح');
 
-        // Show WhatsApp send option
+        // Auto-send WhatsApp message
         if (form.customer_phone && inserted?.confirmation_token) {
           const msg = generateWhatsAppMessage({
             tracking_id: inserted.tracking_id,
@@ -188,19 +188,13 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
             order_id: inserted.id,
             phone: form.customer_phone,
             message_text: msg,
-            status: 'pending',
+            status: 'sent',
+            sent_at: new Date().toISOString(),
           }).then(() => {});
 
-          toast(
-            'إرسال رسالة واتساب للعميل؟',
-            {
-              duration: 15000,
-              action: {
-                label: '📱 إرسال واتساب',
-                onClick: () => openWhatsApp(form.customer_phone, msg),
-              },
-            }
-          );
+          // Auto-open WhatsApp
+          openWhatsApp(form.customer_phone, msg);
+          toast.success('تم فتح واتساب لإرسال رسالة التأكيد للعميل');
         }
       }
 

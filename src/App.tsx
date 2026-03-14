@@ -47,6 +47,7 @@ import OfficeReport from "@/pages/OfficeReport";
 import TrashBin from "@/pages/TrashBin";
 import ThemesPage from "@/pages/ThemesPage";
 import OrderAction from "@/pages/OrderAction";
+import WhatsAppMessages from "@/pages/WhatsAppMessages";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -119,6 +120,7 @@ const App = () => (
               <Route path="/office-report" element={<OfficeReport />} />
               <Route path="/trash" element={<TrashBin />} />
               <Route path="/themes" element={<ThemesPage />} />
+              <Route path="/whatsapp-messages" element={<WhatsAppMessages />} />
               <Route path="/chat" element={<InternalChat />} />
             </Route>
             <Route path="*" element={<NotFound />} />

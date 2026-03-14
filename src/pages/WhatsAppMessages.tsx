@@ -29,6 +29,28 @@ interface WhatsAppMessage {
   };
 }
 
+const toLatinDigits = (value: string) =>
+  value
+    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
+    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)));
+
+const normalizePairingPhone = (value: string) => {
+  let normalized = toLatinDigits(value).trim();
+  normalized = normalized.replace(/\s+/g, "");
+  normalized = normalized.replace(/^\+/, "");
+  normalized = normalized.replace(/^00/, "");
+  normalized = normalized.replace(/\D/g, "");
+
+  // تسهيل إدخال الرقم المحلي المصري: 01XXXXXXXXX -> 20XXXXXXXXXX
+  if (/^01\d{9}$/.test(normalized)) {
+    normalized = `20${normalized.slice(1)}`;
+  }
+
+  return normalized;
+};
+
+const isValidPairingPhone = (value: string) => /^\d{10,15}$/.test(value);
+
 export default function WhatsAppMessages() {
   const [messages, setMessages] = useState<WhatsAppMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -177,14 +199,22 @@ export default function WhatsAppMessages() {
 
   const requestPairingCode = async () => {
     if (!pairingPhone.trim() || !savedServerUrl) return;
+
+    const normalizedPhone = normalizePairingPhone(pairingPhone);
+    if (!isValidPairingPhone(normalizedPhone)) {
+      toast.error('رقم الهاتف غير صحيح. اكتب الرقم بصيغة دولية مثل 2010XXXXXXXX');
+      return;
+    }
+
     setRequestingCode(true);
     setPairingCode(null);
+    setPairingPhone(normalizedPhone);
 
     try {
       const res = await fetch(`${savedServerUrl}/request-pairing-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: pairingPhone.trim() }),
+        body: JSON.stringify({ phone: normalizedPhone }),
       });
       const data = await res.json();
 
@@ -194,8 +224,9 @@ export default function WhatsAppMessages() {
         setPairingOpen(false);
       } else if (data.success && data.code) {
         setPairingCode(data.code);
+        if (data.phone) setPairingPhone(data.phone);
         setServerStatus('pairing_code_ready');
-        toast.success('تم توليد كود الربط! أدخله في واتساب');
+        toast.success('تم توليد كود الربط! استخدمه فورًا داخل نفس رقم واتساب');
       } else {
         toast.error(data.error || 'فشل في توليد الكود');
       }
@@ -375,11 +406,11 @@ export default function WhatsAppMessages() {
                           className="bg-secondary border-border text-lg tracking-wider"
                           placeholder="20XXXXXXXXXX"
                           value={pairingPhone}
-                          onChange={e => setPairingPhone(e.target.value)}
+                          onChange={e => setPairingPhone(toLatinDigits(e.target.value))}
                           dir="ltr"
                         />
                         <p className="text-xs text-muted-foreground">
-                          مثال: 201012345678 (مصر) - بدون + أو 00
+                          مثال: 201012345678 (مصر) — لازم يكون نفس الرقم المفتوح عليه واتساب الآن
                         </p>
                       </div>
 

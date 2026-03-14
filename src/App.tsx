@@ -68,6 +68,7 @@ const App = () => (
           <Routes>
             <Route path="/login" element={<LoginRedirect />} />
             <Route path="/tracking" element={<TrackingPage />} />
+            <Route path="/order-action" element={<OrderAction />} />
             <Route path="/courier-orders" element={
               <ProtectedRoute><CourierOrders /></ProtectedRoute>
             } />

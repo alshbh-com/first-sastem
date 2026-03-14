@@ -310,6 +310,7 @@ export default function WhatsAppMessages() {
       <Card className={`border-2 ${
         serverStatus === 'connected' ? 'border-green-300 bg-green-50/50' :
         serverStatus === 'qr_ready' ? 'border-blue-300 bg-blue-50/50' :
+        serverStatus === 'connecting' ? 'border-border bg-muted/40' :
         savedServerUrl ? 'border-red-300 bg-red-50/50' :
         'border-yellow-300 bg-yellow-50/50'
       }`}>

@@ -3,7 +3,8 @@ import {
   Truck, Wallet, CreditCard, ScrollText, Settings, LogOut, Archive, Building,
   PackageSearch, Search, Printer, DollarSign, MapPin, Users, BarChart3,
   TrendingUp, Calendar, UserCheck, MessageSquare, Locate, FileSpreadsheet,
-  CircleDot, Calculator, Contact, ClipboardList, Trash2, FileBarChart, Navigation2, Palette
+  CircleDot, Calculator, Contact, ClipboardList, Trash2, FileBarChart, Navigation2, Palette,
+  MessageCircle
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';

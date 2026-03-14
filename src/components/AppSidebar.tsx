@@ -59,6 +59,7 @@ const toolsItems = [
   { title: 'سلة المحذوفات', url: '/trash', icon: Trash2 },
   { title: 'الإعدادات', url: '/settings', icon: Settings },
   { title: 'سيستم الحسابات', url: '/accounting-system', icon: Calculator },
+  { title: 'الثيمات', url: '/themes', icon: Palette },
 ];
 
 const groups = [

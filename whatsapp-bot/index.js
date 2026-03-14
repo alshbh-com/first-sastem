@@ -218,8 +218,10 @@ app.get('/status', (req, res) => {
 // Request pairing code with phone number
 app.post('/request-pairing-code', async (req, res) => {
   const { phone } = req.body;
-  if (!phone) {
-    return res.status(400).json({ success: false, error: 'phone number required' });
+  const normalizedPhone = normalizePhoneNumber(phone);
+
+  if (!normalizedPhone || !/^\d{10,15}$/.test(normalizedPhone)) {
+    return res.status(400).json({ success: false, error: 'Invalid phone number. Use international format like 2010XXXXXXXX' });
   }
 
   if (connectionStatus === 'connected') {

@@ -51,6 +51,7 @@ const reportsItems = [
 ];
 
 const toolsItems = [
+  { title: 'رسائل واتساب', url: '/whatsapp-messages', icon: MessageCircle },
   { title: 'تتبع الشحنات', url: '/tracking', icon: Locate },
   { title: 'الطباعة', url: '/print', icon: Printer },
   { title: 'ملاحظات الأوردرات', url: '/order-notes', icon: MessageSquare },

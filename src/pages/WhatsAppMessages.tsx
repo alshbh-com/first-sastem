@@ -320,6 +320,8 @@ export default function WhatsAppMessages() {
                 <Wifi className="h-6 w-6 text-green-600" />
               ) : serverStatus === 'qr_ready' ? (
                 <QrCode className="h-6 w-6 text-blue-600" />
+              ) : serverStatus === 'connecting' ? (
+                <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
               ) : (
                 <WifiOff className="h-6 w-6 text-red-600" />
               )}
@@ -327,16 +329,59 @@ export default function WhatsAppMessages() {
                 <p className="font-bold">
                   {serverStatus === 'connected' ? '✅ واتساب متصل ويعمل تلقائياً' :
                    serverStatus === 'qr_ready' ? '📱 امسح QR Code لربط واتساب' :
+                   serverStatus === 'connecting' ? '⏳ جاري تجهيز QR من السيرفر...' :
                    !savedServerUrl ? '⚠️ السيرفر غير مُعد - اضغط إعدادات السيرفر' :
                    '❌ السيرفر غير متصل'}
                 </p>
                 {savedServerUrl && (
                   <p className="text-xs text-muted-foreground" dir="ltr">{savedServerUrl}</p>
                 )}
+                {statusDetails.rawStatus && (
+                  <p className="text-xs text-muted-foreground mt-1">الحالة الفعلية من السيرفر: {statusDetails.rawStatus}</p>
+                )}
               </div>
             </div>
             {savedServerUrl && (
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
+                <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="outline">
+                      <QrCode className="h-3 w-3 ml-1" />
+                      عرض الحالة و QR
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="bg-card border-border max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>حالة السيرفر و QR مباشرة</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-3">
+                      <div className="text-sm text-muted-foreground">
+                        {serverStatus === 'connected' ? 'السيرفر متصل الآن.' :
+                         serverStatus === 'qr_ready' ? 'QR جاهز للمسح.' :
+                         serverStatus === 'connecting' ? 'السيرفر يحاول توليد QR...' :
+                         'السيرفر غير متصل حالياً.'}
+                      </div>
+
+                      <iframe
+                        src={`${savedServerUrl}/qr`}
+                        title="WhatsApp QR Viewer"
+                        className="w-full h-[420px] rounded-md border"
+                        loading="lazy"
+                      />
+
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <p className="text-xs text-muted-foreground">
+                          سبب آخر فصل: {statusDetails.lastDisconnectReason ?? 'غير متوفر'}
+                          {typeof statusDetails.queueLength === 'number' ? ` • الطابور: ${statusDetails.queueLength}` : ''}
+                        </p>
+                        <Button size="sm" variant="outline" onClick={() => checkServerStatus()}>
+                          تحديث الحالة
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
                 <Button size="sm" variant="outline" onClick={() => window.open(`${savedServerUrl}/qr`, '_blank')}>
                   <ExternalLink className="h-3 w-3 ml-1" />
                   فتح QR

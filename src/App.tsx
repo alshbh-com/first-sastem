@@ -47,6 +47,7 @@ import OfficeReport from "@/pages/OfficeReport";
 import TrashBin from "@/pages/TrashBin";
 import ThemesPage from "@/pages/ThemesPage";
 import OrderAction from "@/pages/OrderAction";
+import WhatsAppMessages from "@/pages/WhatsAppMessages";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();

@@ -141,14 +141,19 @@ async function connectWhatsApp(phoneForPairing) {
   if (phoneForPairing && !state.creds.registered) {
     try {
       // Wait for the socket to initialize
-      await new Promise(r => setTimeout(r, 3000));
-      const cleanPhone = phoneForPairing.replace(/[^0-9]/g, '');
-      const code = await sock.requestPairingCode(cleanPhone);
+      await new Promise(r => setTimeout(r, 4000));
+
+      const normalizedPhone = normalizePhoneNumber(phoneForPairing);
+      if (!/^\d{10,15}$/.test(normalizedPhone)) {
+        throw new Error('Invalid phone format. Use international format like 2010XXXXXXXX');
+      }
+
+      const code = await sock.requestPairingCode(normalizedPhone);
       pairingCode = code;
-      pairingPhoneNumber = cleanPhone;
+      pairingPhoneNumber = normalizedPhone;
       connectionStatus = 'pairing_code_ready';
       isPairingMode = true;
-      console.log(`📱 Pairing code generated for ${cleanPhone}: ${code}`);
+      console.log(`📱 Pairing code generated for ${normalizedPhone}: ${code}`);
     } catch (err) {
       console.error('❌ Failed to generate pairing code:', err.message);
       pairingCode = null;

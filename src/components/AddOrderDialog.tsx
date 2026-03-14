@@ -172,28 +172,22 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
         logActivity('إضافة أوردر جديد', { customer: orderData.customer_name, barcode: inserted?.barcode });
         toast.success('تم إضافة الأوردر بنجاح');
 
-        // Auto-send WhatsApp message
-        if (form.customer_phone && inserted?.confirmation_token) {
-          const msg = generateWhatsAppMessage({
-            tracking_id: inserted.tracking_id,
-            product_name: form.product_name || 'بدون منتج',
-            price: price,
-            confirmation_token: inserted.confirmation_token,
-            customer_name: form.customer_name,
+        // Auto-send WhatsApp message via edge function (fully automatic)
+        if (form.customer_phone && inserted?.id) {
+          supabase.functions.invoke('send-whatsapp', {
+            body: { order_id: inserted.id },
+          }).then(({ data, error: fnErr }) => {
+            if (fnErr) {
+              console.error('WhatsApp send error:', fnErr);
+              toast.error('فشل إرسال رسالة واتساب - تأكد من إعداد السيرفر');
+            } else if (data?.success) {
+              toast.success('📱 تم إرسال رسالة واتساب للعميل تلقائياً');
+            } else if (data?.status === 'no_server') {
+              toast.warning('سيرفر واتساب غير مُعد - روح صفحة رسائل واتساب لإعداده');
+            } else {
+              toast.error('فشل إرسال واتساب: ' + (data?.error || 'خطأ غير معروف'));
+            }
           });
-
-          // Log message
-          supabase.from('whatsapp_messages').insert({
-            order_id: inserted.id,
-            phone: form.customer_phone,
-            message_text: msg,
-            status: 'sent',
-            sent_at: new Date().toISOString(),
-          }).then(() => {});
-
-          // Auto-open WhatsApp
-          openWhatsApp(form.customer_phone, msg);
-          toast.success('تم فتح واتساب لإرسال رسالة التأكيد للعميل');
         }
       }
 

@@ -208,6 +208,9 @@ app.get('/qr-data', (req, res) => {
     connected: connectionStatus === 'connected',
     qr: qrCodeData,
     status: connectionStatus,
+    qrAvailable: !!qrCodeData,
+    queueLength: messageQueue.length,
+    lastDisconnectReason,
   });
 });
 

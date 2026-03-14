@@ -240,7 +240,7 @@ app.post('/request-pairing-code', async (req, res) => {
       reconnectTimer = null;
     }
 
-    await connectWhatsApp(phone);
+    await connectWhatsApp(normalizedPhone);
     
     // Wait up to 20 seconds for pairing code
     let attempts = 0;

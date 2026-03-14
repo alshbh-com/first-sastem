@@ -45,6 +45,7 @@ import AccountingDashboard from "@/pages/AccountingDashboard";
 import AccountingLayout from "@/components/AccountingLayout";
 import OfficeReport from "@/pages/OfficeReport";
 import TrashBin from "@/pages/TrashBin";
+import ThemesPage from "@/pages/ThemesPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();

@@ -766,6 +766,8 @@ export type Database = {
           barcode: string | null
           color: string | null
           company_id: string | null
+          confirmation_status: string | null
+          confirmation_token: string | null
           courier_id: string | null
           created_at: string
           created_by: string | null
@@ -797,6 +799,8 @@ export type Database = {
           barcode?: string | null
           color?: string | null
           company_id?: string | null
+          confirmation_status?: string | null
+          confirmation_token?: string | null
           courier_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -828,6 +832,8 @@ export type Database = {
           barcode?: string | null
           color?: string | null
           company_id?: string | null
+          confirmation_status?: string | null
+          confirmation_token?: string | null
           courier_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -1007,6 +1013,44 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      whatsapp_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message_text: string
+          order_id: string
+          phone: string
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message_text: string
+          order_id: string
+          phone: string
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message_text?: string
+          order_id?: string
+          phone?: string
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_messages_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

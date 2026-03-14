@@ -46,6 +46,7 @@ import AccountingLayout from "@/components/AccountingLayout";
 import OfficeReport from "@/pages/OfficeReport";
 import TrashBin from "@/pages/TrashBin";
 import ThemesPage from "@/pages/ThemesPage";
+import OrderAction from "@/pages/OrderAction";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -67,6 +68,7 @@ const App = () => (
           <Routes>
             <Route path="/login" element={<LoginRedirect />} />
             <Route path="/tracking" element={<TrackingPage />} />
+            <Route path="/order-action" element={<OrderAction />} />
             <Route path="/courier-orders" element={
               <ProtectedRoute><CourierOrders /></ProtectedRoute>
             } />

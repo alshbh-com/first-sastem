@@ -74,18 +74,17 @@ async function connectWhatsApp() {
     if (connection === 'close') {
       const reason = lastDisconnect?.error?.output?.statusCode;
       lastDisconnectReason = reason ?? 'unknown';
-      connectionStatus = 'disconnected';
 
       if (reason === DisconnectReason.loggedOut) {
         console.log('🔐 Session logged out. Resetting auth and regenerating QR...');
         qrCodeData = null;
         clearAuthSession();
-        setTimeout(connectWhatsApp, 2000);
+        scheduleReconnect(2000);
         return;
       }
 
-      console.log('🔄 Reconnecting...');
-      setTimeout(connectWhatsApp, 5000);
+      console.log(`🔄 Reconnecting... (reason: ${lastDisconnectReason})`);
+      scheduleReconnect(5000);
     }
 
     if (connection === 'open') {

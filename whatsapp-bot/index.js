@@ -1,4 +1,6 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
 const QRCode = require('qrcode');
 const pino = require('pino');
@@ -9,14 +11,28 @@ app.use(express.json());
 let sock = null;
 let qrCodeData = null;
 let connectionStatus = 'disconnected';
+let lastDisconnectReason = null;
 let messageQueue = [];
 let isProcessingQueue = false;
+
+const AUTH_DIR = path.join(process.cwd(), 'auth_session');
 
 // Rate limiting: 1 message every 3 seconds
 const MESSAGE_DELAY = 3000;
 
+function clearAuthSession() {
+  try {
+    fs.rmSync(AUTH_DIR, { recursive: true, force: true });
+    console.log('🧹 auth_session cleared');
+  } catch (err) {
+    console.error('⚠️ Failed to clear auth_session:', err.message);
+  }
+}
+
 async function connectWhatsApp() {
-  const { state, saveCreds } = await useMultiFileAuthState('./auth_session');
+  connectionStatus = 'connecting';
+
+  const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
 
   sock = makeWASocket({
     auth: state,
@@ -32,23 +48,30 @@ async function connectWhatsApp() {
     if (qr) {
       qrCodeData = await QRCode.toDataURL(qr);
       connectionStatus = 'qr_ready';
+      lastDisconnectReason = null;
       console.log('📱 QR Code ready! Open /qr to scan');
     }
 
     if (connection === 'close') {
       const reason = lastDisconnect?.error?.output?.statusCode;
+      lastDisconnectReason = reason ?? 'unknown';
       connectionStatus = 'disconnected';
 
-      if (reason !== DisconnectReason.loggedOut) {
-        console.log('🔄 Reconnecting...');
-        setTimeout(connectWhatsApp, 5000);
-      } else {
-        console.log('❌ Logged out. Delete auth_session folder and restart.');
+      if (reason === DisconnectReason.loggedOut) {
+        console.log('🔐 Session logged out. Resetting auth and regenerating QR...');
+        qrCodeData = null;
+        clearAuthSession();
+        setTimeout(connectWhatsApp, 2000);
+        return;
       }
+
+      console.log('🔄 Reconnecting...');
+      setTimeout(connectWhatsApp, 5000);
     }
 
     if (connection === 'open') {
       connectionStatus = 'connected';
+      lastDisconnectReason = null;
       qrCodeData = null;
       console.log('✅ WhatsApp connected!');
       processQueue();
@@ -122,7 +145,8 @@ app.get('/qr', (req, res) => {
         .card{background:white;padding:40px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.1);text-align:center;}</style></head>
         <body><div class="card">
           <h1>⏳ جاري تحميل QR...</h1>
-          <p>الصفحة ستتحدث تلقائياً</p>
+          <p>الحالة الحالية: <b>${connectionStatus}</b></p>
+          <p style="font-size:12px;color:#666">${lastDisconnectReason ? `سبب آخر فصل: ${lastDisconnectReason}` : 'الصفحة ستتحدث تلقائياً'}</p>
         </div></body>
       </html>
     `);
@@ -152,6 +176,7 @@ app.get('/status', (req, res) => {
     status: connectionStatus,
     qrAvailable: !!qrCodeData,
     queueLength: messageQueue.length,
+    lastDisconnectReason,
   });
 });
 
@@ -162,6 +187,15 @@ app.get('/qr-data', (req, res) => {
     qr: qrCodeData,
     status: connectionStatus,
   });
+});
+
+// Manual reset session
+app.post('/reset-session', (req, res) => {
+  clearAuthSession();
+  qrCodeData = null;
+  connectionStatus = 'reconnecting';
+  setTimeout(connectWhatsApp, 1000);
+  res.json({ success: true, message: 'Session reset. New QR will be generated.' });
 });
 
 // Send message endpoint

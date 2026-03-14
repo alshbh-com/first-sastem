@@ -39,6 +39,16 @@ function clearAuthSession() {
   }
 }
 
+function scheduleReconnect(delayMs = 5000) {
+  if (reconnectTimer) return;
+
+  connectionStatus = 'reconnecting';
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    connectWhatsApp();
+  }, delayMs);
+}
+
 async function connectWhatsApp() {
   connectionStatus = 'connecting';
 

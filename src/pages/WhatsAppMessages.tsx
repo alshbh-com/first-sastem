@@ -79,22 +79,102 @@ export default function WhatsAppMessages() {
   };
 
   const checkServerStatus = async (url?: string) => {
-    const checkUrl = url || savedServerUrl;
-    if (!checkUrl) { setServerStatus('unknown'); return; }
+    const checkUrl = (url || savedServerUrl).replace(/\/+$/, '');
+    const requestId = ++statusCheckRef.current;
+
+    if (!checkUrl) {
+      setServerStatus('unknown');
+      setQrData(null);
+      return;
+    }
+
     try {
-      const res = await fetch(`${checkUrl}/qr-data`);
-      const data = await res.json();
-      if (data.connected) {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), 7000);
+      const statusResponse = await fetch(`${checkUrl}/status`, { signal: controller.signal });
+      window.clearTimeout(timeoutId);
+
+      if (!statusResponse.ok) {
+        throw new Error(`status_http_${statusResponse.status}`);
+      }
+
+      const statusData = await statusResponse.json();
+      if (requestId !== statusCheckRef.current) return;
+
+      setStatusDetails({
+        rawStatus: statusData.status,
+        lastDisconnectReason: statusData.lastDisconnectReason,
+        queueLength: statusData.queueLength,
+      });
+
+      if (statusData.connected) {
         setServerStatus('connected');
         setQrData(null);
-      } else if (data.qr) {
-        setServerStatus('qr_ready');
-        setQrData(data.qr);
-      } else {
-        setServerStatus('disconnected');
+        return;
       }
-    } catch {
+
+      if (statusData.qrAvailable) {
+        const qrResponse = await fetch(`${checkUrl}/qr-data`);
+        if (qrResponse.ok) {
+          const qrDataResponse = await qrResponse.json();
+          if (requestId !== statusCheckRef.current) return;
+          if (qrDataResponse.qr) {
+            setServerStatus('qr_ready');
+            setQrData(qrDataResponse.qr);
+            return;
+          }
+        }
+      }
+
+      if (['connecting', 'reconnecting'].includes(statusData.status)) {
+        setServerStatus('connecting');
+        setQrData(null);
+        return;
+      }
+
       setServerStatus('disconnected');
+      setQrData(null);
+    } catch (error) {
+      try {
+        const fallbackResponse = await fetch(`${checkUrl}/qr-data`);
+        if (!fallbackResponse.ok) {
+          throw new Error(`qr_http_${fallbackResponse.status}`);
+        }
+
+        const fallbackData = await fallbackResponse.json();
+        if (requestId !== statusCheckRef.current) return;
+
+        setStatusDetails((prev) => ({ ...prev, rawStatus: fallbackData.status ?? prev.rawStatus }));
+
+        if (fallbackData.connected) {
+          setServerStatus('connected');
+          setQrData(null);
+          return;
+        }
+
+        if (fallbackData.qr) {
+          setServerStatus('qr_ready');
+          setQrData(fallbackData.qr);
+          return;
+        }
+
+        if (['connecting', 'reconnecting'].includes(fallbackData.status)) {
+          setServerStatus('connecting');
+          setQrData(null);
+          return;
+        }
+
+        setServerStatus('disconnected');
+        setQrData(null);
+      } catch {
+        if (requestId !== statusCheckRef.current) return;
+        setServerStatus('disconnected');
+        setQrData(null);
+        setStatusDetails((prev) => ({
+          ...prev,
+          lastDisconnectReason: prev.lastDisconnectReason ?? (error instanceof Error ? error.message : 'fetch_failed'),
+        }));
+      }
     }
   };
 

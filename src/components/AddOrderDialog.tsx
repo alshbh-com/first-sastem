@@ -184,8 +184,8 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
           });
 
           // Log message
-          await supabase.from('whatsapp_messages').insert({
-            order_id: inserted.barcode ? undefined : undefined,
+          supabase.from('whatsapp_messages').insert({
+            order_id: inserted.id,
             phone: form.customer_phone,
             message_text: msg,
             status: 'pending',

@@ -3,7 +3,7 @@ import {
   Truck, Wallet, CreditCard, ScrollText, Settings, LogOut, Archive, Building,
   PackageSearch, Search, Printer, DollarSign, MapPin, Users, BarChart3,
   TrendingUp, Calendar, UserCheck, MessageSquare, Locate, FileSpreadsheet,
-  CircleDot, Calculator, Contact, ClipboardList, Trash2, FileBarChart, Navigation2
+  CircleDot, Calculator, Contact, ClipboardList, Trash2, FileBarChart, Navigation2, Palette
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -59,6 +59,7 @@ const toolsItems = [
   { title: 'سلة المحذوفات', url: '/trash', icon: Trash2 },
   { title: 'الإعدادات', url: '/settings', icon: Settings },
   { title: 'سيستم الحسابات', url: '/accounting-system', icon: Calculator },
+  { title: 'الثيمات', url: '/themes', icon: Palette },
 ];
 
 const groups = [

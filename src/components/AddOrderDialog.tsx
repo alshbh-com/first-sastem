@@ -159,8 +159,9 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
         toast.success('تم تحديث الأوردر');
       } else {
         orderData.tracking_id = 'temp';
+        orderData.confirmation_status = 'awaiting_confirmation';
 
-        const { data: inserted, error } = await supabase.from('orders').insert(orderData).select('barcode').single();
+        const { data: inserted, error } = await supabase.from('orders').insert(orderData).select('barcode, tracking_id, confirmation_token').single();
         if (error) throw error;
 
         if (form.product_id && qty > 0) {
@@ -171,6 +172,36 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
         }
         logActivity('إضافة أوردر جديد', { customer: orderData.customer_name, barcode: inserted?.barcode });
         toast.success('تم إضافة الأوردر بنجاح');
+
+        // Show WhatsApp send option
+        if (form.customer_phone && inserted?.confirmation_token) {
+          const msg = generateWhatsAppMessage({
+            tracking_id: inserted.tracking_id,
+            product_name: form.product_name || 'بدون منتج',
+            price: price,
+            confirmation_token: inserted.confirmation_token,
+            customer_name: form.customer_name,
+          });
+
+          // Log message
+          await supabase.from('whatsapp_messages').insert({
+            order_id: inserted.barcode ? undefined : undefined,
+            phone: form.customer_phone,
+            message_text: msg,
+            status: 'pending',
+          }).then(() => {});
+
+          toast(
+            'إرسال رسالة واتساب للعميل؟',
+            {
+              duration: 15000,
+              action: {
+                label: '📱 إرسال واتساب',
+                onClick: () => openWhatsApp(form.customer_phone, msg),
+              },
+            }
+          );
+        }
       }
 
       setForm(emptyForm);

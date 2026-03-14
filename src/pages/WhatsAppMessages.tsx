@@ -199,14 +199,22 @@ export default function WhatsAppMessages() {
 
   const requestPairingCode = async () => {
     if (!pairingPhone.trim() || !savedServerUrl) return;
+
+    const normalizedPhone = normalizePairingPhone(pairingPhone);
+    if (!isValidPairingPhone(normalizedPhone)) {
+      toast.error('رقم الهاتف غير صحيح. اكتب الرقم بصيغة دولية مثل 2010XXXXXXXX');
+      return;
+    }
+
     setRequestingCode(true);
     setPairingCode(null);
+    setPairingPhone(normalizedPhone);
 
     try {
       const res = await fetch(`${savedServerUrl}/request-pairing-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: pairingPhone.trim() }),
+        body: JSON.stringify({ phone: normalizedPhone }),
       });
       const data = await res.json();
 
@@ -216,8 +224,9 @@ export default function WhatsAppMessages() {
         setPairingOpen(false);
       } else if (data.success && data.code) {
         setPairingCode(data.code);
+        if (data.phone) setPairingPhone(data.phone);
         setServerStatus('pairing_code_ready');
-        toast.success('تم توليد كود الربط! أدخله في واتساب');
+        toast.success('تم توليد كود الربط! استخدمه فورًا داخل نفس رقم واتساب');
       } else {
         toast.error(data.error || 'فشل في توليد الكود');
       }

@@ -305,17 +305,17 @@ export default function ExcelImport() {
   };
 
   return (
-    <div dir="rtl" className="p-4 md:p-6 space-y-6 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">استيراد من Excel</h1>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={downloadTemplate}>
-            <Download className="h-4 w-4 ml-1" />
+    <div dir="rtl" className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 max-w-5xl mx-auto">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <h1 className="text-lg sm:text-2xl font-bold">استيراد من Excel</h1>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button variant="outline" size="sm" className="flex-1 sm:flex-none text-xs sm:text-sm" onClick={downloadTemplate}>
+            <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4 ml-1" />
             تحميل القالب
           </Button>
           {step !== "upload" && (
-            <Button variant="outline" size="sm" onClick={reset}>
-              <RotateCcw className="h-4 w-4 ml-1" />
+            <Button variant="outline" size="sm" className="flex-1 sm:flex-none text-xs sm:text-sm" onClick={reset}>
+              <RotateCcw className="h-3.5 w-3.5 sm:h-4 sm:w-4 ml-1" />
               ملف جديد
             </Button>
           )}
@@ -323,15 +323,15 @@ export default function ExcelImport() {
       </div>
 
       {/* Steps indicator */}
-      <div className="flex items-center justify-center gap-2">
+      <div className="flex items-center justify-center gap-1 sm:gap-2">
         {[
-          { key: "upload", label: "رفع الملف", icon: Upload },
-          { key: "mapping", label: "ربط الأعمدة", icon: FileSpreadsheet },
-          { key: "preview", label: "معاينة واستيراد", icon: CheckCircle },
+          { key: "upload", label: "رفع", labelFull: "رفع الملف", icon: Upload },
+          { key: "mapping", label: "ربط", labelFull: "ربط الأعمدة", icon: FileSpreadsheet },
+          { key: "preview", label: "استيراد", labelFull: "معاينة واستيراد", icon: CheckCircle },
         ].map((s, i) => (
-          <div key={s.key} className="flex items-center gap-2">
+          <div key={s.key} className="flex items-center gap-1 sm:gap-2">
             <div
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-sm font-medium transition-colors ${
                 step === s.key
                   ? "bg-primary text-primary-foreground"
                   : ["upload", "mapping", "preview"].indexOf(step) > i
@@ -339,10 +339,11 @@ export default function ExcelImport() {
                   : "bg-muted text-muted-foreground"
               }`}
             >
-              <s.icon className="h-4 w-4" />
-              {s.label}
+              <s.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">{s.labelFull}</span>
+              <span className="sm:hidden">{s.label}</span>
             </div>
-            {i < 2 && <div className="w-8 h-px bg-border" />}
+            {i < 2 && <div className="w-4 sm:w-8 h-px bg-border" />}
           </div>
         ))}
       </div>

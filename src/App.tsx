@@ -48,6 +48,7 @@ import TrashBin from "@/pages/TrashBin";
 import ThemesPage from "@/pages/ThemesPage";
 import OrderAction from "@/pages/OrderAction";
 import WhatsAppMessages from "@/pages/WhatsAppMessages";
+import ExcelImport from "@/pages/ExcelImport";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -121,6 +122,7 @@ const App = () => (
               <Route path="/trash" element={<TrashBin />} />
               <Route path="/themes" element={<ThemesPage />} />
               <Route path="/whatsapp-messages" element={<WhatsAppMessages />} />
+              <Route path="/excel-import" element={<ExcelImport />} />
               <Route path="/chat" element={<InternalChat />} />
             </Route>
             <Route path="*" element={<NotFound />} />

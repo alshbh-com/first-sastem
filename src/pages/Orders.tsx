@@ -185,8 +185,9 @@ export default function Orders() {
                   <TableHead className="text-right">الإجمالي</TableHead>
                   <TableHead className="text-right hidden md:table-cell">المكتب</TableHead>
                   <TableHead className="text-right">المندوب</TableHead>
-                  <TableHead className="text-right">الحالة</TableHead>
-                  <TableHead className="text-right w-10">تعديل</TableHead>
+                   <TableHead className="text-right">الحالة</TableHead>
+                   <TableHead className="text-right">واتساب</TableHead>
+                   <TableHead className="text-right w-10">تعديل</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

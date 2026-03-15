@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { Search, UserPlus, Lock, Trash2, UserMinus, Pencil } from 'lucide-react';
+import { Search, UserPlus, Lock, Trash2, UserMinus, Pencil, CheckCircle, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import AddOrderDialog from '@/components/AddOrderDialog';
 import { useAuth } from '@/contexts/AuthContext';

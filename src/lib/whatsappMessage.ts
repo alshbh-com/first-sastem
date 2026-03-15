@@ -41,14 +41,14 @@ export function openWhatsApp(phone: string, message: string) {
   // Clean phone number - remove spaces, dashes, etc.
   let cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
 
-  // If starts with 0, assume Libya (+218)
+  // Egyptian numbers: 01XXXXXXXXX -> 201XXXXXXXXX
   if (cleanPhone.startsWith('0')) {
-    cleanPhone = '218' + cleanPhone.substring(1);
+    cleanPhone = '2' + cleanPhone;
   }
 
   // If doesn't start with +, add it
-  if (!cleanPhone.startsWith('+') && !cleanPhone.startsWith('218')) {
-    cleanPhone = '218' + cleanPhone;
+  if (!cleanPhone.startsWith('+') && !cleanPhone.startsWith('2')) {
+    cleanPhone = '2' + cleanPhone;
   }
 
   cleanPhone = cleanPhone.replace('+', '');

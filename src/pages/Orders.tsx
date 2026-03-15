@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { openWhatsApp } from '@/lib/whatsappMessage';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -7,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { Search, UserPlus, Lock, Trash2, UserMinus, Pencil } from 'lucide-react';
+import { Search, UserPlus, Lock, Trash2, UserMinus, Pencil, CheckCircle, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import AddOrderDialog from '@/components/AddOrderDialog';
 import { useAuth } from '@/contexts/AuthContext';
@@ -184,8 +185,9 @@ export default function Orders() {
                   <TableHead className="text-right">الإجمالي</TableHead>
                   <TableHead className="text-right hidden md:table-cell">المكتب</TableHead>
                   <TableHead className="text-right">المندوب</TableHead>
-                  <TableHead className="text-right">الحالة</TableHead>
-                  <TableHead className="text-right w-10">تعديل</TableHead>
+                   <TableHead className="text-right">الحالة</TableHead>
+                   <TableHead className="text-right">واتساب</TableHead>
+                   <TableHead className="text-right w-10">تعديل</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -216,6 +218,37 @@ export default function Orders() {
                         <Badge style={{ backgroundColor: order.order_statuses?.color || undefined }} className="text-xs">
                           {order.order_statuses?.name || 'بدون حالة'}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50" title="تأكيد الطلب" onClick={() => {
+                            const total = Number(order.price) + Number(order.delivery_price);
+                            const msg = `مرحباً ${order.customer_name} 👋
+
+تم تسجيل طلب لك في *${order.offices?.name || 'المكتب'}*.
+
+📦 رقم الطلب: *${order.tracking_id}*
+🛍️ المنتج: *${order.product_name}*
+💰 السعر: *${order.price}* ج.م
+🚚 الشحن: *${order.delivery_price}* ج.م
+💵 الإجمالي: *${total}* ج.م
+📍 العنوان: *${order.address || '-'}*
+
+━━━━━━━━━━━━━━━
+
+نرجو تأكيد الطلب بالرد على هذه الرسالة ✅
+
+شكراً لثقتك بنا 🙏`;
+                            openWhatsApp(order.customer_phone, msg);
+                          }}>
+                            <CheckCircle className="h-4 w-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" title="مراسلة" onClick={() => {
+                            openWhatsApp(order.customer_phone, '');
+                          }}>
+                            <MessageCircle className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Button size="icon" variant="ghost" onClick={() => setEditOrder(order)}>

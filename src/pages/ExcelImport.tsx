@@ -408,14 +408,14 @@ export default function ExcelImport() {
               اربط كل عمود في الملف بالحقل المناسب في النظام. الحقول المطلوبة مُعلَّمة بـ *
             </p>
 
-            <div className="grid gap-3">
+            <div className="grid gap-2 sm:gap-3">
               {headers.map((col) => (
-                <div key={col} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+                <div key={col} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg border bg-card">
                   <div className="flex-1 min-w-0">
-                    <span className="font-medium text-sm truncate block">{col}</span>
+                    <span className="font-medium text-xs sm:text-sm truncate block">{col}</span>
                     {rawData[0] && (
-                      <span className="text-xs text-muted-foreground truncate block">
-                        مثال: {String(rawData[0][col]).slice(0, 40)}
+                      <span className="text-[11px] sm:text-xs text-muted-foreground truncate block">
+                        مثال: {String(rawData[0][col]).slice(0, 30)}
                       </span>
                     )}
                   </div>
@@ -423,7 +423,7 @@ export default function ExcelImport() {
                     value={mapping[col] || "_none"}
                     onValueChange={(v) => updateMapping(col, v)}
                   >
-                    <SelectTrigger className="w-48">
+                    <SelectTrigger className="w-full sm:w-48 text-xs sm:text-sm h-8 sm:h-9">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

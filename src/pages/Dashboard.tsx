@@ -46,6 +46,7 @@ const sections = [
   { title: 'تقرير المكاتب الجديد', url: '/office-report', icon: FileBarChart, color: 'hsl(217,91%,60%)' },
   { title: 'سلة المحذوفات', url: '/trash', icon: Trash2, color: 'hsl(0,72%,51%)' },
   { title: 'سيستم الحسابات', url: '/accounting-system', icon: Calculator, color: 'hsl(270,60%,60%)' },
+  { title: 'استيراد Excel', url: '/excel-import', icon: FileSpreadsheet, color: 'hsl(142,76%,36%)' },
 ];
 
 interface ChatContact {

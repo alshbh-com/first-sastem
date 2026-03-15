@@ -518,7 +518,7 @@ export default function ExcelImport() {
 
             {result && (
               <div className="flex items-center justify-center gap-3">
-                <Badge className="bg-green-600 text-white">{result.success} نجح</Badge>
+                <Badge className="bg-primary text-primary-foreground">{result.success} نجح</Badge>
                 {result.failed > 0 && (
                   <Badge variant="destructive">{result.failed} فشل</Badge>
                 )}

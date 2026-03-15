@@ -122,6 +122,7 @@ const App = () => (
               <Route path="/trash" element={<TrashBin />} />
               <Route path="/themes" element={<ThemesPage />} />
               <Route path="/whatsapp-messages" element={<WhatsAppMessages />} />
+              <Route path="/excel-import" element={<ExcelImport />} />
               <Route path="/chat" element={<InternalChat />} />
             </Route>
             <Route path="*" element={<NotFound />} />

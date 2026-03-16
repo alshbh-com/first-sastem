@@ -8,12 +8,43 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { Search, UserPlus, Lock, Trash2, UserMinus, Pencil, CheckCircle, MessageCircle } from 'lucide-react';
+import { Search, UserPlus, Lock, Trash2, UserMinus, Pencil, CheckCircle, MessageCircle, ChevronRight, ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import AddOrderDialog from '@/components/AddOrderDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activityLogger';
 import { moveToTrash } from '@/lib/trashUtils';
+
+const PAGE_SIZE = 50;
+
+function buildOrderMessage(order: any, courierMap: Record<string, string>) {
+  const total = Number(order.price) + Number(order.delivery_price);
+  const parts = [
+    `مرحباً ${order.customer_name} 👋`,
+    '',
+    `تم تسجيل طلب لك في *${order.offices?.name || 'المكتب'}*.`,
+    '',
+    `📦 رقم الطلب: *${order.tracking_id}*`,
+    order.barcode ? `🔖 الباركود: *${order.barcode}*` : null,
+    `🛍️ المنتج: *${order.product_name}*`,
+    order.quantity > 1 ? `📊 الكمية: *${order.quantity}*` : null,
+    order.color ? `🎨 اللون: *${order.color}*` : null,
+    order.size ? `📐 المقاس: *${order.size}*` : null,
+    `💰 السعر: *${order.price}* ج.م`,
+    `🚚 الشحن: *${order.delivery_price}* ج.م`,
+    `💵 مبلغ التحصيل: *${total}* ج.م`,
+    `📍 العنوان: *${order.address || '-'}*`,
+    order.governorate ? `🏙️ المحافظة: *${order.governorate}*` : null,
+    order.notes ? `📝 ملاحظات: *${order.notes}*` : null,
+    '',
+    '━━━━━━━━━━━━━━━',
+    '',
+    'نرجو تأكيد الطلب بالرد على هذه الرسالة ✅',
+    '',
+    'شكراً لثقتك بنا 🙏',
+  ];
+  return parts.filter(Boolean).join('\n');
+}
 
 export default function Orders() {
   const { isOwner } = useAuth();
@@ -27,6 +58,7 @@ export default function Orders() {
   const [assignCourier, setAssignCourier] = useState('');
   const [statuses, setStatuses] = useState<any[]>([]);
   const [editOrder, setEditOrder] = useState<any>(null);
+  const [page, setPage] = useState(0);
 
   useEffect(() => { loadOrders(); loadFilters(); }, []);
 
@@ -52,9 +84,9 @@ export default function Orders() {
       .from('orders')
       .select('*, order_statuses(name, color), offices(name)')
       .eq('is_closed', false)
-      .order('created_at', { ascending: false })
-      .limit(500);
+      .order('created_at', { ascending: false });
     setOrders(data || []);
+    setPage(0);
   };
 
   const filtered = orders.filter(o => {
@@ -66,12 +98,15 @@ export default function Orders() {
     return matchSearch && matchOffice;
   });
 
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginatedOrders = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
   const toggleSelect = (id: string) => {
     setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   };
   const toggleAll = () => {
-    if (selected.size === filtered.length) setSelected(new Set());
-    else setSelected(new Set(filtered.map(o => o.id)));
+    if (selected.size === paginatedOrders.length) setSelected(new Set());
+    else setSelected(new Set(paginatedOrders.map(o => o.id)));
   };
 
   const assignToCourier = async () => {
@@ -173,7 +208,7 @@ export default function Orders() {
             <Table>
               <TableHeader>
                 <TableRow className="border-border">
-                  <TableHead className="w-10"><Checkbox checked={filtered.length > 0 && selected.size === filtered.length} onCheckedChange={toggleAll} /></TableHead>
+                  <TableHead className="w-10"><Checkbox checked={paginatedOrders.length > 0 && selected.size === paginatedOrders.length} onCheckedChange={toggleAll} /></TableHead>
                   <TableHead className="text-right">الباركود</TableHead>
                   <TableHead className="text-right">الكود</TableHead>
                   <TableHead className="text-right">العميل</TableHead>
@@ -185,15 +220,15 @@ export default function Orders() {
                   <TableHead className="text-right">الإجمالي</TableHead>
                   <TableHead className="text-right hidden md:table-cell">المكتب</TableHead>
                   <TableHead className="text-right">المندوب</TableHead>
-                   <TableHead className="text-right">الحالة</TableHead>
-                   <TableHead className="text-right">واتساب</TableHead>
-                   <TableHead className="text-right w-10">تعديل</TableHead>
+                  <TableHead className="text-right">الحالة</TableHead>
+                  <TableHead className="text-right">واتساب</TableHead>
+                  <TableHead className="text-right w-10">تعديل</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={14} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
-                ) : filtered.map((order) => {
+                {paginatedOrders.length === 0 ? (
+                  <TableRow><TableCell colSpan={15} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
+                ) : paginatedOrders.map((order) => {
                   const hasCourier = !!order.courier_id;
                   return (
                     <TableRow key={order.id} className={`border-border ${hasCourier ? 'bg-muted/30' : ''}`}>
@@ -204,7 +239,9 @@ export default function Orders() {
                       </TableCell>
                       <TableCell className="font-mono text-xs">{order.customer_code || '-'}</TableCell>
                       <TableCell className="text-sm">{order.customer_name}</TableCell>
-                      <TableCell className="text-sm truncate max-w-[120px]">{order.address || '-'}</TableCell>
+                      <TableCell className="text-sm max-w-[200px]">
+                        <div className="whitespace-normal break-words">{order.address || '-'}</div>
+                      </TableCell>
                       <TableCell dir="ltr" className="hidden sm:table-cell text-sm">{order.customer_phone}</TableCell>
                       <TableCell className="hidden md:table-cell text-sm">{order.product_name}</TableCell>
                       <TableCell className="text-sm">{Number(order.price)} ج.م</TableCell>
@@ -221,30 +258,16 @@ export default function Orders() {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50" title="تأكيد الطلب" onClick={() => {
-                            const total = Number(order.price) + Number(order.delivery_price);
-                            const msg = `مرحباً ${order.customer_name} 👋
-
-تم تسجيل طلب لك في *${order.offices?.name || 'المكتب'}*.
-
-📦 رقم الطلب: *${order.tracking_id}*
-🛍️ المنتج: *${order.product_name}*
-💰 السعر: *${order.price}* ج.م
-🚚 الشحن: *${order.delivery_price}* ج.م
-💵 الإجمالي: *${total}* ج.م
-📍 العنوان: *${order.address || '-'}*
-
-━━━━━━━━━━━━━━━
-
-نرجو تأكيد الطلب بالرد على هذه الرسالة ✅
-
-شكراً لثقتك بنا 🙏`;
-                            openWhatsApp(order.customer_phone, msg);
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50" title="تأكيد عبر واتساب" onClick={() => {
+                            openWhatsApp(order.customer_phone, buildOrderMessage(order, courierMap));
                           }}>
                             <CheckCircle className="h-4 w-4" />
                           </Button>
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" title="مراسلة" onClick={() => {
-                            openWhatsApp(order.customer_phone, '');
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" title="تأكيد رسالة نصية" onClick={() => {
+                            const msg = buildOrderMessage(order, courierMap);
+                            const cleanPhone = order.customer_phone.replace(/[\s\-\(\)]/g, '');
+                            const smsUrl = `sms:${cleanPhone}?body=${encodeURIComponent(msg.replace(/\*/g, ''))}`;
+                            window.open(smsUrl, '_blank');
                           }}>
                             <MessageCircle className="h-4 w-4" />
                           </Button>
@@ -263,6 +286,25 @@ export default function Orders() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Fixed Pagination Bar */}
+      {totalPages > 1 && (
+        <div className="sticky bottom-0 z-10 bg-card border border-border rounded-lg p-3 flex items-center justify-between shadow-lg">
+          <div className="text-sm text-muted-foreground">
+            صفحة {page + 1} من {totalPages} — إجمالي {filtered.length} أوردر
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
+              <ChevronRight className="h-4 w-4 ml-1" />
+              السابق
+            </Button>
+            <Button size="sm" variant="outline" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>
+              التالي
+              <ChevronLeft className="h-4 w-4 mr-1" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

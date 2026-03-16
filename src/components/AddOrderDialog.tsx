@@ -115,6 +115,11 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
       return;
     }
 
+    if (!form.address.trim()) {
+      toast.error('العنوان إجباري');
+      return;
+    }
+
     if (!form.office_id) {
       toast.error('اختيار المكتب إجباري');
       return;

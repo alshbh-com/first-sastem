@@ -118,10 +118,12 @@ export default function Offices() {
                       />
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => edit(o)}><Pencil className="h-4 w-4" /></Button>
-                        <Button size="icon" variant="ghost" className="text-destructive" onClick={() => remove(o.id)}><Trash2 className="h-4 w-4" /></Button>
-                      </div>
+                      {canEdit && (
+                        <div className="flex gap-1">
+                          <Button size="icon" variant="ghost" onClick={() => edit(o)}><Pencil className="h-4 w-4" /></Button>
+                          <Button size="icon" variant="ghost" className="text-destructive" onClick={() => remove(o.id)}><Trash2 className="h-4 w-4" /></Button>
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

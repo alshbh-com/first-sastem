@@ -267,7 +267,7 @@ export default function CourierCollections() {
                         <TableCell>{b.reason?.startsWith('__office_commission__') ? (b.reason.split(':')[1] || '-') : (b.reason || '-')}</TableCell>
                         <TableCell>{new Date(b.created_at).toLocaleDateString('ar-EG')}</TableCell>
                         <TableCell>
-                          {isOwner && (
+                          {canEdit && (
                             <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteBonus(b.id)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>

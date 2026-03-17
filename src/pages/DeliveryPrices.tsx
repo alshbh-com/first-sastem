@@ -129,10 +129,12 @@ export default function DeliveryPrices() {
                   <TableCell className="font-bold">{item.price} ج.م</TableCell>
                   <TableCell className="font-bold">{item.pickup_price || 0} ج.م</TableCell>
                   <TableCell>
-                    <div className="flex gap-1">
-                      <Button size="icon" variant="ghost" onClick={() => edit(item)}><Pencil className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" className="text-destructive" onClick={() => remove(item.id)}><Trash2 className="h-4 w-4" /></Button>
-                    </div>
+                    {canEdit && (
+                      <div className="flex gap-1">
+                        <Button size="icon" variant="ghost" onClick={() => edit(item)}><Pencil className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" className="text-destructive" onClick={() => remove(item.id)}><Trash2 className="h-4 w-4" /></Button>
+                      </div>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

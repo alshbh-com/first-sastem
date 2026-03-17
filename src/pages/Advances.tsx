@@ -205,7 +205,7 @@ export default function Advances() {
                       <TableCell className="font-bold">{a.amount} ج.م</TableCell>
                       <TableCell>{a.reason || '-'}</TableCell>
                       <TableCell>{new Date(a.created_at).toLocaleDateString('ar-EG')}</TableCell>
-                      <TableCell><Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteAdvance(a.id)}><Trash2 className="h-4 w-4" /></Button></TableCell>
+                      <TableCell>{canEdit ? <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteAdvance(a.id)}><Trash2 className="h-4 w-4" /></Button> : '-'}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

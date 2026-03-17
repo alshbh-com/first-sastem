@@ -131,7 +131,7 @@ export default function Advances() {
             </SelectContent>
           </Select>
         </div>
-        {selectedEmployee && (
+        {canEdit && selectedEmployee && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 ml-1" />إضافة</Button></DialogTrigger>
             <DialogContent className="bg-card border-border">

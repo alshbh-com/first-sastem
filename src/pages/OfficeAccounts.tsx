@@ -210,36 +210,38 @@ export default function OfficeAccounts() {
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-xl sm:text-2xl font-bold">حسابات المكاتب</h1>
-        <Dialog open={advanceOpen} onOpenChange={setAdvanceOpen}>
-          <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 ml-1" />إضافة دفعة / عمولة / خصم شحن / تسليم جزئي</Button></DialogTrigger>
-          <DialogContent className="bg-card border-border">
-            <DialogHeader><DialogTitle>إضافة عملية مالية</DialogTitle></DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label>المكتب</Label>
-                <Select value={advanceOffice} onValueChange={setAdvanceOffice}>
-                  <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder="اختر مكتب" /></SelectTrigger>
-                  <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
-                </Select>
+        {canEdit && (
+          <Dialog open={advanceOpen} onOpenChange={setAdvanceOpen}>
+            <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 ml-1" />إضافة دفعة / عمولة / خصم شحن / تسليم جزئي</Button></DialogTrigger>
+            <DialogContent className="bg-card border-border">
+              <DialogHeader><DialogTitle>إضافة عملية مالية</DialogTitle></DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label>المكتب</Label>
+                  <Select value={advanceOffice} onValueChange={setAdvanceOffice}>
+                    <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder="اختر مكتب" /></SelectTrigger>
+                    <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>النوع</Label>
+                  <Select value={advanceType} onValueChange={setAdvanceType}>
+                    <SelectTrigger className="bg-secondary border-border"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="advance">دفعة</SelectItem>
+                      <SelectItem value="commission">عمولة</SelectItem>
+                      <SelectItem value="shipping_discount">خصم الشحن</SelectItem>
+                      <SelectItem value="partial_delivery">تسليم جزئي (يدوي)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div><Label>المبلغ</Label><Input type="number" value={advanceAmount} onChange={e => setAdvanceAmount(e.target.value)} className="bg-secondary border-border" /></div>
+                <div><Label>ملاحظات</Label><Input value={advanceNotes} onChange={e => setAdvanceNotes(e.target.value)} className="bg-secondary border-border" /></div>
+                <Button onClick={saveAdvance} className="w-full">حفظ</Button>
               </div>
-              <div>
-                <Label>النوع</Label>
-                <Select value={advanceType} onValueChange={setAdvanceType}>
-                  <SelectTrigger className="bg-secondary border-border"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="advance">دفعة</SelectItem>
-                    <SelectItem value="commission">عمولة</SelectItem>
-                    <SelectItem value="shipping_discount">خصم الشحن</SelectItem>
-                    <SelectItem value="partial_delivery">تسليم جزئي (يدوي)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div><Label>المبلغ</Label><Input type="number" value={advanceAmount} onChange={e => setAdvanceAmount(e.target.value)} className="bg-secondary border-border" /></div>
-              <div><Label>ملاحظات</Label><Input value={advanceNotes} onChange={e => setAdvanceNotes(e.target.value)} className="bg-secondary border-border" /></div>
-              <Button onClick={saveAdvance} className="w-full">حفظ</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-2">

@@ -4,36 +4,72 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, StickyNote, FileText } from 'lucide-react';
+import { Search, StickyNote, FileText, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function PrintSticker() {
   const [search, setSearch] = useState('');
   const [results, setResults] = useState<any[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [couriers, setCouriers] = useState<any[]>([]);
+  const [filterCourier, setFilterCourier] = useState('all');
+  const [filterDate, setFilterDate] = useState('');
 
-  useEffect(() => { loadAllOrders(); }, []);
+  useEffect(() => { loadCouriers(); }, []);
+  useEffect(() => { loadOrders(); }, [filterCourier, filterDate]);
 
-  const loadAllOrders = async () => {
-    const { data } = await supabase
+  const loadCouriers = async () => {
+    const { data: roles } = await supabase.from('user_roles').select('user_id').eq('role', 'courier');
+    if (roles && roles.length > 0) {
+      const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', roles.map(r => r.user_id));
+      setCouriers(profiles || []);
+    }
+  };
+
+  const loadOrders = async () => {
+    let query = supabase
       .from('orders')
       .select('*, offices(name)')
       .eq('is_closed', false)
-      .order('created_at', { ascending: false })
-      .limit(500);
+      .order('created_at', { ascending: false });
+
+    if (filterCourier && filterCourier !== 'all') {
+      query = query.eq('courier_id', filterCourier);
+    }
+
+    if (filterDate) {
+      query = query.gte('created_at', `${filterDate}T00:00:00`).lte('created_at', `${filterDate}T23:59:59`);
+    }
+
+    if (!filterCourier || filterCourier === 'all') {
+      query = query.limit(500);
+    }
+
+    const { data } = await query;
     setResults(data || []);
+    setSelected(new Set());
   };
 
   const doSearch = async () => {
-    if (!search.trim()) { loadAllOrders(); return; }
+    if (!search.trim()) { loadOrders(); return; }
     const term = search.trim();
-    const { data } = await supabase
+    let query = supabase
       .from('orders')
       .select('*, offices(name)')
       .or(`barcode.ilike.%${term}%,customer_code.ilike.%${term}%,tracking_id.ilike.%${term}%,customer_phone.ilike.%${term}%,customer_name.ilike.%${term}%`)
       .order('created_at', { ascending: false })
       .limit(200);
+
+    if (filterCourier && filterCourier !== 'all') {
+      query = query.eq('courier_id', filterCourier);
+    }
+    if (filterDate) {
+      query = query.gte('created_at', `${filterDate}T00:00:00`).lte('created_at', `${filterDate}T23:59:59`);
+    }
+
+    const { data } = await query;
     setResults(data || []);
     setSelected(new Set());
     if (!data?.length) toast.error('لم يتم العثور على نتائج');
@@ -48,13 +84,6 @@ export default function PrintSticker() {
   };
 
   const selectedOrders = results.filter(o => selected.has(o.id));
-
-  const generateBarcodeStripes = (barcode: string) => {
-    return barcode.split('').map((c: string) => {
-      const w = (parseInt(c) || 1) + 1;
-      return `<div style="width:${w}px;height:30px;background:#000;margin:0 0.5px;display:inline-block"></div>`;
-    }).join('');
-  };
 
   const printStickers = () => {
     if (selectedOrders.length === 0) { toast.error('اختر أوردرات للطباعة'); return; }
@@ -143,22 +172,52 @@ export default function PrintSticker() {
     printWindow.print();
   };
 
+  const clearFilters = () => {
+    setFilterCourier('all');
+    setFilterDate('');
+    setSearch('');
+  };
+
   return (
     <div className="space-y-4">
       <h1 className="text-xl sm:text-2xl font-bold">الطباعة</h1>
-      <div className="flex gap-2 flex-wrap">
-        <div className="relative flex-1 min-w-[180px] max-w-lg">
+
+      {/* Filters */}
+      <div className="flex gap-2 flex-wrap items-end">
+        <div className="relative flex-1 min-w-[150px] max-w-xs">
           <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="بحث بالباركود / الكود / الاسم / الهاتف..." value={search}
+          <Input placeholder="بحث بالباركود / الاسم / الهاتف..." value={search}
             onChange={e => setSearch(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && doSearch()}
             className="pr-9 bg-secondary border-border" />
         </div>
-        <Button onClick={doSearch}>بحث</Button>
+        <Button onClick={doSearch} size="sm">بحث</Button>
+      </div>
+
+      <div className="flex gap-2 flex-wrap items-end">
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground">المندوب</label>
+          <Select value={filterCourier} onValueChange={setFilterCourier}>
+            <SelectTrigger className="w-[160px] bg-secondary border-border"><SelectValue placeholder="كل المندوبين" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">كل المندوبين</SelectItem>
+              {couriers.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground">التاريخ</label>
+          <Input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)} className="bg-secondary border-border w-[150px]" />
+        </div>
+        {(filterCourier !== 'all' || filterDate) && (
+          <Button size="sm" variant="outline" onClick={clearFilters}>
+            <Filter className="h-4 w-4 ml-1" />مسح الفلاتر
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-sm font-medium">تم تحديد {selected.size} أوردر</span>
+        <span className="text-sm font-medium">تم تحديد {selected.size} أوردر | إجمالي {results.length}</span>
         <Button size="sm" onClick={printStickers} disabled={selected.size === 0}>
           <StickyNote className="h-4 w-4 ml-1" />ملصقات صغيرة
         </Button>

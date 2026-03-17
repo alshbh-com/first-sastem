@@ -8,14 +8,14 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { Search, UserPlus, Lock, Trash2, UserMinus, Pencil, CheckCircle, MessageCircle, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Search, UserPlus, Lock, Trash2, UserMinus, Pencil, CheckCircle, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import AddOrderDialog from '@/components/AddOrderDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activityLogger';
 import { moveToTrash } from '@/lib/trashUtils';
 
-const PAGE_SIZE = 50;
+
 
 function buildOrderMessage(order: any, courierMap: Record<string, string>) {
   const total = Number(order.price) + Number(order.delivery_price);
@@ -58,7 +58,6 @@ export default function Orders() {
   const [assignCourier, setAssignCourier] = useState('');
   const [statuses, setStatuses] = useState<any[]>([]);
   const [editOrder, setEditOrder] = useState<any>(null);
-  const [page, setPage] = useState(0);
 
   useEffect(() => { loadOrders(); loadFilters(); }, []);
 
@@ -86,7 +85,6 @@ export default function Orders() {
       .eq('is_closed', false)
       .order('created_at', { ascending: false });
     setOrders(data || []);
-    setPage(0);
   };
 
   const filtered = orders.filter(o => {
@@ -98,15 +96,12 @@ export default function Orders() {
     return matchSearch && matchOffice;
   });
 
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginatedOrders = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
-
   const toggleSelect = (id: string) => {
     setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   };
   const toggleAll = () => {
-    if (selected.size === paginatedOrders.length) setSelected(new Set());
-    else setSelected(new Set(paginatedOrders.map(o => o.id)));
+    if (selected.size === filtered.length) setSelected(new Set());
+    else setSelected(new Set(filtered.map(o => o.id)));
   };
 
   const assignToCourier = async () => {
@@ -208,7 +203,7 @@ export default function Orders() {
             <Table>
               <TableHeader>
                 <TableRow className="border-border">
-                  <TableHead className="w-10"><Checkbox checked={paginatedOrders.length > 0 && selected.size === paginatedOrders.length} onCheckedChange={toggleAll} /></TableHead>
+                  <TableHead className="w-10"><Checkbox checked={filtered.length > 0 && selected.size === filtered.length} onCheckedChange={toggleAll} /></TableHead>
                   <TableHead className="text-right">الباركود</TableHead>
                   <TableHead className="text-right">الكود</TableHead>
                   <TableHead className="text-right">العميل</TableHead>
@@ -226,9 +221,9 @@ export default function Orders() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedOrders.length === 0 ? (
+                {filtered.length === 0 ? (
                   <TableRow><TableCell colSpan={15} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
-                ) : paginatedOrders.map((order) => {
+                ) : filtered.map((order) => {
                   const hasCourier = !!order.courier_id;
                   return (
                     <TableRow key={order.id} className={`border-border ${hasCourier ? 'bg-muted/30' : ''}`}>
@@ -287,24 +282,9 @@ export default function Orders() {
         </CardContent>
       </Card>
 
-      {/* Fixed Pagination Bar */}
-      {totalPages > 1 && (
-        <div className="sticky bottom-0 z-10 bg-card border border-border rounded-lg p-3 flex items-center justify-between shadow-lg">
-          <div className="text-sm text-muted-foreground">
-            صفحة {page + 1} من {totalPages} — إجمالي {filtered.length} أوردر
-          </div>
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
-              <ChevronRight className="h-4 w-4 ml-1" />
-              السابق
-            </Button>
-            <Button size="sm" variant="outline" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>
-              التالي
-              <ChevronLeft className="h-4 w-4 mr-1" />
-            </Button>
-          </div>
-        </div>
-      )}
+      <div className="text-center text-sm text-muted-foreground py-2">
+        إجمالي {filtered.length} أوردر
+      </div>
     </div>
   );
 }

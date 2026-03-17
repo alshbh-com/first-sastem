@@ -65,36 +65,38 @@ export default function DeliveryPrices() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">أسعار التوصيل</h1>
-        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
-          <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 ml-2" />إضافة سعر</Button>
-          </DialogTrigger>
-          <DialogContent className="bg-card border-border">
-            <DialogHeader><DialogTitle>{editId ? 'تعديل سعر' : 'إضافة سعر توصيل'}</DialogTitle></DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>المكتب *</Label>
-                <Select value={officeId} onValueChange={setOfficeId}>
-                  <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder="اختر مكتب" /></SelectTrigger>
-                  <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
-                </Select>
+        {canEdit && (
+          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
+            <DialogTrigger asChild>
+              <Button><Plus className="h-4 w-4 ml-2" />إضافة سعر</Button>
+            </DialogTrigger>
+            <DialogContent className="bg-card border-border">
+              <DialogHeader><DialogTitle>{editId ? 'تعديل سعر' : 'إضافة سعر توصيل'}</DialogTitle></DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>المكتب *</Label>
+                  <Select value={officeId} onValueChange={setOfficeId}>
+                    <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder="اختر مكتب" /></SelectTrigger>
+                    <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>المحافظة / المنطقة *</Label>
+                  <Input value={governorate} onChange={e => setGovernorate(e.target.value)} className="bg-secondary border-border" placeholder="مثال: القاهرة" />
+                </div>
+                <div className="space-y-2">
+                  <Label>سعر التوصيل (ج.م)</Label>
+                  <Input type="number" value={price} onChange={e => setPrice(e.target.value)} className="bg-secondary border-border" placeholder="0" />
+                </div>
+                <div className="space-y-2">
+                  <Label>البيك اب (ج.م)</Label>
+                  <Input type="number" value={pickupPrice} onChange={e => setPickupPrice(e.target.value)} className="bg-secondary border-border" placeholder="0" />
+                </div>
+                <Button onClick={save} className="w-full">{editId ? 'حفظ التعديل' : 'إضافة'}</Button>
               </div>
-              <div className="space-y-2">
-                <Label>المحافظة / المنطقة *</Label>
-                <Input value={governorate} onChange={e => setGovernorate(e.target.value)} className="bg-secondary border-border" placeholder="مثال: القاهرة" />
-              </div>
-              <div className="space-y-2">
-                <Label>سعر التوصيل (ج.م)</Label>
-                <Input type="number" value={price} onChange={e => setPrice(e.target.value)} className="bg-secondary border-border" placeholder="0" />
-              </div>
-              <div className="space-y-2">
-                <Label>البيك اب (ج.م)</Label>
-                <Input type="number" value={pickupPrice} onChange={e => setPickupPrice(e.target.value)} className="bg-secondary border-border" placeholder="0" />
-              </div>
-              <Button onClick={save} className="w-full">{editId ? 'حفظ التعديل' : 'إضافة'}</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       <Select value={filterOffice} onValueChange={setFilterOffice}>

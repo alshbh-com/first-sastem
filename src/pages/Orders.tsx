@@ -58,7 +58,6 @@ export default function Orders() {
   const [assignCourier, setAssignCourier] = useState('');
   const [statuses, setStatuses] = useState<any[]>([]);
   const [editOrder, setEditOrder] = useState<any>(null);
-  const [page, setPage] = useState(0);
 
   useEffect(() => { loadOrders(); loadFilters(); }, []);
 

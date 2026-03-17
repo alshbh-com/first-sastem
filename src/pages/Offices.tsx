@@ -111,6 +111,7 @@ export default function Offices() {
                     <TableCell>
                       <Switch
                         checked={o.can_add_orders || false}
+                        disabled={!canEdit}
                         onCheckedChange={async (checked) => {
                           await supabase.from('offices').update({ can_add_orders: checked }).eq('id', o.id);
                           load();

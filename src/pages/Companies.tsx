@@ -8,8 +8,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { usePagePermission } from '@/hooks/usePagePermission';
 
 export default function Companies() {
+  const { canEdit } = usePagePermission();
   const [companies, setCompanies] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');

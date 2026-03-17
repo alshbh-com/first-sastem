@@ -9,8 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Plus, Pencil, Trash2, Package } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { usePagePermission } from '@/hooks/usePagePermission';
 
 export default function Products() {
+  const { canEdit } = usePagePermission();
   const [products, setProducts] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');

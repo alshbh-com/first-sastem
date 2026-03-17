@@ -9,8 +9,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { usePagePermission } from '@/hooks/usePagePermission';
 
 export default function DeliveryPrices() {
+  const { canEdit } = usePagePermission();
   const [offices, setOffices] = useState<any[]>([]);
   const [prices, setPrices] = useState<any[]>([]);
   const [filterOffice, setFilterOffice] = useState('all');

@@ -13,6 +13,7 @@ import { Plus, Trash2, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activityLogger';
+import { usePagePermission } from '@/hooks/usePagePermission';
 
 export default function CourierCollections() {
   const { user, isOwner } = useAuth();

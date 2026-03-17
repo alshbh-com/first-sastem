@@ -15,7 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activityLogger';
 import { moveToTrash } from '@/lib/trashUtils';
 
-const PAGE_SIZE = 50;
+
 
 function buildOrderMessage(order: any, courierMap: Record<string, string>) {
   const total = Number(order.price) + Number(order.delivery_price);

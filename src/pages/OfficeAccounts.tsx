@@ -397,10 +397,12 @@ export default function OfficeAccounts() {
                       <TableCell className="text-sm">{new Date(p.created_at).toLocaleDateString('ar-EG')}</TableCell>
                       <TableCell>
                         <div className="flex gap-1">
-                          <Button size="icon" variant="ghost" onClick={() => { setEditItem(p); setEditAmount(String(p.amount)); setEditNotes(p.notes || ''); }}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          {isOwner && (
+                          {canEdit && (
+                            <Button size="icon" variant="ghost" onClick={() => { setEditItem(p); setEditAmount(String(p.amount)); setEditNotes(p.notes || ''); }}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {canEdit && (
                             <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deletePayment(p.id)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>

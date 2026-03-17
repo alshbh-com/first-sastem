@@ -100,8 +100,8 @@ export default function Orders() {
     setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   };
   const toggleAll = () => {
-    if (selected.size === paginatedOrders.length) setSelected(new Set());
-    else setSelected(new Set(paginatedOrders.map(o => o.id)));
+    if (selected.size === filtered.length) setSelected(new Set());
+    else setSelected(new Set(filtered.map(o => o.id)));
   };
 
   const assignToCourier = async () => {

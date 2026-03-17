@@ -17,6 +17,7 @@ import { usePagePermission } from '@/hooks/usePagePermission';
 
 export default function OfficeAccounts() {
   const { isOwner } = useAuth();
+  const { canEdit } = usePagePermission();
   const [offices, setOffices] = useState<any[]>([]);
   const [selectedOffice, setSelectedOffice] = useState('all');
   const [statuses, setStatuses] = useState<any[]>([]);

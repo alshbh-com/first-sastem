@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { logActivity } from '@/lib/activityLogger';
+import { usePagePermission } from '@/hooks/usePagePermission';
 
 export default function OfficeAccounts() {
   const { isOwner } = useAuth();

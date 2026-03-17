@@ -282,24 +282,9 @@ export default function Orders() {
         </CardContent>
       </Card>
 
-      {/* Fixed Pagination Bar */}
-      {totalPages > 1 && (
-        <div className="sticky bottom-0 z-10 bg-card border border-border rounded-lg p-3 flex items-center justify-between shadow-lg">
-          <div className="text-sm text-muted-foreground">
-            صفحة {page + 1} من {totalPages} — إجمالي {filtered.length} أوردر
-          </div>
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
-              <ChevronRight className="h-4 w-4 ml-1" />
-              السابق
-            </Button>
-            <Button size="sm" variant="outline" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>
-              التالي
-              <ChevronLeft className="h-4 w-4 mr-1" />
-            </Button>
-          </div>
-        </div>
-      )}
+      <div className="text-center text-sm text-muted-foreground py-2">
+        إجمالي {filtered.length} أوردر
+      </div>
     </div>
   );
 }

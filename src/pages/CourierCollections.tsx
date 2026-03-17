@@ -17,6 +17,7 @@ import { usePagePermission } from '@/hooks/usePagePermission';
 
 export default function CourierCollections() {
   const { user, isOwner } = useAuth();
+  const { canEdit } = usePagePermission();
   const [couriers, setCouriers] = useState<any[]>([]);
   const [selectedCourier, setSelectedCourier] = useState('');
   const [statuses, setStatuses] = useState<any[]>([]);

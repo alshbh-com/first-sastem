@@ -85,7 +85,6 @@ export default function Orders() {
       .eq('is_closed', false)
       .order('created_at', { ascending: false });
     setOrders(data || []);
-    setPage(0);
   };
 
   const filtered = orders.filter(o => {

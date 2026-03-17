@@ -221,9 +221,9 @@ export default function Orders() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedOrders.length === 0 ? (
+                {filtered.length === 0 ? (
                   <TableRow><TableCell colSpan={15} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
-                ) : paginatedOrders.map((order) => {
+                ) : filtered.map((order) => {
                   const hasCourier = !!order.courier_id;
                   return (
                     <TableRow key={order.id} className={`border-border ${hasCourier ? 'bg-muted/30' : ''}`}>

@@ -13,9 +13,11 @@ import { Plus, Trash2, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activityLogger';
+import { usePagePermission } from '@/hooks/usePagePermission';
 
 export default function CourierCollections() {
   const { user, isOwner } = useAuth();
+  const { canEdit } = usePagePermission();
   const [couriers, setCouriers] = useState<any[]>([]);
   const [selectedCourier, setSelectedCourier] = useState('');
   const [statuses, setStatuses] = useState<any[]>([]);
@@ -200,6 +202,7 @@ export default function CourierCollections() {
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-base">حاسبة العمولة</CardTitle>
               <div className="flex gap-2 flex-wrap">
+              {canEdit && (
                 <Dialog open={bonusDialogOpen} onOpenChange={v => { setBonusDialogOpen(v); if (!v) setBonusType('special'); }}>
                   <div className="flex gap-1">
                     <Button size="sm" variant="outline" onClick={() => { setBonusType('special'); setBonusDialogOpen(true); }}><Plus className="h-4 w-4 ml-1" />عمولة للمندوب</Button>
@@ -214,7 +217,8 @@ export default function CourierCollections() {
                     </div>
                   </DialogContent>
                 </Dialog>
-                {selectedOrders.size > 0 && (
+              )}
+              {canEdit && selectedOrders.size > 0 && (
                   <Button size="sm" variant="destructive" onClick={closeSelectedOrders}><Lock className="h-4 w-4 ml-1" />تقفيل ({selectedOrders.size})</Button>
                 )}
               </div>
@@ -263,7 +267,7 @@ export default function CourierCollections() {
                         <TableCell>{b.reason?.startsWith('__office_commission__') ? (b.reason.split(':')[1] || '-') : (b.reason || '-')}</TableCell>
                         <TableCell>{new Date(b.created_at).toLocaleDateString('ar-EG')}</TableCell>
                         <TableCell>
-                          {isOwner && (
+                          {canEdit && (
                             <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteBonus(b.id)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>

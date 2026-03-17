@@ -8,8 +8,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { usePagePermission } from '@/hooks/usePagePermission';
 
 export default function Companies() {
+  const { canEdit } = usePagePermission();
   const [companies, setCompanies] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
@@ -48,17 +50,19 @@ export default function Companies() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">الشركات</h1>
-        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditId(null); setName(''); setPrice('0'); } }}>
-          <DialogTrigger asChild><Button><Plus className="h-4 w-4 ml-2" />إضافة شركة</Button></DialogTrigger>
-          <DialogContent className="bg-card border-border">
-            <DialogHeader><DialogTitle>{editId ? 'تعديل شركة' : 'إضافة شركة'}</DialogTitle></DialogHeader>
-            <div className="space-y-4">
-              <div><Label>اسم الشركة</Label><Input value={name} onChange={(e) => setName(e.target.value)} className="bg-secondary border-border" /></div>
-              <div><Label>سعر الاتفاق</Label><Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} className="bg-secondary border-border" /></div>
-              <Button onClick={save} className="w-full">{editId ? 'حفظ' : 'إضافة'}</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        {canEdit && (
+          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditId(null); setName(''); setPrice('0'); } }}>
+            <DialogTrigger asChild><Button><Plus className="h-4 w-4 ml-2" />إضافة شركة</Button></DialogTrigger>
+            <DialogContent className="bg-card border-border">
+              <DialogHeader><DialogTitle>{editId ? 'تعديل شركة' : 'إضافة شركة'}</DialogTitle></DialogHeader>
+              <div className="space-y-4">
+                <div><Label>اسم الشركة</Label><Input value={name} onChange={(e) => setName(e.target.value)} className="bg-secondary border-border" /></div>
+                <div><Label>سعر الاتفاق</Label><Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} className="bg-secondary border-border" /></div>
+                <Button onClick={save} className="w-full">{editId ? 'حفظ' : 'إضافة'}</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
       <Card className="bg-card border-border">
         <CardContent className="p-0">
@@ -76,10 +80,12 @@ export default function Companies() {
                   <TableCell className="font-medium">{c.name}</TableCell>
                   <TableCell>{c.agreement_price} ج.م</TableCell>
                   <TableCell>
-                    <div className="flex gap-1">
-                      <Button size="icon" variant="ghost" onClick={() => { setEditId(c.id); setName(c.name); setPrice(String(c.agreement_price)); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" className="text-destructive" onClick={() => remove(c.id)}><Trash2 className="h-4 w-4" /></Button>
-                    </div>
+                    {canEdit && (
+                      <div className="flex gap-1">
+                        <Button size="icon" variant="ghost" onClick={() => { setEditId(c.id); setName(c.name); setPrice(String(c.agreement_price)); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" className="text-destructive" onClick={() => remove(c.id)}><Trash2 className="h-4 w-4" /></Button>
+                      </div>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

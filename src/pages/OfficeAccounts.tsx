@@ -13,9 +13,11 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { logActivity } from '@/lib/activityLogger';
+import { usePagePermission } from '@/hooks/usePagePermission';
 
 export default function OfficeAccounts() {
   const { isOwner } = useAuth();
+  const { canEdit } = usePagePermission();
   const [offices, setOffices] = useState<any[]>([]);
   const [selectedOffice, setSelectedOffice] = useState('all');
   const [statuses, setStatuses] = useState<any[]>([]);
@@ -208,36 +210,38 @@ export default function OfficeAccounts() {
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-xl sm:text-2xl font-bold">حسابات المكاتب</h1>
-        <Dialog open={advanceOpen} onOpenChange={setAdvanceOpen}>
-          <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 ml-1" />إضافة دفعة / عمولة / خصم شحن / تسليم جزئي</Button></DialogTrigger>
-          <DialogContent className="bg-card border-border">
-            <DialogHeader><DialogTitle>إضافة عملية مالية</DialogTitle></DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label>المكتب</Label>
-                <Select value={advanceOffice} onValueChange={setAdvanceOffice}>
-                  <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder="اختر مكتب" /></SelectTrigger>
-                  <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
-                </Select>
+        {canEdit && (
+          <Dialog open={advanceOpen} onOpenChange={setAdvanceOpen}>
+            <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 ml-1" />إضافة دفعة / عمولة / خصم شحن / تسليم جزئي</Button></DialogTrigger>
+            <DialogContent className="bg-card border-border">
+              <DialogHeader><DialogTitle>إضافة عملية مالية</DialogTitle></DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label>المكتب</Label>
+                  <Select value={advanceOffice} onValueChange={setAdvanceOffice}>
+                    <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder="اختر مكتب" /></SelectTrigger>
+                    <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>النوع</Label>
+                  <Select value={advanceType} onValueChange={setAdvanceType}>
+                    <SelectTrigger className="bg-secondary border-border"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="advance">دفعة</SelectItem>
+                      <SelectItem value="commission">عمولة</SelectItem>
+                      <SelectItem value="shipping_discount">خصم الشحن</SelectItem>
+                      <SelectItem value="partial_delivery">تسليم جزئي (يدوي)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div><Label>المبلغ</Label><Input type="number" value={advanceAmount} onChange={e => setAdvanceAmount(e.target.value)} className="bg-secondary border-border" /></div>
+                <div><Label>ملاحظات</Label><Input value={advanceNotes} onChange={e => setAdvanceNotes(e.target.value)} className="bg-secondary border-border" /></div>
+                <Button onClick={saveAdvance} className="w-full">حفظ</Button>
               </div>
-              <div>
-                <Label>النوع</Label>
-                <Select value={advanceType} onValueChange={setAdvanceType}>
-                  <SelectTrigger className="bg-secondary border-border"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="advance">دفعة</SelectItem>
-                    <SelectItem value="commission">عمولة</SelectItem>
-                    <SelectItem value="shipping_discount">خصم الشحن</SelectItem>
-                    <SelectItem value="partial_delivery">تسليم جزئي (يدوي)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div><Label>المبلغ</Label><Input type="number" value={advanceAmount} onChange={e => setAdvanceAmount(e.target.value)} className="bg-secondary border-border" /></div>
-              <div><Label>ملاحظات</Label><Input value={advanceNotes} onChange={e => setAdvanceNotes(e.target.value)} className="bg-secondary border-border" /></div>
-              <Button onClick={saveAdvance} className="w-full">حفظ</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -393,10 +397,12 @@ export default function OfficeAccounts() {
                       <TableCell className="text-sm">{new Date(p.created_at).toLocaleDateString('ar-EG')}</TableCell>
                       <TableCell>
                         <div className="flex gap-1">
-                          <Button size="icon" variant="ghost" onClick={() => { setEditItem(p); setEditAmount(String(p.amount)); setEditNotes(p.notes || ''); }}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          {isOwner && (
+                          {canEdit && (
+                            <Button size="icon" variant="ghost" onClick={() => { setEditItem(p); setEditAmount(String(p.amount)); setEditNotes(p.notes || ''); }}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {canEdit && (
                             <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deletePayment(p.id)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>

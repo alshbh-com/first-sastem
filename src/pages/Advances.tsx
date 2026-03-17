@@ -12,8 +12,10 @@ import { Plus, Trash2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activityLogger';
+import { usePagePermission } from '@/hooks/usePagePermission';
 
 export default function Advances() {
+  const { canEdit } = usePagePermission();
   const { user } = useAuth();
   const [employees, setEmployees] = useState<any[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState('');
@@ -129,7 +131,7 @@ export default function Advances() {
             </SelectContent>
           </Select>
         </div>
-        {selectedEmployee && (
+        {canEdit && selectedEmployee && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 ml-1" />إضافة</Button></DialogTrigger>
             <DialogContent className="bg-card border-border">
@@ -203,7 +205,7 @@ export default function Advances() {
                       <TableCell className="font-bold">{a.amount} ج.م</TableCell>
                       <TableCell>{a.reason || '-'}</TableCell>
                       <TableCell>{new Date(a.created_at).toLocaleDateString('ar-EG')}</TableCell>
-                      <TableCell><Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteAdvance(a.id)}><Trash2 className="h-4 w-4" /></Button></TableCell>
+                      <TableCell>{canEdit ? <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteAdvance(a.id)}><Trash2 className="h-4 w-4" /></Button> : '-'}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

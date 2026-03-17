@@ -11,8 +11,10 @@ import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { logActivity } from '@/lib/activityLogger';
+import { usePagePermission } from '@/hooks/usePagePermission';
 
 export default function Offices() {
+  const { canEdit } = usePagePermission();
   const [offices, setOffices] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -59,27 +61,29 @@ export default function Offices() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">المكاتب</h1>
-        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditId(null); resetForm(); } }}>
-          <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 ml-2" />إضافة مكتب</Button>
-          </DialogTrigger>
-          <DialogContent className="bg-card border-border max-w-lg">
-            <DialogHeader><DialogTitle>{editId ? 'تعديل مكتب' : 'إضافة مكتب'}</DialogTitle></DialogHeader>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2"><Label>اسم المكتب *</Label><Input value={form.name} onChange={e => set('name', e.target.value)} className="bg-secondary border-border" /></div>
-                <div className="space-y-2"><Label>التخصص</Label><Input value={form.specialty} onChange={e => set('specialty', e.target.value)} className="bg-secondary border-border" /></div>
+        {canEdit && (
+          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditId(null); resetForm(); } }}>
+            <DialogTrigger asChild>
+              <Button><Plus className="h-4 w-4 ml-2" />إضافة مكتب</Button>
+            </DialogTrigger>
+            <DialogContent className="bg-card border-border max-w-lg">
+              <DialogHeader><DialogTitle>{editId ? 'تعديل مكتب' : 'إضافة مكتب'}</DialogTitle></DialogHeader>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2"><Label>اسم المكتب *</Label><Input value={form.name} onChange={e => set('name', e.target.value)} className="bg-secondary border-border" /></div>
+                  <div className="space-y-2"><Label>التخصص</Label><Input value={form.specialty} onChange={e => set('specialty', e.target.value)} className="bg-secondary border-border" /></div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2"><Label>اسم صاحب المكتب</Label><Input value={form.owner_name} onChange={e => set('owner_name', e.target.value)} className="bg-secondary border-border" /></div>
+                  <div className="space-y-2"><Label>رقم الهاتف</Label><Input value={form.owner_phone} onChange={e => set('owner_phone', e.target.value)} className="bg-secondary border-border" dir="ltr" /></div>
+                </div>
+                <div className="space-y-2"><Label>العنوان</Label><Input value={form.address} onChange={e => set('address', e.target.value)} className="bg-secondary border-border" /></div>
+                <div className="space-y-2"><Label>ملاحظات</Label><Textarea value={form.notes} onChange={e => set('notes', e.target.value)} className="bg-secondary border-border" rows={2} /></div>
+                <Button onClick={save} className="w-full">{editId ? 'حفظ التعديل' : 'إضافة'}</Button>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2"><Label>اسم صاحب المكتب</Label><Input value={form.owner_name} onChange={e => set('owner_name', e.target.value)} className="bg-secondary border-border" /></div>
-                <div className="space-y-2"><Label>رقم الهاتف</Label><Input value={form.owner_phone} onChange={e => set('owner_phone', e.target.value)} className="bg-secondary border-border" dir="ltr" /></div>
-              </div>
-              <div className="space-y-2"><Label>العنوان</Label><Input value={form.address} onChange={e => set('address', e.target.value)} className="bg-secondary border-border" /></div>
-              <div className="space-y-2"><Label>ملاحظات</Label><Textarea value={form.notes} onChange={e => set('notes', e.target.value)} className="bg-secondary border-border" rows={2} /></div>
-              <Button onClick={save} className="w-full">{editId ? 'حفظ التعديل' : 'إضافة'}</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
       <Card className="bg-card border-border">
         <CardContent className="p-0">
@@ -107,6 +111,7 @@ export default function Offices() {
                     <TableCell>
                       <Switch
                         checked={o.can_add_orders || false}
+                        disabled={!canEdit}
                         onCheckedChange={async (checked) => {
                           await supabase.from('offices').update({ can_add_orders: checked }).eq('id', o.id);
                           load();
@@ -114,10 +119,12 @@ export default function Offices() {
                       />
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => edit(o)}><Pencil className="h-4 w-4" /></Button>
-                        <Button size="icon" variant="ghost" className="text-destructive" onClick={() => remove(o.id)}><Trash2 className="h-4 w-4" /></Button>
-                      </div>
+                      {canEdit && (
+                        <div className="flex gap-1">
+                          <Button size="icon" variant="ghost" onClick={() => edit(o)}><Pencil className="h-4 w-4" /></Button>
+                          <Button size="icon" variant="ghost" className="text-destructive" onClick={() => remove(o.id)}><Trash2 className="h-4 w-4" /></Button>
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

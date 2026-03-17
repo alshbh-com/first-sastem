@@ -203,7 +203,7 @@ export default function Orders() {
             <Table>
               <TableHeader>
                 <TableRow className="border-border">
-                  <TableHead className="w-10"><Checkbox checked={paginatedOrders.length > 0 && selected.size === paginatedOrders.length} onCheckedChange={toggleAll} /></TableHead>
+                  <TableHead className="w-10"><Checkbox checked={filtered.length > 0 && selected.size === filtered.length} onCheckedChange={toggleAll} /></TableHead>
                   <TableHead className="text-right">الباركود</TableHead>
                   <TableHead className="text-right">الكود</TableHead>
                   <TableHead className="text-right">العميل</TableHead>

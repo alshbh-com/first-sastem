@@ -96,9 +96,6 @@ export default function Orders() {
     return matchSearch && matchOffice;
   });
 
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginatedOrders = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
-
   const toggleSelect = (id: string) => {
     setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   };

@@ -51,17 +51,19 @@ export default function Products() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">المنتجات والمخزون</h1>
-        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditId(null); setName(''); setQuantity('0'); } }}>
-          <DialogTrigger asChild><Button><Plus className="h-4 w-4 ml-2" />إضافة منتج</Button></DialogTrigger>
-          <DialogContent className="bg-card border-border">
-            <DialogHeader><DialogTitle>{editId ? 'تعديل منتج' : 'إضافة منتج'}</DialogTitle></DialogHeader>
-            <div className="space-y-4">
-              <div><Label>اسم المنتج</Label><Input value={name} onChange={(e) => setName(e.target.value)} className="bg-secondary border-border" /></div>
-              <div><Label>عدد القطع</Label><Input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="bg-secondary border-border" /></div>
-              <Button onClick={save} className="w-full">{editId ? 'حفظ' : 'إضافة'}</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        {canEdit && (
+          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditId(null); setName(''); setQuantity('0'); } }}>
+            <DialogTrigger asChild><Button><Plus className="h-4 w-4 ml-2" />إضافة منتج</Button></DialogTrigger>
+            <DialogContent className="bg-card border-border">
+              <DialogHeader><DialogTitle>{editId ? 'تعديل منتج' : 'إضافة منتج'}</DialogTitle></DialogHeader>
+              <div className="space-y-4">
+                <div><Label>اسم المنتج</Label><Input value={name} onChange={(e) => setName(e.target.value)} className="bg-secondary border-border" /></div>
+                <div><Label>عدد القطع</Label><Input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="bg-secondary border-border" /></div>
+                <Button onClick={save} className="w-full">{editId ? 'حفظ' : 'إضافة'}</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
       <Card className="bg-card border-border">
         <CardContent className="p-0">

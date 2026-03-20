@@ -26,28 +26,17 @@ export default function TrashBin() {
 
   const loadTrash = async () => {
     setLoading(true);
-    // Load soft-deleted orders from localStorage
     const trashIds: string[] = JSON.parse(localStorage.getItem('trash_order_ids') || '[]');
     
-    const promises: Promise<any>[] = [];
-    
+    let ordersData: any[] = [];
     if (trashIds.length > 0) {
-      promises.push(
-        supabase.from('orders').select('*, order_statuses(name, color), offices(name)').in('id', trashIds).order('updated_at', { ascending: false }).then(r => r)
-      );
-    } else {
-      promises.push(Promise.resolve({ data: [] }));
+      const { data } = await supabase.from('orders').select('*, order_statuses(name, color), offices(name)').in('id', trashIds).order('updated_at', { ascending: false });
+      ordersData = data || [];
     }
-    
-    // Load soft-deleted diaries
-    promises.push(
-      supabase.from('diaries').select('*, offices(name)').not('deleted_at', 'is', null).order('deleted_at', { ascending: false }).then(r => r)
-    );
-    
-    const [ordersRes, diariesRes] = await Promise.all(promises);
-    setTrashedOrders(ordersRes.data || []);
-    
-    const diaries = diariesRes.data || [];
+    setTrashedOrders(ordersData);
+
+    const { data: diariesData } = await supabase.from('diaries').select('*, offices(name)').not('deleted_at', 'is', null).order('deleted_at', { ascending: false });
+    const diaries = diariesData || [];
     // Auto-delete diaries older than 2 months
     const now = new Date();
     const toAutoDelete = diaries.filter((d: any) => differenceInMonths(now, new Date(d.deleted_at)) >= 2);

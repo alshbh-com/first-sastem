@@ -37,6 +37,7 @@ export default function OfficeDiaries() {
         .from('diaries')
         .select('*')
         .eq('office_id', officeId!)
+        .is('deleted_at', null)
         .order('diary_number', { ascending: false });
       if (error) throw error;
       return data;

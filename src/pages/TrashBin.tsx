@@ -33,7 +33,7 @@ export default function TrashBin() {
     
     if (trashIds.length > 0) {
       promises.push(
-        supabase.from('orders').select('*, order_statuses(name, color), offices(name)').in('id', trashIds).order('updated_at', { ascending: false })
+        supabase.from('orders').select('*, order_statuses(name, color), offices(name)').in('id', trashIds).order('updated_at', { ascending: false }).then(r => r)
       );
     } else {
       promises.push(Promise.resolve({ data: [] }));
@@ -41,7 +41,7 @@ export default function TrashBin() {
     
     // Load soft-deleted diaries
     promises.push(
-      supabase.from('diaries').select('*, offices(name)').not('deleted_at', 'is', null).order('deleted_at', { ascending: false })
+      supabase.from('diaries').select('*, offices(name)').not('deleted_at', 'is', null).order('deleted_at', { ascending: false }).then(r => r)
     );
     
     const [ordersRes, diariesRes] = await Promise.all(promises);

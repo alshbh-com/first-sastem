@@ -1,0 +1,1 @@
+INSERT INTO public.order_statuses (name, color, is_fixed, sort_order) VALUES ('مكرر', '#9333ea', true, 11) ON CONFLICT DO NOTHING;

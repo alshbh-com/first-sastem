@@ -6,10 +6,18 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Trash2, Unlock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { moveToTrash } from '@/lib/trashUtils';
+
+const RETURN_STATUS_OPTIONS = [
+  { value: '', label: '-' },
+  { value: 'مازال في الشركة', label: 'مازال في الشركة' },
+  { value: 'خرج', label: 'خرج' },
+  { value: 'تالف', label: 'تالف' },
+];
 
 export default function ClosedOrders() {
   const { isOwner } = useAuth();
@@ -70,6 +78,13 @@ export default function ClosedOrders() {
     loadOrders();
   };
 
+  const updateReturnStatus = async (orderId: string, status: string) => {
+    const { error } = await supabase.from('orders').update({ return_status: status } as any).eq('id', orderId);
+    if (error) { toast.error(error.message); return; }
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, return_status: status } : o));
+    toast.success('تم تحديث حالة المرتجع');
+  };
+
   return (
     <div className="space-y-4">
       <h1 className="text-xl sm:text-2xl font-bold">الأوردرات القديمة (المقفلة)</h1>
@@ -100,11 +115,12 @@ export default function ClosedOrders() {
                   <TableHead className="text-right">الإجمالي</TableHead>
                   <TableHead className="text-right hidden md:table-cell">المكتب</TableHead>
                   <TableHead className="text-right">الحالة</TableHead>
+                  <TableHead className="text-right">حالة المرتجع</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={isOwner ? 9 : 8} className="text-center text-muted-foreground py-8">لا توجد أوردرات مقفلة</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={isOwner ? 10 : 9} className="text-center text-muted-foreground py-8">لا توجد أوردرات مقفلة</TableCell></TableRow>
                 ) : filtered.map(order => (
                   <TableRow key={order.id} className="border-border">
                     {isOwner && <TableCell><Checkbox checked={selected.has(order.id)} onCheckedChange={() => toggleSelect(order.id)} /></TableCell>}
@@ -119,6 +135,18 @@ export default function ClosedOrders() {
                       <Badge style={{ backgroundColor: order.order_statuses?.color || undefined }} className="text-xs">
                         {order.order_statuses?.name || '-'}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Select value={order.return_status || ''} onValueChange={(v) => updateReturnStatus(order.id, v)}>
+                        <SelectTrigger className="h-7 text-xs w-32 bg-secondary border-border">
+                          <SelectValue placeholder="-" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {RETURN_STATUS_OPTIONS.map(opt => (
+                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                   </TableRow>
                 ))}

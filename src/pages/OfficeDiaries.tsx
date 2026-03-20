@@ -98,13 +98,13 @@ export default function OfficeDiaries() {
 
   const deleteDiary = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('diaries').delete().eq('id', id);
+      const { error } = await supabase.from('diaries').update({ deleted_at: new Date().toISOString() }).eq('id', id);
       if (error) throw error;
-      await logActivity('حذف يومية', { diary_id: id });
+      await logActivity('نقل يومية لسلة المحذوفات', { diary_id: id });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['diaries', officeId] });
-      toast.success('تم حذف اليومية');
+      toast.success('تم نقل اليومية إلى سلة المحذوفات');
     },
   });
 

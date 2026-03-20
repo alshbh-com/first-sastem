@@ -13,7 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { moveToTrash } from '@/lib/trashUtils';
 
 const RETURN_STATUS_OPTIONS = [
-  { value: '', label: '-' },
+  { value: 'none', label: '-' },
   { value: 'مازال في الشركة', label: 'مازال في الشركة' },
   { value: 'خرج', label: 'خرج' },
   { value: 'تالف', label: 'تالف' },
@@ -79,9 +79,10 @@ export default function ClosedOrders() {
   };
 
   const updateReturnStatus = async (orderId: string, status: string) => {
-    const { error } = await supabase.from('orders').update({ return_status: status } as any).eq('id', orderId);
+    const actualStatus = status === 'none' ? '' : status;
+    const { error } = await supabase.from('orders').update({ return_status: actualStatus } as any).eq('id', orderId);
     if (error) { toast.error(error.message); return; }
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, return_status: status } : o));
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, return_status: actualStatus } : o));
     toast.success('تم تحديث حالة المرتجع');
   };
 
@@ -137,7 +138,7 @@ export default function ClosedOrders() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Select value={order.return_status || ''} onValueChange={(v) => updateReturnStatus(order.id, v)}>
+                      <Select value={order.return_status || 'none'} onValueChange={(v) => updateReturnStatus(order.id, v)}>
                         <SelectTrigger className="h-7 text-xs w-32 bg-secondary border-border">
                           <SelectValue placeholder="-" />
                         </SelectTrigger>

@@ -346,6 +346,7 @@ export type Database = {
           cash_arrived_entries: Json | null
           closed_at: string | null
           created_at: string
+          deleted_at: string | null
           diary_date: string
           diary_number: number
           id: string
@@ -365,6 +366,7 @@ export type Database = {
           cash_arrived_entries?: Json | null
           closed_at?: string | null
           created_at?: string
+          deleted_at?: string | null
           diary_date?: string
           diary_number?: number
           id?: string
@@ -384,6 +386,7 @@ export type Database = {
           cash_arrived_entries?: Json | null
           closed_at?: string | null
           created_at?: string
+          deleted_at?: string | null
           diary_date?: string
           diary_number?: number
           id?: string
@@ -788,6 +791,7 @@ export type Database = {
           product_id: string | null
           product_name: string
           quantity: number
+          return_status: string | null
           shipping_paid: number | null
           size: string | null
           status_id: string | null
@@ -821,6 +825,7 @@ export type Database = {
           product_id?: string | null
           product_name?: string
           quantity?: number
+          return_status?: string | null
           shipping_paid?: number | null
           size?: string | null
           status_id?: string | null
@@ -854,6 +859,7 @@ export type Database = {
           product_id?: string | null
           product_name?: string
           quantity?: number
+          return_status?: string | null
           shipping_paid?: number | null
           size?: string | null
           status_id?: string | null
@@ -897,6 +903,62 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      price_list_items: {
+        Row: {
+          created_at: string
+          governorate: string
+          id: string
+          pickup_price: number
+          price: number
+          price_list_id: string
+        }
+        Insert: {
+          created_at?: string
+          governorate?: string
+          id?: string
+          pickup_price?: number
+          price?: number
+          price_list_id: string
+        }
+        Update: {
+          created_at?: string
+          governorate?: string
+          id?: string
+          pickup_price?: number
+          price?: number
+          price_list_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_list_items_price_list_id_fkey"
+            columns: ["price_list_id"]
+            isOneToOne: false
+            referencedRelation: "price_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_lists: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       products: {
         Row: {

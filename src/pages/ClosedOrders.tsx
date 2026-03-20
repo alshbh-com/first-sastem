@@ -138,7 +138,7 @@ export default function ClosedOrders() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Select value={order.return_status || ''} onValueChange={(v) => updateReturnStatus(order.id, v)}>
+                      <Select value={order.return_status || 'none'} onValueChange={(v) => updateReturnStatus(order.id, v)}>
                         <SelectTrigger className="h-7 text-xs w-32 bg-secondary border-border">
                           <SelectValue placeholder="-" />
                         </SelectTrigger>

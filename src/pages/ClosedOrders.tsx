@@ -13,7 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { moveToTrash } from '@/lib/trashUtils';
 
 const RETURN_STATUS_OPTIONS = [
-  { value: '', label: '-' },
+  { value: 'none', label: '-' },
   { value: 'مازال في الشركة', label: 'مازال في الشركة' },
   { value: 'خرج', label: 'خرج' },
   { value: 'تالف', label: 'تالف' },

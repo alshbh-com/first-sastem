@@ -1136,7 +1136,7 @@ export type Database = {
       nextval_barcode: { Args: never; Returns: number }
     }
     Enums: {
-      app_role: "owner" | "admin" | "courier" | "office"
+      app_role: "owner" | "admin" | "courier" | "office" | "branch"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1264,7 +1264,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["owner", "admin", "courier", "office"],
+      app_role: ["owner", "admin", "courier", "office", "branch"],
     },
   },
 } as const

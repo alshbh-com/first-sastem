@@ -49,6 +49,8 @@ import ThemesPage from "@/pages/ThemesPage";
 import OrderAction from "@/pages/OrderAction";
 import WhatsAppMessages from "@/pages/WhatsAppMessages";
 import ExcelImport from "@/pages/ExcelImport";
+import BranchPortal from "@/pages/BranchPortal";
+import OrderApproval from "@/pages/OrderApproval";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();

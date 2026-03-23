@@ -4,7 +4,7 @@ import {
   PackageSearch, Search, Printer, DollarSign, MapPin, Users, BarChart3,
   TrendingUp, Calendar, UserCheck, MessageSquare, Locate, FileSpreadsheet,
   CircleDot, Calculator, Contact, ClipboardList, Trash2, FileBarChart, Navigation2, Palette,
-  MessageCircle
+  MessageCircle, ShieldCheck
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 
 const mainItems = [
   { title: 'لوحة التحكم', url: '/', icon: LayoutDashboard },
+  { title: 'تأكيد الأوردرات', url: '/order-approval', icon: ShieldCheck },
   { title: 'الأوردرات', url: '/orders', icon: Package },
   { title: 'جميع الأوردرات', url: '/unassigned-orders', icon: PackageSearch },
   { title: 'الأوردرات القديمة', url: '/closed-orders', icon: Archive },

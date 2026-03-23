@@ -49,6 +49,8 @@ import ThemesPage from "@/pages/ThemesPage";
 import OrderAction from "@/pages/OrderAction";
 import WhatsAppMessages from "@/pages/WhatsAppMessages";
 import ExcelImport from "@/pages/ExcelImport";
+import BranchPortal from "@/pages/BranchPortal";
+import OrderApproval from "@/pages/OrderApproval";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -77,6 +79,9 @@ const App = () => (
             <Route path="/office-portal" element={
               <ProtectedRoute><OfficePortal /></ProtectedRoute>
             } />
+            <Route path="/branch-portal" element={
+              <ProtectedRoute><BranchPortal /></ProtectedRoute>
+            } />
             {/* Accounting System - separate full layout */}
             <Route path="/accounting-system" element={
               <ProtectedRoute requiredRole="owner_or_admin"><AccountingLayout /></ProtectedRoute>
@@ -92,6 +97,7 @@ const App = () => (
               <ProtectedRoute requiredRole="owner_or_admin"><AppLayout /></ProtectedRoute>
             }>
               <Route path="/" element={<Dashboard />} />
+              <Route path="/order-approval" element={<OrderApproval />} />
               <Route path="/orders" element={<Orders />} />
               <Route path="/unassigned-orders" element={<UnassignedOrders />} />
               <Route path="/closed-orders" element={<ClosedOrders />} />

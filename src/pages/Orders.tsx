@@ -83,6 +83,7 @@ export default function Orders() {
       .from('orders')
       .select('*, order_statuses(name, color), offices(name)')
       .eq('is_closed', false)
+      .eq('is_pending_approval', false)
       .order('created_at', { ascending: false });
     setOrders(data || []);
   };
@@ -233,7 +234,14 @@ export default function Orders() {
                         <div className="font-mono font-bold">{order.barcode || '-'}</div>
                       </TableCell>
                       <TableCell className="font-mono text-xs">{order.customer_code || '-'}</TableCell>
-                      <TableCell className="text-sm">{order.customer_name}</TableCell>
+                      <TableCell className="text-sm">
+                        <div className="flex items-center gap-1">
+                          {order.customer_name}
+                          {order.branch_label && (
+                            <Badge variant="outline" className="text-[10px] px-1 py-0 border-blue-500 text-blue-500 whitespace-nowrap">{order.branch_label}</Badge>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell className="text-sm max-w-[200px]">
                         <div className="whitespace-normal break-words">{order.address || '-'}</div>
                       </TableCell>

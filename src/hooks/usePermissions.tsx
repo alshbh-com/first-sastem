@@ -12,6 +12,7 @@ export interface SectionPermission {
 // All sections that can be permissioned
 export const ALL_SECTIONS = [
   { key: 'dashboard', label: 'لوحة التحكم', url: '/' },
+  { key: 'order-approval', label: 'تأكيد الأوردرات', url: '/order-approval' },
   { key: 'orders', label: 'الأوردرات', url: '/orders' },
   { key: 'unassigned-orders', label: 'جميع الأوردرات', url: '/unassigned-orders' },
   { key: 'closed-orders', label: 'الأوردرات القديمة', url: '/closed-orders' },

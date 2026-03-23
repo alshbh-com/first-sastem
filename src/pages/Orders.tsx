@@ -83,6 +83,7 @@ export default function Orders() {
       .from('orders')
       .select('*, order_statuses(name, color), offices(name)')
       .eq('is_closed', false)
+      .eq('is_pending_approval', false)
       .order('created_at', { ascending: false });
     setOrders(data || []);
   };

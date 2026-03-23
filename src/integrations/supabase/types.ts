@@ -766,7 +766,10 @@ export type Database = {
       orders: {
         Row: {
           address: string | null
+          approved_at: string | null
+          approved_by: string | null
           barcode: string | null
+          branch_label: string | null
           color: string | null
           company_id: string | null
           confirmation_status: string | null
@@ -782,6 +785,7 @@ export type Database = {
           governorate: string | null
           id: string
           is_closed: boolean
+          is_pending_approval: boolean
           is_settled: boolean
           notes: string | null
           office_id: string | null
@@ -800,7 +804,10 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           barcode?: string | null
+          branch_label?: string | null
           color?: string | null
           company_id?: string | null
           confirmation_status?: string | null
@@ -816,6 +823,7 @@ export type Database = {
           governorate?: string | null
           id?: string
           is_closed?: boolean
+          is_pending_approval?: boolean
           is_settled?: boolean
           notes?: string | null
           office_id?: string | null
@@ -834,7 +842,10 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           barcode?: string | null
+          branch_label?: string | null
           color?: string | null
           company_id?: string | null
           confirmation_status?: string | null
@@ -850,6 +861,7 @@ export type Database = {
           governorate?: string | null
           id?: string
           is_closed?: boolean
+          is_pending_approval?: boolean
           is_settled?: boolean
           notes?: string | null
           office_id?: string | null

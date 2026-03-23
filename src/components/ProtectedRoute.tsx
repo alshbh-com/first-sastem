@@ -8,7 +8,7 @@ interface Props {
 }
 
 export default function ProtectedRoute({ children, requiredRole }: Props) {
-  const { session, loading, isOwner, isAdmin, isOwnerOrAdmin, isCourier, isOffice } = useAuth();
+  const { session, loading, isOwner, isAdmin, isOwnerOrAdmin, isCourier, isOffice, isBranch } = useAuth();
 
   if (loading) {
     return (
@@ -31,6 +31,7 @@ export default function ProtectedRoute({ children, requiredRole }: Props) {
   }
 
   if (requiredRole === 'owner_or_admin' && !isOwnerOrAdmin) {
+    if (isBranch) return <Navigate to="/branch-portal" replace />;
     if (isOffice) return <Navigate to="/office-portal" replace />;
     return <Navigate to="/courier-orders" replace />;
   }

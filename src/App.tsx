@@ -79,6 +79,9 @@ const App = () => (
             <Route path="/office-portal" element={
               <ProtectedRoute><OfficePortal /></ProtectedRoute>
             } />
+            <Route path="/branch-portal" element={
+              <ProtectedRoute><BranchPortal /></ProtectedRoute>
+            } />
             {/* Accounting System - separate full layout */}
             <Route path="/accounting-system" element={
               <ProtectedRoute requiredRole="owner_or_admin"><AccountingLayout /></ProtectedRoute>

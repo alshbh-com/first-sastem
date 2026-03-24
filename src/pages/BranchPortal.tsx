@@ -148,7 +148,7 @@ function AddBranchOrderDialog({ branchName, userId, onOrderAdded }: { branchName
   const [form, setForm] = useState({
     customer_name: '', customer_phone: '', customer_code: '',
     product_name: '', quantity: '1', price: '0', delivery_price: '0',
-    governorate: '', color: '', size: '', address: '', notes: '',
+    color: '', size: '', address: '', notes: '',
     office_id: '',
   });
 

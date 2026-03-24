@@ -44,6 +44,18 @@ export default function BranchPortal() {
     setLoading(false);
   };
 
+  const handleDelete = async (orderId: string) => {
+    if (!confirm('هل أنت متأكد من حذف هذا الأوردر؟')) return;
+    try {
+      const { error } = await supabase.from('orders').delete().eq('id', orderId);
+      if (error) throw error;
+      toast.success('تم حذف الأوردر');
+      setOrders(prev => prev.filter(o => o.id !== orderId));
+    } catch (err: any) {
+      toast.error(err.message || 'حصل خطأ');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background p-4" dir="rtl">
       <div className="max-w-6xl mx-auto space-y-4">
@@ -75,13 +87,14 @@ export default function BranchPortal() {
                     <TableHead className="text-right">المكتب</TableHead>
                     <TableHead className="text-right">الحالة</TableHead>
                     <TableHead className="text-right">التاريخ</TableHead>
+                    <TableHead className="text-right">إجراء</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loading ? (
-                    <TableRow><TableCell colSpan={8} className="text-center py-8"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></TableCell></TableRow>
+                    <TableRow><TableCell colSpan={9} className="text-center py-8"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></TableCell></TableRow>
                   ) : orders.length === 0 ? (
-                    <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
                   ) : orders.map(o => (
                     <TableRow key={o.id} className="border-border relative">
                       <TableCell className="font-mono font-bold text-sm">{o.barcode || '-'}</TableCell>
@@ -105,6 +118,16 @@ export default function BranchPortal() {
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {new Date(o.created_at).toLocaleDateString('ar-EG')}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10"
+                          onClick={() => handleDelete(o.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}

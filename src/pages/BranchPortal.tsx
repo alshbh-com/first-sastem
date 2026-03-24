@@ -257,10 +257,6 @@ function AddBranchOrderDialog({ branchName, userId, onOrderAdded }: { branchName
             <Input value={form.address} onChange={e => set('address', e.target.value)} className="bg-secondary border-border" />
           </div>
 
-          <div className="space-y-1">
-            <Label className="text-xs">المحافظة</Label>
-            <Input value={form.governorate} onChange={e => set('governorate', e.target.value)} className="bg-secondary border-border" />
-          </div>
 
           <div className="space-y-1">
             <Label className="text-xs">اسم المنتج</Label>

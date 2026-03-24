@@ -190,7 +190,7 @@ function AddBranchOrderDialog({ branchName, userId, onOrderAdded }: { branchName
         quantity: parseInt(form.quantity) || 1,
         price: parseFloat(form.price) || 0,
         delivery_price: parseFloat(form.delivery_price) || 0,
-        governorate: form.governorate,
+        governorate: '',
         color: form.color,
         size: form.size,
         address: form.address,

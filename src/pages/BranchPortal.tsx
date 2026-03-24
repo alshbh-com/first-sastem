@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { LogOut, Plus, Loader2, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { LogOut, Plus, Loader2, Clock, CheckCircle, XCircle, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -44,6 +44,18 @@ export default function BranchPortal() {
     setLoading(false);
   };
 
+  const handleDelete = async (orderId: string) => {
+    if (!confirm('هل أنت متأكد من حذف هذا الأوردر؟')) return;
+    try {
+      const { error } = await supabase.from('orders').delete().eq('id', orderId);
+      if (error) throw error;
+      toast.success('تم حذف الأوردر');
+      setOrders(prev => prev.filter(o => o.id !== orderId));
+    } catch (err: any) {
+      toast.error(err.message || 'حصل خطأ');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background p-4" dir="rtl">
       <div className="max-w-6xl mx-auto space-y-4">
@@ -75,13 +87,14 @@ export default function BranchPortal() {
                     <TableHead className="text-right">المكتب</TableHead>
                     <TableHead className="text-right">الحالة</TableHead>
                     <TableHead className="text-right">التاريخ</TableHead>
+                    <TableHead className="text-right">إجراء</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loading ? (
-                    <TableRow><TableCell colSpan={8} className="text-center py-8"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></TableCell></TableRow>
+                    <TableRow><TableCell colSpan={9} className="text-center py-8"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></TableCell></TableRow>
                   ) : orders.length === 0 ? (
-                    <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
                   ) : orders.map(o => (
                     <TableRow key={o.id} className="border-border relative">
                       <TableCell className="font-mono font-bold text-sm">{o.barcode || '-'}</TableCell>
@@ -106,6 +119,16 @@ export default function BranchPortal() {
                       <TableCell className="text-xs text-muted-foreground">
                         {new Date(o.created_at).toLocaleDateString('ar-EG')}
                       </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10"
+                          onClick={() => handleDelete(o.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -125,7 +148,7 @@ function AddBranchOrderDialog({ branchName, userId, onOrderAdded }: { branchName
   const [form, setForm] = useState({
     customer_name: '', customer_phone: '', customer_code: '',
     product_name: '', quantity: '1', price: '0', delivery_price: '0',
-    governorate: '', color: '', size: '', address: '', notes: '',
+    color: '', size: '', address: '', notes: '',
     office_id: '',
   });
 
@@ -152,6 +175,10 @@ function AddBranchOrderDialog({ branchName, userId, onOrderAdded }: { branchName
       toast.error('العنوان إجباري');
       return;
     }
+    if (!(parseFloat(form.price) > 0)) {
+      toast.error('السعر إجباري');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -163,7 +190,7 @@ function AddBranchOrderDialog({ branchName, userId, onOrderAdded }: { branchName
         quantity: parseInt(form.quantity) || 1,
         price: parseFloat(form.price) || 0,
         delivery_price: parseFloat(form.delivery_price) || 0,
-        governorate: form.governorate,
+        governorate: '',
         color: form.color,
         size: form.size,
         address: form.address,
@@ -180,7 +207,7 @@ function AddBranchOrderDialog({ branchName, userId, onOrderAdded }: { branchName
       setForm({
         customer_name: '', customer_phone: '', customer_code: '',
         product_name: '', quantity: '1', price: '0', delivery_price: '0',
-        governorate: '', color: '', size: '', address: '', notes: '',
+        color: '', size: '', address: '', notes: '',
         office_id: '',
       });
       setOpen(false);
@@ -230,10 +257,6 @@ function AddBranchOrderDialog({ branchName, userId, onOrderAdded }: { branchName
             <Input value={form.address} onChange={e => set('address', e.target.value)} className="bg-secondary border-border" />
           </div>
 
-          <div className="space-y-1">
-            <Label className="text-xs">المحافظة</Label>
-            <Input value={form.governorate} onChange={e => set('governorate', e.target.value)} className="bg-secondary border-border" />
-          </div>
 
           <div className="space-y-1">
             <Label className="text-xs">اسم المنتج</Label>

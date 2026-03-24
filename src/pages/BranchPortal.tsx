@@ -175,6 +175,10 @@ function AddBranchOrderDialog({ branchName, userId, onOrderAdded }: { branchName
       toast.error('العنوان إجباري');
       return;
     }
+    if (!(parseFloat(form.price) > 0)) {
+      toast.error('السعر إجباري');
+      return;
+    }
 
     setLoading(true);
     try {

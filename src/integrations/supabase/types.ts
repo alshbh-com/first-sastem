@@ -251,6 +251,36 @@ export type Database = {
           },
         ]
       }
+      courier_leaves: {
+        Row: {
+          approved_by: string | null
+          courier_id: string
+          created_at: string
+          id: string
+          leave_date: string
+          reason: string | null
+          status: string
+        }
+        Insert: {
+          approved_by?: string | null
+          courier_id: string
+          created_at?: string
+          id?: string
+          leave_date: string
+          reason?: string | null
+          status?: string
+        }
+        Update: {
+          approved_by?: string | null
+          courier_id?: string
+          created_at?: string
+          id?: string
+          leave_date?: string
+          reason?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       courier_locations: {
         Row: {
           accuracy: number | null
@@ -275,6 +305,135 @@ export type Database = {
           latitude?: number
           longitude?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      courier_ratings: {
+        Row: {
+          courier_id: string
+          created_at: string
+          id: string
+          month: number
+          notes: string | null
+          rated_by: string | null
+          rating: number
+          year: number
+        }
+        Insert: {
+          courier_id: string
+          created_at?: string
+          id?: string
+          month: number
+          notes?: string | null
+          rated_by?: string | null
+          rating?: number
+          year: number
+        }
+        Update: {
+          courier_id?: string
+          created_at?: string
+          id?: string
+          month?: number
+          notes?: string | null
+          rated_by?: string | null
+          rating?: number
+          year?: number
+        }
+        Relationships: []
+      }
+      courier_rewards: {
+        Row: {
+          courier_id: string
+          created_at: string
+          deliveries_count: number
+          id: string
+          is_paid: boolean
+          reward_amount: number
+          reward_date: string
+        }
+        Insert: {
+          courier_id: string
+          created_at?: string
+          deliveries_count?: number
+          id?: string
+          is_paid?: boolean
+          reward_amount?: number
+          reward_date?: string
+        }
+        Update: {
+          courier_id?: string
+          created_at?: string
+          deliveries_count?: number
+          id?: string
+          is_paid?: boolean
+          reward_amount?: number
+          reward_date?: string
+        }
+        Relationships: []
+      }
+      courier_violations: {
+        Row: {
+          courier_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          reason: string
+          violation_type: string
+        }
+        Insert: {
+          courier_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          reason?: string
+          violation_type?: string
+        }
+        Update: {
+          courier_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          reason?: string
+          violation_type?: string
+        }
+        Relationships: []
+      }
+      customer_complaints: {
+        Row: {
+          complaint_text: string
+          created_at: string
+          created_by: string | null
+          customer_name: string
+          customer_phone: string
+          id: string
+          order_id: string | null
+          resolution: string | null
+          resolved_at: string | null
+          status: string
+        }
+        Insert: {
+          complaint_text?: string
+          created_at?: string
+          created_by?: string | null
+          customer_name?: string
+          customer_phone?: string
+          id?: string
+          order_id?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          status?: string
+        }
+        Update: {
+          complaint_text?: string
+          created_at?: string
+          created_by?: string | null
+          customer_name?: string
+          customer_phone?: string
+          id?: string
+          order_id?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          status?: string
         }
         Relationships: []
       }
@@ -553,6 +712,114 @@ export type Database = {
           },
         ]
       }
+      fuel_entries: {
+        Row: {
+          amount: number
+          courier_id: string
+          created_at: string
+          created_by: string | null
+          entry_date: string
+          id: string
+          liters: number | null
+          notes: string | null
+        }
+        Insert: {
+          amount?: number
+          courier_id: string
+          created_at?: string
+          created_by?: string | null
+          entry_date?: string
+          id?: string
+          liters?: number | null
+          notes?: string | null
+        }
+        Update: {
+          amount?: number
+          courier_id?: string
+          created_at?: string
+          created_by?: string | null
+          entry_date?: string
+          id?: string
+          liters?: number | null
+          notes?: string | null
+        }
+        Relationships: []
+      }
+      internal_tickets: {
+        Row: {
+          assigned_to: string | null
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          description: string
+          id: string
+          priority: string
+          status: string
+          title: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          priority?: string
+          status?: string
+          title?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          priority?: string
+          status?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      inventory_items: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          item_name: string
+          location: string | null
+          min_quantity: number
+          notes: string | null
+          quantity: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          item_name?: string
+          location?: string | null
+          min_quantity?: number
+          notes?: string | null
+          quantity?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          item_name?: string
+          location?: string | null
+          min_quantity?: number
+          notes?: string | null
+          quantity?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           created_at: string
@@ -577,6 +844,39 @@ export type Database = {
           message?: string
           receiver_id?: string
           sender_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          link: string | null
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          message?: string
+          title?: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          message?: string
+          title?: string
+          type?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1085,6 +1385,45 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      vehicles: {
+        Row: {
+          brand: string | null
+          courier_id: string
+          created_at: string
+          id: string
+          model: string | null
+          next_maintenance_date: string | null
+          notes: string | null
+          plate_number: string | null
+          vehicle_type: string
+          year: number | null
+        }
+        Insert: {
+          brand?: string | null
+          courier_id: string
+          created_at?: string
+          id?: string
+          model?: string | null
+          next_maintenance_date?: string | null
+          notes?: string | null
+          plate_number?: string | null
+          vehicle_type?: string
+          year?: number | null
+        }
+        Update: {
+          brand?: string | null
+          courier_id?: string
+          created_at?: string
+          id?: string
+          model?: string | null
+          next_maintenance_date?: string | null
+          notes?: string | null
+          plate_number?: string | null
+          vehicle_type?: string
+          year?: number | null
         }
         Relationships: []
       }

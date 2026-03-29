@@ -700,7 +700,7 @@ function DataBackup() {
       const allData: Record<string, any[]> = {};
 
       for (const table of tables) {
-        const { data } = await supabase.from(table).select('*').limit(5000);
+        const { data } = await (supabase.from as any)(table).select('*').limit(5000);
         allData[table] = data || [];
       }
 

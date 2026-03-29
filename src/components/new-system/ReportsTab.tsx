@@ -1,39 +1,481 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, FileBarChart, Receipt, Calendar, Filter, Users, DollarSign, Clock, BarChart3 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { FileText, FileBarChart, Receipt, Calendar, Users, DollarSign, Clock, BarChart3, Download, Printer, Filter } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { format } from 'date-fns';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
-const planned = [
-  { icon: FileText, title: 'تقرير PDF شامل قابل للتخصيص', desc: 'تختار الأعمدة والفلاتر' },
-  { icon: Receipt, title: 'إنشاء عقود تعاون مع المكاتب', desc: 'PDF جاهز للطباعة' },
-  { icon: FileBarChart, title: 'كشف حساب مفصل لكل مكتب', desc: 'PDF بكل التفاصيل' },
-  { icon: Calendar, title: 'تقرير مقارنة فترات', desc: 'هذا الشهر مقابل اللي فات' },
-  { icon: Filter, title: 'تقرير مخصص', desc: 'المستخدم يختار الأعمدة والفلاتر' },
-  { icon: Users, title: 'جدول رواتب المندوبين الشهري', desc: 'كشف رواتب جاهز' },
-  { icon: DollarSign, title: 'إيصال استلام فلوس من المندوب', desc: 'PDF للطباعة' },
-  { icon: Clock, title: 'ملخص يومي تلقائي للمالك', desc: 'يتبعت كل يوم' },
-  { icon: BarChart3, title: 'تقرير أوردرات بدون حركة', desc: 'أوردرات راكدة' },
-  { icon: FileText, title: 'تقرير أداء النظام', desc: 'سرعة واستخدام' },
-];
+// ============ 1. تقرير PDF شامل ============
+function ComprehensivePDFReport() {
+  const [dateFrom, setDateFrom] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [dateTo, setDateTo] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [officeId, setOfficeId] = useState('all');
+  const [offices, setOffices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [columns, setColumns] = useState({
+    tracking: true, customer: true, phone: true, product: true, price: true,
+    delivery: true, status: true, office: true, courier: true, governorate: true
+  });
 
+  useEffect(() => {
+    supabase.from('offices').select('id, name').then(({ data }) => setOffices(data || []));
+  }, []);
+
+  const generatePDF = async () => {
+    setLoading(true);
+    try {
+      let query = supabase.from('orders').select('*, order_statuses(name)');
+      if (officeId !== 'all') query = query.eq('office_id', officeId);
+      query = query.gte('created_at', dateFrom).lte('created_at', dateTo + 'T23:59:59');
+      const { data: orders } = await query.limit(5000);
+      if (!orders?.length) { toast.error('لا توجد بيانات'); setLoading(false); return; }
+
+      const doc = new jsPDF({ orientation: 'landscape' });
+      doc.setFont('helvetica');
+      doc.setFontSize(16);
+      doc.text('Comprehensive Orders Report', 140, 15, { align: 'center' });
+      doc.setFontSize(10);
+      doc.text(`From: ${dateFrom} To: ${dateTo}`, 140, 22, { align: 'center' });
+      doc.text(`Total Orders: ${orders.length}`, 140, 28, { align: 'center' });
+
+      const headers: string[] = [];
+      const keys: string[] = [];
+      if (columns.tracking) { headers.push('Tracking'); keys.push('tracking_id'); }
+      if (columns.customer) { headers.push('Customer'); keys.push('customer_name'); }
+      if (columns.phone) { headers.push('Phone'); keys.push('customer_phone'); }
+      if (columns.product) { headers.push('Product'); keys.push('product_name'); }
+      if (columns.price) { headers.push('Price'); keys.push('price'); }
+      if (columns.delivery) { headers.push('Delivery'); keys.push('delivery_price'); }
+      if (columns.status) { headers.push('Status'); keys.push('_status'); }
+      if (columns.office) { headers.push('Office'); keys.push('_office'); }
+      if (columns.governorate) { headers.push('Gov.'); keys.push('governorate'); }
+
+      const officeMap = Object.fromEntries(offices.map(o => [o.id, o.name]));
+      const rows = orders.map(o => keys.map(k => {
+        if (k === '_status') return (o as any).order_statuses?.name || '-';
+        if (k === '_office') return officeMap[o.office_id || ''] || '-';
+        return String((o as any)[k] ?? '-');
+      }));
+
+      autoTable(doc, { head: [headers], body: rows, startY: 34, styles: { fontSize: 7, cellPadding: 2 }, headStyles: { fillColor: [59, 130, 246] } });
+      doc.save(`orders-report-${dateFrom}.pdf`);
+      toast.success('تم تحميل التقرير');
+    } catch { toast.error('حدث خطأ'); }
+    setLoading(false);
+  };
+
+  const colKeys = Object.keys(columns) as (keyof typeof columns)[];
+  const colLabels: Record<string, string> = { tracking: 'رقم التتبع', customer: 'العميل', phone: 'الهاتف', product: 'المنتج', price: 'السعر', delivery: 'التوصيل', status: 'الحالة', office: 'المكتب', courier: 'المندوب', governorate: 'المحافظة' };
+
+  return (
+    <Card>
+      <CardHeader><CardTitle className="text-sm flex items-center gap-2"><FileText className="h-4 w-4" /> تقرير PDF شامل قابل للتخصيص</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div><Label>من تاريخ</Label><Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} /></div>
+          <div><Label>إلى تاريخ</Label><Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} /></div>
+          <div><Label>المكتب</Label>
+            <Select value={officeId} onValueChange={setOfficeId}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="all">الكل</SelectItem>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div>
+          <Label className="mb-2 block">اختر الأعمدة</Label>
+          <div className="flex flex-wrap gap-2">
+            {colKeys.map(k => (
+              <Badge key={k} variant={columns[k] ? 'default' : 'outline'} className="cursor-pointer" onClick={() => setColumns(p => ({ ...p, [k]: !p[k] }))}>
+                {colLabels[k]}
+              </Badge>
+            ))}
+          </div>
+        </div>
+        <Button onClick={generatePDF} disabled={loading} className="w-full"><Download className="h-4 w-4 ml-2" />{loading ? 'جاري التحميل...' : 'تحميل PDF'}</Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ============ 2. كشف حساب مفصل لكل مكتب ============
+function OfficeAccountStatement() {
+  const [officeId, setOfficeId] = useState('');
+  const [offices, setOffices] = useState<any[]>([]);
+  const [dateFrom, setDateFrom] = useState(format(new Date(Date.now() - 30 * 86400000), 'yyyy-MM-dd'));
+  const [dateTo, setDateTo] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [statement, setStatement] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    supabase.from('offices').select('id, name').then(({ data }) => setOffices(data || []));
+  }, []);
+
+  const generate = async () => {
+    if (!officeId) { toast.error('اختر مكتب'); return; }
+    setLoading(true);
+    const [ordersRes, paymentsRes] = await Promise.all([
+      supabase.from('orders').select('*, order_statuses(name)').eq('office_id', officeId).gte('created_at', dateFrom).lte('created_at', dateTo + 'T23:59:59').limit(5000),
+      supabase.from('office_payments').select('*').eq('office_id', officeId).gte('created_at', dateFrom).lte('created_at', dateTo + 'T23:59:59')
+    ]);
+    const orders = ordersRes.data || [];
+    const payments = paymentsRes.data || [];
+    const totalOrders = orders.length;
+    const totalRevenue = orders.reduce((s, o) => s + Number(o.price || 0), 0);
+    const totalDelivery = orders.reduce((s, o) => s + Number(o.delivery_price || 0), 0);
+    const totalPayments = payments.reduce((s, p) => s + Number(p.amount || 0), 0);
+    setStatement({ orders, payments, totalOrders, totalRevenue, totalDelivery, totalPayments, balance: totalRevenue - totalDelivery - totalPayments });
+    setLoading(false);
+  };
+
+  const exportPDF = () => {
+    if (!statement) return;
+    const doc = new jsPDF();
+    const officeName = offices.find(o => o.id === officeId)?.name || '';
+    doc.setFontSize(14);
+    doc.text(`Account Statement - ${officeName}`, 105, 15, { align: 'center' });
+    doc.setFontSize(10);
+    doc.text(`Period: ${dateFrom} to ${dateTo}`, 105, 22, { align: 'center' });
+
+    autoTable(doc, {
+      startY: 30, head: [['Item', 'Amount']],
+      body: [
+        ['Total Orders', String(statement.totalOrders)],
+        ['Total Revenue', statement.totalRevenue.toLocaleString()],
+        ['Total Delivery Fees', statement.totalDelivery.toLocaleString()],
+        ['Total Payments', statement.totalPayments.toLocaleString()],
+        ['Balance', statement.balance.toLocaleString()],
+      ],
+      headStyles: { fillColor: [34, 197, 94] }
+    });
+
+    if (statement.payments.length) {
+      autoTable(doc, {
+        startY: (doc as any).lastAutoTable.finalY + 10,
+        head: [['Date', 'Amount', 'Notes']],
+        body: statement.payments.map((p: any) => [format(new Date(p.created_at), 'yyyy-MM-dd'), p.amount.toLocaleString(), p.notes || '-']),
+        headStyles: { fillColor: [59, 130, 246] }
+      });
+    }
+    doc.save(`statement-${officeName}-${dateFrom}.pdf`);
+    toast.success('تم تحميل كشف الحساب');
+  };
+
+  return (
+    <Card>
+      <CardHeader><CardTitle className="text-sm flex items-center gap-2"><FileBarChart className="h-4 w-4" /> كشف حساب مفصل لكل مكتب</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div><Label>المكتب</Label>
+            <Select value={officeId} onValueChange={setOfficeId}>
+              <SelectTrigger><SelectValue placeholder="اختر مكتب" /></SelectTrigger>
+              <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div><Label>من</Label><Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} /></div>
+          <div><Label>إلى</Label><Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} /></div>
+        </div>
+        <Button onClick={generate} disabled={loading} className="w-full">{loading ? 'جاري...' : 'عرض كشف الحساب'}</Button>
+        {statement && (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: 'إجمالي الأوردرات', value: statement.totalOrders, color: 'text-blue-600' },
+                { label: 'إجمالي المبيعات', value: statement.totalRevenue.toLocaleString(), color: 'text-green-600' },
+                { label: 'إجمالي المدفوعات', value: statement.totalPayments.toLocaleString(), color: 'text-orange-600' },
+                { label: 'الرصيد', value: statement.balance.toLocaleString(), color: statement.balance >= 0 ? 'text-green-600' : 'text-red-600' },
+              ].map((item, i) => (
+                <div key={i} className="p-3 rounded-lg border bg-muted/30 text-center">
+                  <p className="text-xs text-muted-foreground">{item.label}</p>
+                  <p className={`text-lg font-bold ${item.color}`}>{item.value}</p>
+                </div>
+              ))}
+            </div>
+            <Button variant="outline" onClick={exportPDF} className="w-full"><Download className="h-4 w-4 ml-2" /> تحميل PDF</Button>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ============ 3. جدول رواتب المندوبين ============
+function CourierSalaryReport() {
+  const [month, setMonth] = useState(format(new Date(), 'yyyy-MM'));
+  const [salaryData, setSalaryData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const generate = async () => {
+    setLoading(true);
+    const startDate = `${month}-01`;
+    const endDate = `${month}-31`;
+    const [profilesRes, advancesRes, bonusesRes, fuelRes, collectionsRes] = await Promise.all([
+      supabase.from('profiles').select('id, full_name, salary').then(r => r),
+      supabase.from('advances').select('*').gte('created_at', startDate).lte('created_at', endDate + 'T23:59:59'),
+      supabase.from('courier_bonuses').select('*').gte('created_at', startDate).lte('created_at', endDate + 'T23:59:59'),
+      supabase.from('fuel_entries').select('*').gte('entry_date', startDate).lte('entry_date', endDate),
+      supabase.from('courier_collections').select('*').gte('created_at', startDate).lte('created_at', endDate + 'T23:59:59'),
+    ]);
+    const profiles = profilesRes.data || [];
+    const advances = advancesRes.data || [];
+    const bonuses = bonusesRes.data || [];
+    const fuel = fuelRes.data || [];
+    const collections = collectionsRes.data || [];
+
+    const data = profiles.filter(p => p.salary > 0).map(p => {
+      const totalAdvances = advances.filter(a => a.user_id === p.id).reduce((s, a) => s + Number(a.amount), 0);
+      const totalBonuses = bonuses.filter(b => b.courier_id === p.id).reduce((s, b) => s + Number(b.amount), 0);
+      const totalFuel = fuel.filter(f => f.courier_id === p.id).reduce((s, f) => s + Number(f.amount), 0);
+      const totalCollections = collections.filter(c => c.courier_id === p.id).reduce((s, c) => s + Number(c.amount), 0);
+      const net = Number(p.salary) + totalBonuses - totalAdvances - totalFuel;
+      return { ...p, totalAdvances, totalBonuses, totalFuel, totalCollections, net };
+    });
+    setSalaryData(data);
+    setLoading(false);
+  };
+
+  const exportPDF = () => {
+    const doc = new jsPDF({ orientation: 'landscape' });
+    doc.setFontSize(14);
+    doc.text(`Courier Salary Report - ${month}`, 140, 15, { align: 'center' });
+    autoTable(doc, {
+      startY: 25,
+      head: [['Name', 'Base Salary', 'Bonuses', 'Advances', 'Fuel', 'Collections', 'Net']],
+      body: salaryData.map(d => [d.full_name, d.salary, d.totalBonuses, d.totalAdvances, d.totalFuel, d.totalCollections, d.net]),
+      headStyles: { fillColor: [147, 51, 234] },
+      foot: [['Total', '', '', '', '', '', salaryData.reduce((s, d) => s + d.net, 0).toLocaleString()]],
+    });
+    doc.save(`salaries-${month}.pdf`);
+    toast.success('تم تحميل جدول الرواتب');
+  };
+
+  return (
+    <Card>
+      <CardHeader><CardTitle className="text-sm flex items-center gap-2"><Users className="h-4 w-4" /> جدول رواتب المندوبين الشهري</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex gap-3 items-end">
+          <div className="flex-1"><Label>الشهر</Label><Input type="month" value={month} onChange={e => setMonth(e.target.value)} /></div>
+          <Button onClick={generate} disabled={loading}>{loading ? 'جاري...' : 'حساب'}</Button>
+        </div>
+        {salaryData.length > 0 && (
+          <>
+            <div className="overflow-auto max-h-[300px]">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>الاسم</TableHead><TableHead>الراتب</TableHead><TableHead>مكافآت</TableHead>
+                    <TableHead>سلف</TableHead><TableHead>وقود</TableHead><TableHead>صافي</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {salaryData.map(d => (
+                    <TableRow key={d.id}>
+                      <TableCell className="font-medium">{d.full_name}</TableCell>
+                      <TableCell>{Number(d.salary).toLocaleString()}</TableCell>
+                      <TableCell className="text-green-600">+{d.totalBonuses.toLocaleString()}</TableCell>
+                      <TableCell className="text-red-600">-{d.totalAdvances.toLocaleString()}</TableCell>
+                      <TableCell className="text-orange-600">-{d.totalFuel.toLocaleString()}</TableCell>
+                      <TableCell className={`font-bold ${d.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>{d.net.toLocaleString()}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            <Button variant="outline" onClick={exportPDF} className="w-full"><Download className="h-4 w-4 ml-2" /> تحميل PDF</Button>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ============ 4. إيصال استلام فلوس ============
+function CollectionReceipt() {
+  const [courierId, setCourierId] = useState('');
+  const [amount, setAmount] = useState('');
+  const [reason, setReason] = useState('تحصيل أوردرات');
+  const [couriers, setCouriers] = useState<any[]>([]);
+
+  useEffect(() => {
+    supabase.from('profiles').select('id, full_name').then(({ data }) => setCouriers(data || []));
+  }, []);
+
+  const printReceipt = () => {
+    if (!courierId || !amount) { toast.error('أكمل البيانات'); return; }
+    const courierName = couriers.find(c => c.id === courierId)?.full_name || '';
+    const doc = new jsPDF();
+    const now = new Date();
+    doc.setFontSize(18);
+    doc.text('Collection Receipt', 105, 20, { align: 'center' });
+    doc.setFontSize(10);
+    doc.text('-------------------------------------------', 105, 28, { align: 'center' });
+
+    autoTable(doc, {
+      startY: 35, theme: 'grid',
+      head: [['Field', 'Details']],
+      body: [
+        ['Date', format(now, 'yyyy-MM-dd HH:mm')],
+        ['Receipt No.', `REC-${Date.now().toString(36).toUpperCase()}`],
+        ['Courier', courierName],
+        ['Amount', `${Number(amount).toLocaleString()} EGP`],
+        ['Reason', reason],
+      ],
+      headStyles: { fillColor: [234, 179, 8] },
+      styles: { fontSize: 12 }
+    });
+
+    const y = (doc as any).lastAutoTable.finalY + 20;
+    doc.text('Signature: ___________________', 30, y);
+    doc.text('Received by: ___________________', 120, y);
+    doc.save(`receipt-${courierName}-${format(now, 'yyyyMMdd')}.pdf`);
+    toast.success('تم تحميل الإيصال');
+  };
+
+  return (
+    <Card>
+      <CardHeader><CardTitle className="text-sm flex items-center gap-2"><Receipt className="h-4 w-4" /> إيصال استلام فلوس من المندوب</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div><Label>المندوب</Label>
+            <Select value={courierId} onValueChange={setCourierId}>
+              <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
+              <SelectContent>{couriers.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div><Label>المبلغ</Label><Input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" /></div>
+          <div><Label>السبب</Label><Input value={reason} onChange={e => setReason(e.target.value)} /></div>
+        </div>
+        <Button onClick={printReceipt} className="w-full"><Printer className="h-4 w-4 ml-2" /> طباعة إيصال PDF</Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ============ 5. تقرير مقارنة فترات ============
+function PeriodComparison() {
+  const [result, setResult] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  const compare = async () => {
+    setLoading(true);
+    const now = new Date();
+    const thisStart = format(new Date(now.getFullYear(), now.getMonth(), 1), 'yyyy-MM-dd');
+    const thisEnd = format(now, 'yyyy-MM-dd');
+    const lastStart = format(new Date(now.getFullYear(), now.getMonth() - 1, 1), 'yyyy-MM-dd');
+    const lastEnd = format(new Date(now.getFullYear(), now.getMonth(), 0), 'yyyy-MM-dd');
+
+    const [thisRes, lastRes] = await Promise.all([
+      supabase.from('orders').select('price, delivery_price').gte('created_at', thisStart).lte('created_at', thisEnd + 'T23:59:59'),
+      supabase.from('orders').select('price, delivery_price').gte('created_at', lastStart).lte('created_at', lastEnd + 'T23:59:59'),
+    ]);
+    const thisOrders = thisRes.data || [];
+    const lastOrders = lastRes.data || [];
+    setResult({
+      thisMonth: { count: thisOrders.length, revenue: thisOrders.reduce((s, o) => s + Number(o.price), 0), shipping: thisOrders.reduce((s, o) => s + Number(o.delivery_price), 0) },
+      lastMonth: { count: lastOrders.length, revenue: lastOrders.reduce((s, o) => s + Number(o.price), 0), shipping: lastOrders.reduce((s, o) => s + Number(o.delivery_price), 0) },
+    });
+    setLoading(false);
+  };
+
+  const pct = (a: number, b: number) => b === 0 ? 0 : Math.round(((a - b) / b) * 100);
+
+  return (
+    <Card>
+      <CardHeader><CardTitle className="text-sm flex items-center gap-2"><Calendar className="h-4 w-4" /> مقارنة هذا الشهر بالسابق</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <Button onClick={compare} disabled={loading} className="w-full">{loading ? 'جاري...' : 'مقارنة'}</Button>
+        {result && (
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: 'عدد الأوردرات', curr: result.thisMonth.count, prev: result.lastMonth.count },
+              { label: 'الإيرادات', curr: result.thisMonth.revenue, prev: result.lastMonth.revenue },
+              { label: 'الشحن', curr: result.thisMonth.shipping, prev: result.lastMonth.shipping },
+            ].map((item, i) => {
+              const change = pct(item.curr, item.prev);
+              return (
+                <div key={i} className="p-3 rounded-lg border bg-muted/30 text-center">
+                  <p className="text-xs text-muted-foreground">{item.label}</p>
+                  <p className="text-lg font-bold">{item.curr.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground">السابق: {item.prev.toLocaleString()}</p>
+                  <Badge variant={change >= 0 ? 'default' : 'destructive'} className="mt-1">{change >= 0 ? '+' : ''}{change}%</Badge>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ============ 6. تقرير أوردرات بدون حركة ============
+function StaleOrdersReport() {
+  const [days, setDays] = useState('7');
+  const [staleOrders, setStaleOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const find = async () => {
+    setLoading(true);
+    const cutoff = new Date(Date.now() - Number(days) * 86400000).toISOString();
+    const { data } = await supabase.from('orders').select('tracking_id, customer_name, product_name, created_at, updated_at, order_statuses(name)')
+      .eq('is_closed', false).lt('updated_at', cutoff).order('updated_at', { ascending: true }).limit(200);
+    setStaleOrders(data || []);
+    setLoading(false);
+  };
+
+  return (
+    <Card>
+      <CardHeader><CardTitle className="text-sm flex items-center gap-2"><Clock className="h-4 w-4" /> أوردرات بدون حركة (راكدة)</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex gap-3 items-end">
+          <div className="flex-1"><Label>عدد الأيام بدون تحديث</Label><Input type="number" value={days} onChange={e => setDays(e.target.value)} /></div>
+          <Button onClick={find} disabled={loading}>{loading ? 'جاري...' : 'بحث'}</Button>
+        </div>
+        {staleOrders.length > 0 && (
+          <div className="overflow-auto max-h-[250px]">
+            <Table>
+              <TableHeader><TableRow><TableHead>التتبع</TableHead><TableHead>العميل</TableHead><TableHead>الحالة</TableHead><TableHead>آخر تحديث</TableHead></TableRow></TableHeader>
+              <TableBody>
+                {staleOrders.map((o, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="text-xs">{o.tracking_id}</TableCell>
+                    <TableCell className="text-xs">{o.customer_name}</TableCell>
+                    <TableCell><Badge variant="outline" className="text-xs">{(o as any).order_statuses?.name || '-'}</Badge></TableCell>
+                    <TableCell className="text-xs">{format(new Date(o.updated_at), 'MM/dd HH:mm')}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+        {staleOrders.length === 0 && !loading && <p className="text-center text-sm text-muted-foreground">لا توجد أوردرات راكدة</p>}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ============ Main ============
 export default function ReportsTab() {
   return (
     <div className="mt-4 space-y-4">
-      <Card>
-        <CardHeader><CardTitle className="text-sm flex items-center gap-2"><FileText className="h-4 w-4" /> تقارير ومستندات</CardTitle></CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground mb-4">الميزات المخطط تنفيذها في المرحلة القادمة:</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {planned.map((item, i) => (
-              <div key={i} className="flex items-start gap-2 p-3 rounded-lg border bg-muted/30">
-                <item.icon className="h-4 w-4 mt-0.5 text-primary shrink-0" />
-                <div>
-                  <p className="text-sm font-medium">{item.title}</p>
-                  <p className="text-xs text-muted-foreground">{item.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <ComprehensivePDFReport />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <OfficeAccountStatement />
+        <CourierSalaryReport />
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <CollectionReceipt />
+        <PeriodComparison />
+      </div>
+      <StaleOrdersReport />
     </div>
   );
 }

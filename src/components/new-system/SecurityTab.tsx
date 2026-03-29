@@ -244,8 +244,8 @@ function AutoLockSettings() {
 
   const save = async () => {
     setSaving(true);
-    await supabase.from('app_settings').upsert({ key: 'auto_lock_enabled', value: String(enabled) });
-    await supabase.from('app_settings').upsert({ key: 'auto_lock_minutes', value: minutes });
+    await saveSetting('auto_lock_enabled', String(enabled));
+    await saveSetting('auto_lock_minutes', minutes);
     toast.success('تم حفظ إعدادات القفل التلقائي');
     setSaving(false);
   };
@@ -296,8 +296,8 @@ function OrderEditLock() {
 
   const save = async () => {
     setSaving(true);
-    await supabase.from('app_settings').upsert({ key: 'order_edit_lock_enabled', value: String(enabled) });
-    await supabase.from('app_settings').upsert({ key: 'order_edit_lock_hours', value: hours });
+    await saveSetting('order_edit_lock_enabled', String(enabled));
+    await saveSetting('order_edit_lock_hours', hours);
     toast.success('تم حفظ إعدادات قفل التعديل');
     setSaving(false);
   };
@@ -364,7 +364,7 @@ function UserWorkHours() {
   const save = async () => {
     setSaving(true);
     for (const [userId, setting] of Object.entries(settings)) {
-      await supabase.from('app_settings').upsert({ key: `work_hours_${userId}`, value: JSON.stringify(setting) });
+      await saveSetting(`work_hours_${userId}`, JSON.stringify(setting));
     }
     toast.success('تم حفظ ساعات العمل');
     setSaving(false);
@@ -450,7 +450,7 @@ function OfficePermissions() {
   const save = async () => {
     setSaving(true);
     for (const [userId, officeIds] of Object.entries(assignments)) {
-      await supabase.from('app_settings').upsert({ key: `office_perm_${userId}`, value: JSON.stringify(officeIds) });
+      await saveSetting(`office_perm_${userId}`, JSON.stringify(officeIds));
     }
     toast.success('تم حفظ صلاحيات المكاتب');
     setSaving(false);
@@ -509,7 +509,7 @@ function DeleteApproval() {
 
   const save = async () => {
     setSaving(true);
-    await supabase.from('app_settings').upsert({ key: 'require_owner_delete_approval', value: String(enabled) });
+    await saveSetting('require_owner_delete_approval', String(enabled));
     toast.success('تم حفظ إعدادات الموافقة على الحذف');
     setSaving(false);
   };
@@ -565,7 +565,7 @@ function ReadOnlyMode() {
 
   const save = async () => {
     setSaving(true);
-    await supabase.from('app_settings').upsert({ key: 'read_only_users', value: JSON.stringify(readOnlyUsers) });
+    await saveSetting('read_only_users', JSON.stringify(readOnlyUsers));
     toast.success('تم حفظ إعدادات وضع القراءة فقط');
     setSaving(false);
   };
@@ -645,7 +645,7 @@ function FieldPermissions() {
   const save = async () => {
     setSaving(true);
     for (const [userId, fields] of Object.entries(hiddenFields)) {
-      await supabase.from('app_settings').upsert({ key: `hidden_fields_${userId}`, value: JSON.stringify(fields) });
+      await saveSetting(`hidden_fields_${userId}`, JSON.stringify(fields));
     }
     toast.success('تم حفظ صلاحيات الحقول');
     setSaving(false);

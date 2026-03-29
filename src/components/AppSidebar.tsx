@@ -4,7 +4,7 @@ import {
   PackageSearch, Search, Printer, DollarSign, MapPin, Users, BarChart3,
   TrendingUp, Calendar, UserCheck, MessageSquare, Locate, FileSpreadsheet,
   CircleDot, Calculator, Contact, ClipboardList, Trash2, FileBarChart, Navigation2, Palette,
-  MessageCircle, ShieldCheck
+  MessageCircle, ShieldCheck, Rocket
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -63,6 +63,7 @@ const toolsItems = [
   { title: 'الإعدادات', url: '/settings', icon: Settings },
   { title: 'سيستم الحسابات', url: '/accounting-system', icon: Calculator },
   { title: 'الثيمات', url: '/themes', icon: Palette },
+  { title: 'السيستم الجديد', url: '/new-system', icon: Rocket },
 ];
 
 const groups = [

@@ -51,6 +51,7 @@ import WhatsAppMessages from "@/pages/WhatsAppMessages";
 import ExcelImport from "@/pages/ExcelImport";
 import BranchPortal from "@/pages/BranchPortal";
 import OrderApproval from "@/pages/OrderApproval";
+import NewSystem from "@/pages/NewSystem";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -130,6 +131,7 @@ const App = () => (
               <Route path="/whatsapp-messages" element={<WhatsAppMessages />} />
               <Route path="/excel-import" element={<ExcelImport />} />
               <Route path="/chat" element={<InternalChat />} />
+              <Route path="/new-system" element={<NewSystem />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

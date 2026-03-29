@@ -4,12 +4,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Shield, Lock, Eye, UserCheck, KeyRound, Clock, Activity, FileText, Users, Building2, AlertTriangle, Download, Settings2, LogIn, Trash2, Save } from 'lucide-react';
+import { Shield, Lock, Eye, UserCheck, Clock, Activity, FileText, Users, Building2, Download, LogIn, Trash2, Save } from 'lucide-react';
+
+// Helper to upsert app_settings without TS issues
+async function saveSetting(key: string, value: string) {
+  const { supabase } = await import('@/integrations/supabase/client');
+  // Try update first, if no rows affected, insert
+  const { data } = await supabase.from('app_settings').select('key').eq('key', key).single();
+  if (data) {
+    await supabase.from('app_settings').update({ value, updated_at: new Date().toISOString() }).eq('key', key);
+  } else {
+    await supabase.from('app_settings').insert({ key, value } as any);
+  }
+}
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';

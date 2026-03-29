@@ -1,5 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3, Users, Shield, Wrench, DollarSign, FileText, Sparkles, Bell, Settings2 } from 'lucide-react';
+import { BarChart3, Users, Shield, Wrench, DollarSign, FileText, Sparkles, Bell, Settings2, Building2 } from 'lucide-react';
 import AnalyticsTab from '@/components/new-system/AnalyticsTab';
 import HRTab from '@/components/new-system/HRTab';
 import ToolsTab from '@/components/new-system/ToolsTab';
@@ -9,10 +9,12 @@ import ReportsTab from '@/components/new-system/ReportsTab';
 import UXTab from '@/components/new-system/UXTab';
 import NotificationsTab from '@/components/new-system/NotificationsTab';
 import CustomizationTab from '@/components/new-system/CustomizationTab';
+import OfficeManagementTab from '@/components/new-system/OfficeManagementTab';
 
 const tabs = [
   { value: 'analytics', label: 'التحليلات', icon: BarChart3 },
   { value: 'hr', label: 'إدارة المندوبين', icon: Users },
+  { value: 'offices', label: 'إدارة المكاتب', icon: Building2 },
   { value: 'tools', label: 'أدوات تشغيلية', icon: Wrench },
   { value: 'security', label: 'أمان وصلاحيات', icon: Shield },
   { value: 'finance', label: 'مالي متقدم', icon: DollarSign },
@@ -37,6 +39,7 @@ export default function NewSystem() {
         </TabsList>
         <TabsContent value="analytics"><AnalyticsTab /></TabsContent>
         <TabsContent value="hr"><HRTab /></TabsContent>
+        <TabsContent value="offices"><OfficeManagementTab /></TabsContent>
         <TabsContent value="tools"><ToolsTab /></TabsContent>
         <TabsContent value="security"><SecurityTab /></TabsContent>
         <TabsContent value="finance"><FinanceTab /></TabsContent>

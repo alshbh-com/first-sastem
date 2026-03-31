@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Cell } from 'recharts';
-import { TrendingUp, MapPin, RotateCcw, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
+import { TrendingUp, MapPin, RotateCcw, Clock, CheckCircle, AlertTriangle, ListChecks } from 'lucide-react';
 
 export default function AnalyticsTab() {
   const [weeklyForecast, setWeeklyForecast] = useState(0);
@@ -13,6 +17,10 @@ export default function AnalyticsTab() {
   const [courierSuccess, setCourierSuccess] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statusCounts, setStatusCounts] = useState<any[]>([]);
+  const [statusPeriod, setStatusPeriod] = useState('30');
+  const [statusDateFrom, setStatusDateFrom] = useState('');
+  const [statusDateTo, setStatusDateTo] = useState('');
 
   useEffect(() => {
     loadAnalytics();

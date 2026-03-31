@@ -33,6 +33,7 @@ export default function PrintSticker() {
       .from('orders')
       .select('*, offices(name)')
       .eq('is_closed', false)
+      .eq('is_pending_approval', false)
       .order('created_at', { ascending: false });
 
     if (filterCourier && filterCourier !== 'all') {
@@ -49,8 +50,14 @@ export default function PrintSticker() {
 
     const { data } = await query;
     setResults(data || []);
-    setSelected(new Set());
   };
+
+  // Auto-search with debounce
+  useEffect(() => {
+    if (!search.trim()) { loadOrders(); return; }
+    const timer = setTimeout(() => doSearch(), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const doSearch = async () => {
     if (!search.trim()) { loadOrders(); return; }
@@ -58,6 +65,7 @@ export default function PrintSticker() {
     let query = supabase
       .from('orders')
       .select('*, offices(name)')
+      .eq('is_pending_approval', false)
       .or(`barcode.ilike.%${term}%,customer_code.ilike.%${term}%,tracking_id.ilike.%${term}%,customer_phone.ilike.%${term}%,customer_name.ilike.%${term}%`)
       .order('created_at', { ascending: false })
       .limit(200);
@@ -71,7 +79,6 @@ export default function PrintSticker() {
 
     const { data } = await query;
     setResults(data || []);
-    setSelected(new Set());
     if (!data?.length) toast.error('لم يتم العثور على نتائج');
   };
 

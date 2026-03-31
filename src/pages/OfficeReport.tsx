@@ -45,6 +45,7 @@ export default function OfficeReport() {
   const returned = orders.filter(o => ['مرتجع', 'رفض ولم يدفع شحن', 'رفض ودفع شحن'].includes(o.order_statuses?.name || ''));
   const pending = orders.filter(o => ['مؤجل', 'قيد التوصيل', 'بدون حالة'].includes(o.order_statuses?.name || ''));
   const partial = orders.filter(o => o.order_statuses?.name === 'تسليم جزئي');
+  const totalPrice = orders.reduce((sum, o) => sum + (Number(o.price) || 0), 0);
 
   return (
     <div className="space-y-4">

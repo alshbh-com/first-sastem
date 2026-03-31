@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 export default function PrintSticker() {
   const [search, setSearch] = useState('');
   const [results, setResults] = useState<any[]>([]);
+  const [selectedOrdersMap, setSelectedOrdersMap] = useState<Map<string, any>>(new Map());
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [couriers, setCouriers] = useState<any[]>([]);
   const [filterCourier, setFilterCourier] = useState('all');

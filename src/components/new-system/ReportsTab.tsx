@@ -141,18 +141,18 @@ function OfficeAccountStatement() {
     const doc = new jsPDF();
     const officeName = offices.find(o => o.id === officeId)?.name || '';
     doc.setFontSize(14);
-    doc.text(`Account Statement - ${officeName}`, 105, 15, { align: 'center' });
+    doc.text(`Kashf Hesab - ${officeName}`, 105, 15, { align: 'center' });
     doc.setFontSize(10);
-    doc.text(`Period: ${dateFrom} to ${dateTo}`, 105, 22, { align: 'center' });
+    doc.text(`Min: ${dateFrom} - Ila: ${dateTo}`, 105, 22, { align: 'center' });
 
     autoTable(doc, {
-      startY: 30, head: [['Item', 'Amount']],
+      startY: 30, head: [['ElBayan', 'ElMablagh']],
       body: [
-        ['Total Orders', String(statement.totalOrders)],
-        ['Total Revenue', statement.totalRevenue.toLocaleString()],
-        ['Total Delivery Fees', statement.totalDelivery.toLocaleString()],
-        ['Total Payments', statement.totalPayments.toLocaleString()],
-        ['Balance', statement.balance.toLocaleString()],
+        ['Igmali ElAwrdat', String(statement.totalOrders)],
+        ['Igmali ElMabi3at', statement.totalRevenue.toLocaleString()],
+        ['Igmali ElTawseel', statement.totalDelivery.toLocaleString()],
+        ['Igmali ElMadfo3at', statement.totalPayments.toLocaleString()],
+        ['ElRaseed', statement.balance.toLocaleString()],
       ],
       headStyles: { fillColor: [34, 197, 94] }
     });
@@ -160,7 +160,7 @@ function OfficeAccountStatement() {
     if (statement.payments.length) {
       autoTable(doc, {
         startY: (doc as any).lastAutoTable.finalY + 10,
-        head: [['Date', 'Amount', 'Notes']],
+        head: [['ElTareekh', 'ElMablagh', 'Mola7zat']],
         body: statement.payments.map((p: any) => [format(new Date(p.created_at), 'yyyy-MM-dd'), p.amount.toLocaleString(), p.notes || '-']),
         headStyles: { fillColor: [59, 130, 246] }
       });

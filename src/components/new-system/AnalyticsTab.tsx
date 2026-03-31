@@ -178,7 +178,52 @@ export default function AnalyticsTab() {
 
   return (
     <div className="space-y-4 mt-4">
-      {/* Row 1: Forecast + Alerts */}
+      {/* Status Counts */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2"><ListChecks className="h-4 w-4" /> عدد الأوردرات حسب الحالة</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap gap-3 items-end">
+            <div className="space-y-1">
+              <Label className="text-xs">الفترة</Label>
+              <Select value={statusPeriod} onValueChange={v => { setStatusPeriod(v); setStatusDateFrom(''); setStatusDateTo(''); }}>
+                <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="7">آخر 7 أيام</SelectItem>
+                  <SelectItem value="30">آخر 30 يوم</SelectItem>
+                  <SelectItem value="60">آخر 60 يوم</SelectItem>
+                  <SelectItem value="90">آخر 90 يوم</SelectItem>
+                  <SelectItem value="365">آخر سنة</SelectItem>
+                  <SelectItem value="all">الكل</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">من تاريخ</Label>
+              <Input type="date" value={statusDateFrom} onChange={e => setStatusDateFrom(e.target.value)} className="w-36" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">إلى تاريخ</Label>
+              <Input type="date" value={statusDateTo} onChange={e => setStatusDateTo(e.target.value)} className="w-36" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+            {statusCounts.map(s => (
+              <div key={s.name} className="flex items-center gap-2 p-2 rounded-lg border bg-muted/30">
+                <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+                <span className="text-sm flex-1 truncate">{s.name}</span>
+                <span className="text-sm font-bold">{s.count}</span>
+              </div>
+            ))}
+          </div>
+          {statusCounts.length > 0 && (
+            <div className="text-sm text-muted-foreground text-center">
+              إجمالي: <strong>{statusCounts.reduce((s, c) => s + c.count, 0)}</strong> أوردر
+            </div>
+          )}
+        </CardContent>
+      </Card>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardHeader className="pb-2">

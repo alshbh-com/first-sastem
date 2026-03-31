@@ -253,7 +253,7 @@ export default function PrintSticker() {
             <Table>
               <TableHeader>
                 <TableRow className="border-border">
-                  <TableHead className="w-10"><Checkbox checked={results.length > 0 && selected.size === results.length} onCheckedChange={toggleAll} /></TableHead>
+                  <TableHead className="w-10"><Checkbox checked={results.length > 0 && results.every(o => selected.has(o.id))} onCheckedChange={toggleAll} /></TableHead>
                   <TableHead className="text-right">الباركود</TableHead>
                   <TableHead className="text-right">الكود</TableHead>
                   <TableHead className="text-right">العميل</TableHead>

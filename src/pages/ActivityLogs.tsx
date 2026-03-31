@@ -52,7 +52,20 @@ export default function ActivityLogs() {
                     <TableCell className="text-sm font-medium">{l.user_id ? (profiles[l.user_id] || 'مجهول') : '-'}</TableCell>
                     <TableCell className="font-medium text-sm">{l.action}</TableCell>
                     <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
-                      {typeof l.details === 'object' ? JSON.stringify(l.details) : l.details}
+                      {typeof l.details === 'object' ? Object.entries(l.details as Record<string, any>).map(([k, v]) => {
+                        const labels: Record<string, string> = {
+                          order_id: 'رقم الأوردر', tracking_id: 'كود التتبع', customer_name: 'اسم العميل',
+                          customer_phone: 'رقم العميل', price: 'السعر', office: 'المكتب', office_name: 'المكتب',
+                          courier: 'المندوب', courier_name: 'المندوب', status: 'الحالة', old_status: 'الحالة القديمة',
+                          new_status: 'الحالة الجديدة', amount: 'المبلغ', reason: 'السبب', name: 'الاسم',
+                          phone: 'الهاتف', address: 'العنوان', product: 'المنتج', product_name: 'المنتج',
+                          quantity: 'الكمية', notes: 'ملاحظات', date: 'التاريخ', type: 'النوع',
+                          delivery_price: 'سعر التوصيل', governorate: 'المحافظة', barcode: 'الباركود',
+                          changed_by: 'بواسطة', old_value: 'القيمة القديمة', new_value: 'القيمة الجديدة',
+                          field: 'الحقل', count: 'العدد', total: 'الإجمالي', user: 'المستخدم',
+                        };
+                        return `${labels[k] || k}: ${v}`;
+                      }).join(' | ') : l.details}
                     </TableCell>
                     <TableCell className="text-sm">{new Date(l.created_at).toLocaleString('ar-EG')}</TableCell>
                   </TableRow>

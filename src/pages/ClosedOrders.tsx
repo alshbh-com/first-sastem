@@ -32,6 +32,7 @@ export default function ClosedOrders() {
       .from('orders')
       .select('*, order_statuses(name, color), offices(name)')
       .eq('is_closed', true)
+      .eq('is_pending_approval', false)
       .order('updated_at', { ascending: false })
       .limit(500);
     setOrders(data || []);

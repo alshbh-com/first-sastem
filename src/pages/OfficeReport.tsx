@@ -45,6 +45,7 @@ export default function OfficeReport() {
   const returned = orders.filter(o => ['مرتجع', 'رفض ولم يدفع شحن', 'رفض ودفع شحن'].includes(o.order_statuses?.name || ''));
   const pending = orders.filter(o => ['مؤجل', 'قيد التوصيل', 'بدون حالة'].includes(o.order_statuses?.name || ''));
   const partial = orders.filter(o => o.order_statuses?.name === 'تسليم جزئي');
+  const totalPrice = orders.reduce((sum, o) => sum + (Number(o.price) || 0), 0);
 
   return (
     <div className="space-y-4">
@@ -73,12 +74,13 @@ export default function OfficeReport() {
 
       {selectedOffice && (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
             <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">إجمالي</p><p className="text-lg font-bold">{orders.length}</p></CardContent></Card>
             <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">تم التسليم</p><p className="text-lg font-bold text-emerald-500">{delivered.length}</p></CardContent></Card>
             <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">مرتجع</p><p className="text-lg font-bold text-destructive">{returned.length}</p></CardContent></Card>
             <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">معلق</p><p className="text-lg font-bold text-amber-500">{pending.length}</p></CardContent></Card>
             <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">تسليم جزئي</p><p className="text-lg font-bold text-blue-500">{partial.length}</p></CardContent></Card>
+            <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">إجمالي الأسعار</p><p className="text-lg font-bold text-primary">{totalPrice.toLocaleString('ar-EG')} ج.م</p></CardContent></Card>
           </div>
 
           <Card className="bg-card border-border">

@@ -39,6 +39,7 @@ export default function GlobalSearch() {
     const { data } = await supabase
       .from('orders')
       .select('*, order_statuses(name, color), offices(name)')
+      .eq('is_pending_approval', false)
       .or(`barcode.ilike.%${term}%,customer_code.ilike.%${term}%,customer_phone.ilike.%${term}%,tracking_id.ilike.%${term}%,customer_name.ilike.%${term}%,address.ilike.%${term}%`)
       .order('created_at', { ascending: false })
       .limit(100);

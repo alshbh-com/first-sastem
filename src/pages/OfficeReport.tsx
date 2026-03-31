@@ -30,6 +30,7 @@ export default function OfficeReport() {
       .from('orders')
       .select('*, order_statuses(name, color)')
       .eq('office_id', selectedOffice)
+      .eq('is_pending_approval', false)
       .order('created_at', { ascending: false });
 
     if (dateFrom) query = query.gte('created_at', `${dateFrom}T00:00:00`);

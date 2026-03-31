@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 export default function PrintSticker() {
   const [search, setSearch] = useState('');
   const [results, setResults] = useState<any[]>([]);
+  const [selectedOrdersMap, setSelectedOrdersMap] = useState<Map<string, any>>(new Map());
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [couriers, setCouriers] = useState<any[]>([]);
   const [filterCourier, setFilterCourier] = useState('all');
@@ -33,6 +34,7 @@ export default function PrintSticker() {
       .from('orders')
       .select('*, offices(name)')
       .eq('is_closed', false)
+      .eq('is_pending_approval', false)
       .order('created_at', { ascending: false });
 
     if (filterCourier && filterCourier !== 'all') {
@@ -49,8 +51,14 @@ export default function PrintSticker() {
 
     const { data } = await query;
     setResults(data || []);
-    setSelected(new Set());
   };
+
+  // Auto-search with debounce
+  useEffect(() => {
+    if (!search.trim()) { loadOrders(); return; }
+    const timer = setTimeout(() => doSearch(), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const doSearch = async () => {
     if (!search.trim()) { loadOrders(); return; }
@@ -58,6 +66,7 @@ export default function PrintSticker() {
     let query = supabase
       .from('orders')
       .select('*, offices(name)')
+      .eq('is_pending_approval', false)
       .or(`barcode.ilike.%${term}%,customer_code.ilike.%${term}%,tracking_id.ilike.%${term}%,customer_phone.ilike.%${term}%,customer_name.ilike.%${term}%`)
       .order('created_at', { ascending: false })
       .limit(200);
@@ -71,19 +80,33 @@ export default function PrintSticker() {
 
     const { data } = await query;
     setResults(data || []);
-    setSelected(new Set());
     if (!data?.length) toast.error('لم يتم العثور على نتائج');
   };
 
   const toggleSelect = (id: string) => {
     setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+    const order = results.find(o => o.id === id);
+    if (order) {
+      setSelectedOrdersMap(prev => {
+        const n = new Map(prev);
+        if (n.has(id)) n.delete(id); else n.set(id, order);
+        return n;
+      });
+    }
   };
   const toggleAll = () => {
-    if (selected.size === results.length) setSelected(new Set());
-    else setSelected(new Set(results.map(o => o.id)));
+    if (results.every(o => selected.has(o.id))) {
+      // Deselect all current results
+      setSelected(prev => { const n = new Set(prev); results.forEach(o => n.delete(o.id)); return n; });
+      setSelectedOrdersMap(prev => { const n = new Map(prev); results.forEach(o => n.delete(o.id)); return n; });
+    } else {
+      // Select all current results (add to existing)
+      setSelected(prev => { const n = new Set(prev); results.forEach(o => n.add(o.id)); return n; });
+      setSelectedOrdersMap(prev => { const n = new Map(prev); results.forEach(o => n.set(o.id, o)); return n; });
+    }
   };
 
-  const selectedOrders = results.filter(o => selected.has(o.id));
+  const selectedOrders = Array.from(selectedOrdersMap.values());
 
   const printStickers = () => {
     if (selectedOrders.length === 0) { toast.error('اختر أوردرات للطباعة'); return; }
@@ -188,10 +211,8 @@ export default function PrintSticker() {
           <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input placeholder="بحث بالباركود / الاسم / الهاتف..." value={search}
             onChange={e => setSearch(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && doSearch()}
             className="pr-9 bg-secondary border-border" />
         </div>
-        <Button onClick={doSearch} size="sm">بحث</Button>
       </div>
 
       <div className="flex gap-2 flex-wrap items-end">
@@ -232,7 +253,7 @@ export default function PrintSticker() {
             <Table>
               <TableHeader>
                 <TableRow className="border-border">
-                  <TableHead className="w-10"><Checkbox checked={results.length > 0 && selected.size === results.length} onCheckedChange={toggleAll} /></TableHead>
+                  <TableHead className="w-10"><Checkbox checked={results.length > 0 && results.every(o => selected.has(o.id))} onCheckedChange={toggleAll} /></TableHead>
                   <TableHead className="text-right">الباركود</TableHead>
                   <TableHead className="text-right">الكود</TableHead>
                   <TableHead className="text-right">العميل</TableHead>

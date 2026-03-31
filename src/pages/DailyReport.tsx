@@ -18,7 +18,7 @@ export default function DailyReport() {
     const startOfDay = `${date}T00:00:00`;
     const endOfDay = `${date}T23:59:59`;
     const [ordersRes, statusRes] = await Promise.all([
-      supabase.from('orders').select('*, offices(name)').gte('created_at', startOfDay).lte('created_at', endOfDay).order('created_at', { ascending: false }),
+      supabase.from('orders').select('*, offices(name)').eq('is_pending_approval', false).gte('created_at', startOfDay).lte('created_at', endOfDay).order('created_at', { ascending: false }),
       supabase.from('order_statuses').select('*'),
     ]);
     setOrders(ordersRes.data || []);

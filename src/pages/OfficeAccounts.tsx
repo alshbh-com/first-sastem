@@ -54,6 +54,7 @@ export default function OfficeAccounts() {
       .select('id, barcode, status_id, partial_amount, price, is_settled, customer_code, customer_name')
       .eq('office_id', selectedOffice)
       .eq('is_closed', false)
+      .eq('is_pending_approval', false)
       .order('created_at', { ascending: false });
     setOfficeOrders(data || []);
   };
@@ -98,7 +99,8 @@ export default function OfficeAccounts() {
         .from('orders')
         .select('price, delivery_price, status_id, partial_amount')
         .eq('office_id', office.id)
-        .eq('is_closed', false);
+        .eq('is_closed', false)
+        .eq('is_pending_approval', false);
 
       if (dateFilter) query = query.gte('created_at', dateFilter);
       const { data: orders } = await query;

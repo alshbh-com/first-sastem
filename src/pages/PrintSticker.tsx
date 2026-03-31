@@ -85,13 +85,28 @@ export default function PrintSticker() {
 
   const toggleSelect = (id: string) => {
     setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+    const order = results.find(o => o.id === id);
+    if (order) {
+      setSelectedOrdersMap(prev => {
+        const n = new Map(prev);
+        if (n.has(id)) n.delete(id); else n.set(id, order);
+        return n;
+      });
+    }
   };
   const toggleAll = () => {
-    if (selected.size === results.length) setSelected(new Set());
-    else setSelected(new Set(results.map(o => o.id)));
+    if (results.every(o => selected.has(o.id))) {
+      // Deselect all current results
+      setSelected(prev => { const n = new Set(prev); results.forEach(o => n.delete(o.id)); return n; });
+      setSelectedOrdersMap(prev => { const n = new Map(prev); results.forEach(o => n.delete(o.id)); return n; });
+    } else {
+      // Select all current results (add to existing)
+      setSelected(prev => { const n = new Set(prev); results.forEach(o => n.add(o.id)); return n; });
+      setSelectedOrdersMap(prev => { const n = new Map(prev); results.forEach(o => n.set(o.id, o)); return n; });
+    }
   };
 
-  const selectedOrders = results.filter(o => selected.has(o.id));
+  const selectedOrders = Array.from(selectedOrdersMap.values());
 
   const printStickers = () => {
     if (selectedOrders.length === 0) { toast.error('اختر أوردرات للطباعة'); return; }

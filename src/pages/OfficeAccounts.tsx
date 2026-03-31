@@ -54,6 +54,7 @@ export default function OfficeAccounts() {
       .select('id, barcode, status_id, partial_amount, price, is_settled, customer_code, customer_name')
       .eq('office_id', selectedOffice)
       .eq('is_closed', false)
+      .eq('is_pending_approval', false)
       .order('created_at', { ascending: false });
     setOfficeOrders(data || []);
   };

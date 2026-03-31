@@ -211,10 +211,8 @@ export default function PrintSticker() {
           <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input placeholder="بحث بالباركود / الاسم / الهاتف..." value={search}
             onChange={e => setSearch(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && doSearch()}
             className="pr-9 bg-secondary border-border" />
         </div>
-        <Button onClick={doSearch} size="sm">بحث</Button>
       </div>
 
       <div className="flex gap-2 flex-wrap items-end">

@@ -85,13 +85,54 @@ function translateDetails(details: any): string {
     is_closed: 'مقفول', is_settled: 'مخلّص', priority: 'الأولوية',
     diary_number: 'رقم اليومية', diary_date: 'تاريخ اليومية',
     partial_amount: 'مبلغ جزئي', settlement: 'تسوية',
+    user_id: 'المستخدم', created_by: 'اللي عمله', paid_by: 'اللي دفع',
+    collected_by: 'اللي حصّل', approved_by: 'اللي وافق', rated_by: 'اللي قيّم',
+    assigned_to: 'معيّن لـ', created_at: 'وقت الإنشاء', updated_at: 'وقت التعديل',
+    category: 'التصنيف', expense_name: 'اسم المصروف', expense_date: 'تاريخ المصروف',
+    leave_date: 'تاريخ الإجازة', violation_type: 'نوع المخالفة',
+    entry_date: 'تاريخ القيد', liters: 'لترات', plate_number: 'رقم اللوحة',
+    vehicle_type: 'نوع المركبة', item_name: 'اسم الصنف', min_quantity: 'أقل كمية',
+    reward_amount: 'مبلغ المكافأة', deliveries_count: 'عدد التوصيلات',
+    is_paid: 'مدفوع', is_active: 'نشط', salary: 'المرتب', full_name: 'الاسم بالكامل',
+    login_code: 'كود الدخول', coverage_areas: 'مناطق التغطية',
+    complaint_text: 'نص الشكوى', resolution: 'الحل', message: 'الرسالة',
+    title: 'العنوان', description: 'الوصف', closing_date: 'تاريخ التقفيل',
+    agreement_price: 'سعر الاتفاق', pickup_price: 'سعر البيك أب',
+    owner_name: 'اسم صاحب المكتب', owner_phone: 'تليفون صاحب المكتب',
+    id: 'الرقم التعريفي',
   };
+
+  // ترجمة القيم الإنجليزية الشائعة
+  const valueTranslations: Record<string, string> = {
+    'deduction': 'خصم', 'advance': 'سلفة', 'bonus': 'مكافأة', 'penalty': 'جزاء',
+    'warning': 'إنذار', 'suspension': 'إيقاف', 'fine': 'غرامة',
+    'inside': 'داخل', 'outside': 'خارج', 'income': 'دخل', 'expense': 'مصروف',
+    'normal': 'عادي', 'urgent': 'مستعجل', 'high': 'عالي', 'low': 'منخفض',
+    'open': 'مفتوح', 'closed': 'مقفول', 'pending': 'معلّق', 'resolved': 'تم الحل',
+    'approved': 'موافق عليه', 'rejected': 'مرفوض',
+    'motorcycle': 'موتوسيكل', 'car': 'عربية', 'bicycle': 'عجلة',
+    'true': 'أيوه', 'false': 'لأ',
+    'salary': 'مرتب', 'rent': 'إيجار', 'fuel': 'بنزين', 'other': 'تاني',
+    'أخرى': 'تاني',
+  };
+
+  const translateValue = (v: any): string => {
+    if (typeof v === 'boolean') return v ? 'أيوه' : 'لأ';
+    const str = String(v);
+    return valueTranslations[str] || str;
+  };
+
+  // لو القيمة UUID طويل نتجاهلها أو نختصرها
+  const isUUID = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
 
   const parts: string[] = [];
   for (const [k, v] of Object.entries(details as Record<string, any>)) {
     if (v === null || v === undefined || v === '') continue;
+    const strV = String(v);
+    // لو UUID وملوش ترجمة نتخطاه
+    if (isUUID(strV) && !['order_id', 'tracking_id'].includes(k)) continue;
     const label = labels[k] || k;
-    parts.push(`${label}: ${v}`);
+    parts.push(`${label}: ${translateValue(v)}`);
   }
   return parts.length > 0 ? parts.join('\n') : '-';
 }

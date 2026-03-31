@@ -275,10 +275,18 @@ export default function CourierCollections() {
 
           {bonuses.length > 0 && (
             <Card className="bg-card border-border">
-              <CardHeader><CardTitle className="text-base">العمولات</CardTitle></CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-base">العمولات</CardTitle>
+                {canEdit && selectedBonuses.size > 0 && (
+                  <Button size="sm" variant="destructive" onClick={deleteSelectedBonuses}>
+                    <Trash2 className="h-4 w-4 ml-1" />حذف ({selectedBonuses.size})
+                  </Button>
+                )}
+              </CardHeader>
               <CardContent className="p-0">
                 <Table>
                   <TableHeader><TableRow className="border-border">
+                    <TableHead className="text-right w-10"><Checkbox checked={bonuses.length > 0 && selectedBonuses.size === bonuses.length} onCheckedChange={toggleAllBonuses} /></TableHead>
                     <TableHead className="text-right">النوع</TableHead>
                     <TableHead className="text-right">المبلغ</TableHead>
                     <TableHead className="text-right">السبب</TableHead>
@@ -288,6 +296,7 @@ export default function CourierCollections() {
                   <TableBody>
                     {bonuses.map(b => (
                       <TableRow key={b.id} className="border-border">
+                        <TableCell><Checkbox checked={selectedBonuses.has(b.id)} onCheckedChange={() => toggleSelectBonus(b.id)} /></TableCell>
                         <TableCell className="text-sm">{b.reason?.startsWith('__office_commission__') ? 'عمولة مكتب' : 'عمولة للمندوب'}</TableCell>
                         <TableCell className="font-bold">{b.amount} ج.م</TableCell>
                         <TableCell>{b.reason?.startsWith('__office_commission__') ? (b.reason.split(':')[1] || '-') : (b.reason || '-')}</TableCell>

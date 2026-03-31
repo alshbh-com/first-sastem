@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Trash2, Save } from 'lucide-react';
 import { toast } from 'sonner';
@@ -26,6 +27,7 @@ export default function Advances() {
   const [type, setType] = useState('advance');
   const [salary, setSalary] = useState('');
   const [savingSalary, setSavingSalary] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const load = async () => {
@@ -62,6 +64,7 @@ export default function Advances() {
       .eq('user_id', selectedEmployee)
       .order('created_at', { ascending: false });
     setAdvances(data || []);
+    setSelectedIds(new Set());
   };
 
   const addAdvance = async () => {
@@ -86,6 +89,29 @@ export default function Advances() {
     await supabase.from('advances').delete().eq('id', id);
     logActivity('حذف سلفة/خصم', { advance_id: id });
     loadAdvances();
+  };
+
+  const deleteSelected = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`حذف ${selectedIds.size} معاملة؟`)) return;
+    const ids = Array.from(selectedIds);
+    await supabase.from('advances').delete().in('id', ids);
+    logActivity('حذف معاملات متعددة', { count: ids.length });
+    toast.success(`تم حذف ${ids.length} معاملة`);
+    loadAdvances();
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (selectedIds.size === advances.length) setSelectedIds(new Set());
+    else setSelectedIds(new Set(advances.map(a => a.id)));
   };
 
   const saveSalary = async () => {
@@ -132,27 +158,34 @@ export default function Advances() {
           </Select>
         </div>
         {canEdit && selectedEmployee && (
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 ml-1" />إضافة</Button></DialogTrigger>
-            <DialogContent className="bg-card border-border">
-              <DialogHeader><DialogTitle>إضافة سلفة / خصم / إضافي</DialogTitle></DialogHeader>
-              <div className="space-y-4">
-                <div><Label>النوع</Label>
-                  <Select value={type} onValueChange={setType}>
-                    <SelectTrigger className="bg-secondary border-border"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="advance">سلفة</SelectItem>
-                      <SelectItem value="deduction">خصم</SelectItem>
-                      <SelectItem value="bonus">إضافي</SelectItem>
-                    </SelectContent>
-                  </Select>
+          <>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 ml-1" />إضافة</Button></DialogTrigger>
+              <DialogContent className="bg-card border-border">
+                <DialogHeader><DialogTitle>إضافة سلفة / خصم / إضافي</DialogTitle></DialogHeader>
+                <div className="space-y-4">
+                  <div><Label>النوع</Label>
+                    <Select value={type} onValueChange={setType}>
+                      <SelectTrigger className="bg-secondary border-border"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="advance">سلفة</SelectItem>
+                        <SelectItem value="deduction">خصم</SelectItem>
+                        <SelectItem value="bonus">إضافي</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>المبلغ</Label><Input type="number" value={amount} onChange={e => setAmount(e.target.value)} className="bg-secondary border-border" /></div>
+                  <div><Label>السبب</Label><Input value={reason} onChange={e => setReason(e.target.value)} className="bg-secondary border-border" /></div>
+                  <Button onClick={addAdvance} className="w-full">حفظ</Button>
                 </div>
-                <div><Label>المبلغ</Label><Input type="number" value={amount} onChange={e => setAmount(e.target.value)} className="bg-secondary border-border" /></div>
-                <div><Label>السبب</Label><Input value={reason} onChange={e => setReason(e.target.value)} className="bg-secondary border-border" /></div>
-                <Button onClick={addAdvance} className="w-full">حفظ</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
+            {selectedIds.size > 0 && (
+              <Button size="sm" variant="destructive" onClick={deleteSelected}>
+                <Trash2 className="h-4 w-4 ml-1" />حذف ({selectedIds.size})
+              </Button>
+            )}
+          </>
         )}
       </div>
 
@@ -189,6 +222,9 @@ export default function Advances() {
               <Table>
                 <TableHeader>
                   <TableRow className="border-border">
+                    <TableHead className="text-right w-10">
+                      <Checkbox checked={advances.length > 0 && selectedIds.size === advances.length} onCheckedChange={toggleAll} />
+                    </TableHead>
                     <TableHead className="text-right">النوع</TableHead>
                     <TableHead className="text-right">المبلغ</TableHead>
                     <TableHead className="text-right">السبب</TableHead>
@@ -198,9 +234,10 @@ export default function Advances() {
                 </TableHeader>
                 <TableBody>
                   {advances.length === 0 ? (
-                    <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-4">لا توجد بيانات</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-4">لا توجد بيانات</TableCell></TableRow>
                   ) : advances.map(a => (
                     <TableRow key={a.id} className="border-border">
+                      <TableCell><Checkbox checked={selectedIds.has(a.id)} onCheckedChange={() => toggleSelect(a.id)} /></TableCell>
                       <TableCell><Badge className={typeColor(a.type)}>{typeLabel(a.type)}</Badge></TableCell>
                       <TableCell className="font-bold">{a.amount} ج.م</TableCell>
                       <TableCell>{a.reason || '-'}</TableCell>

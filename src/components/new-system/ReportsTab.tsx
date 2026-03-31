@@ -42,22 +42,22 @@ function ComprehensivePDFReport() {
       const doc = new jsPDF({ orientation: 'landscape' });
       doc.setFont('helvetica');
       doc.setFontSize(16);
-      doc.text('Comprehensive Orders Report', 140, 15, { align: 'center' });
+      doc.text('Orders Report / Taqrir Al-Awrdat', 140, 15, { align: 'center' });
       doc.setFontSize(10);
-      doc.text(`From: ${dateFrom} To: ${dateTo}`, 140, 22, { align: 'center' });
-      doc.text(`Total Orders: ${orders.length}`, 140, 28, { align: 'center' });
+      doc.text(`Min: ${dateFrom} - Ila: ${dateTo}`, 140, 22, { align: 'center' });
+      doc.text(`Igmali: ${orders.length} order`, 140, 28, { align: 'center' });
 
       const headers: string[] = [];
       const keys: string[] = [];
-      if (columns.tracking) { headers.push('Tracking'); keys.push('tracking_id'); }
-      if (columns.customer) { headers.push('Customer'); keys.push('customer_name'); }
-      if (columns.phone) { headers.push('Phone'); keys.push('customer_phone'); }
-      if (columns.product) { headers.push('Product'); keys.push('product_name'); }
-      if (columns.price) { headers.push('Price'); keys.push('price'); }
-      if (columns.delivery) { headers.push('Delivery'); keys.push('delivery_price'); }
-      if (columns.status) { headers.push('Status'); keys.push('_status'); }
-      if (columns.office) { headers.push('Office'); keys.push('_office'); }
-      if (columns.governorate) { headers.push('Gov.'); keys.push('governorate'); }
+      if (columns.tracking) { headers.push('Raqm Tatabo3'); keys.push('tracking_id'); }
+      if (columns.customer) { headers.push('El3ameel'); keys.push('customer_name'); }
+      if (columns.phone) { headers.push('ElTelefon'); keys.push('customer_phone'); }
+      if (columns.product) { headers.push('ElMontag'); keys.push('product_name'); }
+      if (columns.price) { headers.push('ElSe3r'); keys.push('price'); }
+      if (columns.delivery) { headers.push('ElTawseel'); keys.push('delivery_price'); }
+      if (columns.status) { headers.push('El7ala'); keys.push('_status'); }
+      if (columns.office) { headers.push('ElMaktab'); keys.push('_office'); }
+      if (columns.governorate) { headers.push('ElMo7afza'); keys.push('governorate'); }
 
       const officeMap = Object.fromEntries(offices.map(o => [o.id, o.name]));
       const rows = orders.map(o => keys.map(k => {
@@ -141,18 +141,18 @@ function OfficeAccountStatement() {
     const doc = new jsPDF();
     const officeName = offices.find(o => o.id === officeId)?.name || '';
     doc.setFontSize(14);
-    doc.text(`Account Statement - ${officeName}`, 105, 15, { align: 'center' });
+    doc.text(`Kashf Hesab - ${officeName}`, 105, 15, { align: 'center' });
     doc.setFontSize(10);
-    doc.text(`Period: ${dateFrom} to ${dateTo}`, 105, 22, { align: 'center' });
+    doc.text(`Min: ${dateFrom} - Ila: ${dateTo}`, 105, 22, { align: 'center' });
 
     autoTable(doc, {
-      startY: 30, head: [['Item', 'Amount']],
+      startY: 30, head: [['ElBayan', 'ElMablagh']],
       body: [
-        ['Total Orders', String(statement.totalOrders)],
-        ['Total Revenue', statement.totalRevenue.toLocaleString()],
-        ['Total Delivery Fees', statement.totalDelivery.toLocaleString()],
-        ['Total Payments', statement.totalPayments.toLocaleString()],
-        ['Balance', statement.balance.toLocaleString()],
+        ['Igmali ElAwrdat', String(statement.totalOrders)],
+        ['Igmali ElMabi3at', statement.totalRevenue.toLocaleString()],
+        ['Igmali ElTawseel', statement.totalDelivery.toLocaleString()],
+        ['Igmali ElMadfo3at', statement.totalPayments.toLocaleString()],
+        ['ElRaseed', statement.balance.toLocaleString()],
       ],
       headStyles: { fillColor: [34, 197, 94] }
     });
@@ -160,7 +160,7 @@ function OfficeAccountStatement() {
     if (statement.payments.length) {
       autoTable(doc, {
         startY: (doc as any).lastAutoTable.finalY + 10,
-        head: [['Date', 'Amount', 'Notes']],
+        head: [['ElTareekh', 'ElMablagh', 'Mola7zat']],
         body: statement.payments.map((p: any) => [format(new Date(p.created_at), 'yyyy-MM-dd'), p.amount.toLocaleString(), p.notes || '-']),
         headStyles: { fillColor: [59, 130, 246] }
       });
@@ -245,13 +245,13 @@ function CourierSalaryReport() {
   const exportPDF = () => {
     const doc = new jsPDF({ orientation: 'landscape' });
     doc.setFontSize(14);
-    doc.text(`Courier Salary Report - ${month}`, 140, 15, { align: 'center' });
+    doc.text(`Gadwal Rawateb ElManadeb - ${month}`, 140, 15, { align: 'center' });
     autoTable(doc, {
       startY: 25,
-      head: [['Name', 'Base Salary', 'Bonuses', 'Advances', 'Fuel', 'Collections', 'Net']],
+      head: [['ElEsm', 'ElRateb', 'Mokafa2at', 'Solaf', 'Waqod', 'Ta7seelat', 'Safi']],
       body: salaryData.map(d => [d.full_name, d.salary, d.totalBonuses, d.totalAdvances, d.totalFuel, d.totalCollections, d.net]),
       headStyles: { fillColor: [147, 51, 234] },
-      foot: [['Total', '', '', '', '', '', salaryData.reduce((s, d) => s + d.net, 0).toLocaleString()]],
+      foot: [['Igmali', '', '', '', '', '', salaryData.reduce((s, d) => s + d.net, 0).toLocaleString()]],
     });
     doc.save(`salaries-${month}.pdf`);
     toast.success('تم تحميل جدول الرواتب');
@@ -314,27 +314,27 @@ function CollectionReceipt() {
     const doc = new jsPDF();
     const now = new Date();
     doc.setFontSize(18);
-    doc.text('Collection Receipt', 105, 20, { align: 'center' });
+    doc.text('Esal Estelam Feloos', 105, 20, { align: 'center' });
     doc.setFontSize(10);
     doc.text('-------------------------------------------', 105, 28, { align: 'center' });
 
     autoTable(doc, {
       startY: 35, theme: 'grid',
-      head: [['Field', 'Details']],
+      head: [['ElBayan', 'ElTafaseel']],
       body: [
-        ['Date', format(now, 'yyyy-MM-dd HH:mm')],
-        ['Receipt No.', `REC-${Date.now().toString(36).toUpperCase()}`],
-        ['Courier', courierName],
-        ['Amount', `${Number(amount).toLocaleString()} EGP`],
-        ['Reason', reason],
+        ['ElTareekh', format(now, 'yyyy-MM-dd HH:mm')],
+        ['Raqm ElEsal', `REC-${Date.now().toString(36).toUpperCase()}`],
+        ['ElMandob', courierName],
+        ['ElMablagh', `${Number(amount).toLocaleString()} EGP`],
+        ['ElSabab', reason],
       ],
       headStyles: { fillColor: [234, 179, 8] },
       styles: { fontSize: 12 }
     });
 
     const y = (doc as any).lastAutoTable.finalY + 20;
-    doc.text('Signature: ___________________', 30, y);
-    doc.text('Received by: ___________________', 120, y);
+    doc.text('ElTawqe3: ___________________', 30, y);
+    doc.text('ElMostalam: ___________________', 120, y);
     doc.save(`receipt-${courierName}-${format(now, 'yyyyMMdd')}.pdf`);
     toast.success('تم تحميل الإيصال');
   };

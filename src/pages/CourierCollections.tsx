@@ -25,6 +25,7 @@ export default function CourierCollections() {
   const [commissionStatuses, setCommissionStatuses] = useState<string[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
+  const [selectedBonuses, setSelectedBonuses] = useState<Set<string>>(new Set());
   const [bonuses, setBonuses] = useState<any[]>([]);
   const [bonusDialogOpen, setBonusDialogOpen] = useState(false);
   const [bonusType, setBonusType] = useState<'special' | 'office_commission'>('special');
@@ -165,6 +166,30 @@ export default function CourierCollections() {
     loadCourierData();
   };
 
+  const deleteSelectedBonuses = async () => {
+    if (selectedBonuses.size === 0) return;
+    if (!confirm(`حذف ${selectedBonuses.size} عمولة؟`)) return;
+    const ids = Array.from(selectedBonuses);
+    await supabase.from('courier_bonuses').delete().in('id', ids);
+    logActivity('حذف عمولات متعددة', { count: ids.length, courier_id: selectedCourier });
+    toast.success(`تم حذف ${ids.length} عمولة`);
+    setSelectedBonuses(new Set());
+    loadCourierData();
+  };
+
+  const toggleSelectBonus = (id: string) => {
+    setSelectedBonuses(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAllBonuses = () => {
+    if (selectedBonuses.size === bonuses.length) setSelectedBonuses(new Set());
+    else setSelectedBonuses(new Set(bonuses.map(b => b.id)));
+  };
+
   const updateOrderNotes = async (orderId: string, notes: string) => {
     setOrderNotes(prev => ({ ...prev, [orderId]: notes }));
   };
@@ -250,10 +275,18 @@ export default function CourierCollections() {
 
           {bonuses.length > 0 && (
             <Card className="bg-card border-border">
-              <CardHeader><CardTitle className="text-base">العمولات</CardTitle></CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-base">العمولات</CardTitle>
+                {canEdit && selectedBonuses.size > 0 && (
+                  <Button size="sm" variant="destructive" onClick={deleteSelectedBonuses}>
+                    <Trash2 className="h-4 w-4 ml-1" />حذف ({selectedBonuses.size})
+                  </Button>
+                )}
+              </CardHeader>
               <CardContent className="p-0">
                 <Table>
                   <TableHeader><TableRow className="border-border">
+                    <TableHead className="text-right w-10"><Checkbox checked={bonuses.length > 0 && selectedBonuses.size === bonuses.length} onCheckedChange={toggleAllBonuses} /></TableHead>
                     <TableHead className="text-right">النوع</TableHead>
                     <TableHead className="text-right">المبلغ</TableHead>
                     <TableHead className="text-right">السبب</TableHead>
@@ -263,6 +296,7 @@ export default function CourierCollections() {
                   <TableBody>
                     {bonuses.map(b => (
                       <TableRow key={b.id} className="border-border">
+                        <TableCell><Checkbox checked={selectedBonuses.has(b.id)} onCheckedChange={() => toggleSelectBonus(b.id)} /></TableCell>
                         <TableCell className="text-sm">{b.reason?.startsWith('__office_commission__') ? 'عمولة مكتب' : 'عمولة للمندوب'}</TableCell>
                         <TableCell className="font-bold">{b.amount} ج.م</TableCell>
                         <TableCell>{b.reason?.startsWith('__office_commission__') ? (b.reason.split(':')[1] || '-') : (b.reason || '-')}</TableCell>

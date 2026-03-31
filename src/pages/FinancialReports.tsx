@@ -29,7 +29,7 @@ export default function FinancialReports() {
   const rejectPaidShipId = statuses.find(s => s.name === 'رفض ودفع شحن')?.id;
   const halfShipId = statuses.find(s => s.name === 'استلم ودفع نص الشحن')?.id;
 
-  // Shipping revenue = deliveries shipping + reject paid shipping
+  // Shipping revenue = deliveries shipping + reject paid shipping + half ship
   const totalShipping = orders.reduce((s, o) => {
     if (deliveredStatusIds.includes(o.status_id)) return s + Number(o.delivery_price);
     if (o.status_id === rejectPaidShipId || o.status_id === halfShipId) return s + Number(o.shipping_paid || 0);

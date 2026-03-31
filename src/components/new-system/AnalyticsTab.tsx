@@ -26,6 +26,36 @@ export default function AnalyticsTab() {
     loadAnalytics();
   }, []);
 
+  useEffect(() => {
+    loadStatusCounts();
+  }, [statusPeriod, statusDateFrom, statusDateTo]);
+
+  const loadStatusCounts = async () => {
+    const { data: statuses } = await supabase.from('order_statuses').select('id, name, color').order('sort_order');
+    if (!statuses) return;
+
+    let query = supabase.from('orders').select('status_id').eq('is_pending_approval', false);
+
+    if (statusDateFrom && statusDateTo) {
+      query = query.gte('created_at', statusDateFrom).lte('created_at', statusDateTo + 'T23:59:59');
+    } else {
+      const daysAgo = new Date();
+      daysAgo.setDate(daysAgo.getDate() - Number(statusPeriod));
+      query = query.gte('created_at', daysAgo.toISOString());
+    }
+
+    const { data: orders } = await query;
+    if (!orders) return;
+
+    const counts = statuses.map(s => ({
+      name: s.name,
+      color: s.color || '#6b7280',
+      count: orders.filter(o => o.status_id === s.id).length,
+    })).filter(s => s.count > 0).sort((a, b) => b.count - a.count);
+
+    setStatusCounts(counts);
+  };
+
   const loadAnalytics = async () => {
     setLoading(true);
     try {

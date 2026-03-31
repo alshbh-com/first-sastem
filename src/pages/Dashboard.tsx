@@ -114,7 +114,7 @@ export default function Dashboard() {
   const loadStats = async () => {
     const today = new Date().toISOString().split('T')[0];
     const [allRes, statusRes] = await Promise.all([
-      supabase.from('orders').select('id, is_closed, status_id, price, delivery_price, shipping_paid, created_at'),
+      supabase.from('orders').select('id, is_closed, status_id, price, delivery_price, shipping_paid, created_at').eq('is_pending_approval', false),
       supabase.from('order_statuses').select('id, name'),
     ]);
     const all = allRes.data || [];

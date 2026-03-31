@@ -16,7 +16,7 @@ export default function OfficeStats() {
   const loadData = async () => {
     const [officesRes, ordersRes, statusRes] = await Promise.all([
       supabase.from('offices').select('*'),
-      supabase.from('orders').select('*'),
+      supabase.from('orders').select('*').eq('is_pending_approval', false),
       supabase.from('order_statuses').select('*'),
     ]);
     setOffices(officesRes.data || []);

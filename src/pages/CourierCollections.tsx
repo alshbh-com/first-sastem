@@ -60,6 +60,7 @@ export default function CourierCollections() {
       .select('*, order_statuses(name, color)')
       .eq('courier_id', selectedCourier)
       .eq('is_closed', false)
+      .eq('is_pending_approval', false)
       .order('created_at', { ascending: false });
     setOrders(orderData || []);
     setSelectedOrders(new Set());

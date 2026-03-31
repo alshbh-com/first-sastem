@@ -49,6 +49,7 @@ export default function AccountingDashboard() {
       let q = supabase
         .from('orders')
         .select('*, order_statuses(name)')
+        .eq('is_pending_approval', false)
         .gte('created_at', dateFrom)
         .lte('created_at', dateTo + 'T23:59:59');
       if (officeFilter !== 'all') q = q.eq('office_id', officeFilter);

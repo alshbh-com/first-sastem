@@ -15,12 +15,14 @@ export default function CompanyAccounts() {
         const { count: orderCount } = await supabase
           .from('orders')
           .select('*', { count: 'exact', head: true })
-          .eq('company_id', company.id);
+          .eq('company_id', company.id)
+          .eq('is_pending_approval', false);
 
         const { data: orders } = await supabase
           .from('orders')
           .select('price, delivery_price')
-          .eq('company_id', company.id);
+          .eq('company_id', company.id)
+          .eq('is_pending_approval', false);
 
         const totalWork = orders?.reduce((sum, o) => sum + Number(o.price), 0) || 0;
 

@@ -99,7 +99,8 @@ export default function OfficeAccounts() {
         .from('orders')
         .select('price, delivery_price, status_id, partial_amount')
         .eq('office_id', office.id)
-        .eq('is_closed', false);
+        .eq('is_closed', false)
+        .eq('is_pending_approval', false);
 
       if (dateFilter) query = query.gte('created_at', dateFilter);
       const { data: orders } = await query;

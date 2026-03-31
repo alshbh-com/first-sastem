@@ -16,7 +16,7 @@ export default function CourierStats() {
   const loadData = async () => {
     const [rolesRes, ordersRes, statusRes] = await Promise.all([
       supabase.from('user_roles').select('user_id').eq('role', 'courier'),
-      supabase.from('orders').select('*').not('courier_id', 'is', null),
+      supabase.from('orders').select('*').eq('is_pending_approval', false).not('courier_id', 'is', null),
       supabase.from('order_statuses').select('*'),
     ]);
 

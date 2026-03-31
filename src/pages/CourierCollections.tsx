@@ -25,6 +25,7 @@ export default function CourierCollections() {
   const [commissionStatuses, setCommissionStatuses] = useState<string[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
+  const [selectedBonuses, setSelectedBonuses] = useState<Set<string>>(new Set());
   const [bonuses, setBonuses] = useState<any[]>([]);
   const [bonusDialogOpen, setBonusDialogOpen] = useState(false);
   const [bonusType, setBonusType] = useState<'special' | 'office_commission'>('special');

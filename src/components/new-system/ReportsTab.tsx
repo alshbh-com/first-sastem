@@ -314,27 +314,27 @@ function CollectionReceipt() {
     const doc = new jsPDF();
     const now = new Date();
     doc.setFontSize(18);
-    doc.text('Collection Receipt', 105, 20, { align: 'center' });
+    doc.text('Esal Estelam Feloos', 105, 20, { align: 'center' });
     doc.setFontSize(10);
     doc.text('-------------------------------------------', 105, 28, { align: 'center' });
 
     autoTable(doc, {
       startY: 35, theme: 'grid',
-      head: [['Field', 'Details']],
+      head: [['ElBayan', 'ElTafaseel']],
       body: [
-        ['Date', format(now, 'yyyy-MM-dd HH:mm')],
-        ['Receipt No.', `REC-${Date.now().toString(36).toUpperCase()}`],
-        ['Courier', courierName],
-        ['Amount', `${Number(amount).toLocaleString()} EGP`],
-        ['Reason', reason],
+        ['ElTareekh', format(now, 'yyyy-MM-dd HH:mm')],
+        ['Raqm ElEsal', `REC-${Date.now().toString(36).toUpperCase()}`],
+        ['ElMandob', courierName],
+        ['ElMablagh', `${Number(amount).toLocaleString()} EGP`],
+        ['ElSabab', reason],
       ],
       headStyles: { fillColor: [234, 179, 8] },
       styles: { fontSize: 12 }
     });
 
     const y = (doc as any).lastAutoTable.finalY + 20;
-    doc.text('Signature: ___________________', 30, y);
-    doc.text('Received by: ___________________', 120, y);
+    doc.text('ElTawqe3: ___________________', 30, y);
+    doc.text('ElMostalam: ___________________', 120, y);
     doc.save(`receipt-${courierName}-${format(now, 'yyyyMMdd')}.pdf`);
     toast.success('تم تحميل الإيصال');
   };

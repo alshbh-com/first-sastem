@@ -166,6 +166,30 @@ export default function CourierCollections() {
     loadCourierData();
   };
 
+  const deleteSelectedBonuses = async () => {
+    if (selectedBonuses.size === 0) return;
+    if (!confirm(`حذف ${selectedBonuses.size} عمولة؟`)) return;
+    const ids = Array.from(selectedBonuses);
+    await supabase.from('courier_bonuses').delete().in('id', ids);
+    logActivity('حذف عمولات متعددة', { count: ids.length, courier_id: selectedCourier });
+    toast.success(`تم حذف ${ids.length} عمولة`);
+    setSelectedBonuses(new Set());
+    loadCourierData();
+  };
+
+  const toggleSelectBonus = (id: string) => {
+    setSelectedBonuses(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAllBonuses = () => {
+    if (selectedBonuses.size === bonuses.length) setSelectedBonuses(new Set());
+    else setSelectedBonuses(new Set(bonuses.map(b => b.id)));
+  };
+
   const updateOrderNotes = async (orderId: string, notes: string) => {
     setOrderNotes(prev => ({ ...prev, [orderId]: notes }));
   };

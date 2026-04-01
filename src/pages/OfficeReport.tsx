@@ -125,9 +125,9 @@ export default function OfficeReport() {
                   <TableBody>
                     {loading ? (
                       <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">جاري التحميل...</TableCell></TableRow>
-                    ) : orders.length === 0 ? (
+                    ) : filteredOrders.length === 0 ? (
                       <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
-                    ) : orders.map((o, idx) => (
+                    ) : filteredOrders.map((o, idx) => (
                       <TableRow key={o.id} className="border-border">
                         <TableCell className="text-sm">{idx + 1}</TableCell>
                         <TableCell className="text-sm font-medium">{o.customer_name}</TableCell>

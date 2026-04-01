@@ -14,6 +14,7 @@ export default function OfficeReport() {
   const [dateTo, setDateTo] = useState('');
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [orderStatusFilter, setOrderStatusFilter] = useState('all');
 
   useEffect(() => {
     supabase.from('offices').select('id, name').order('name').then(({ data }) => setOffices(data || []));
@@ -41,12 +42,22 @@ export default function OfficeReport() {
     setLoading(false);
   };
 
+  // Filter by order status category
+  const getOrderCategory = (o: any) => {
+    if (o.courier_id && !o.is_closed && ['قيد التوصيل', 'مؤجل', 'بدون حالة'].includes(o.order_statuses?.name || '')) return 'مع المندوب';
+    if (!o.courier_id && !o.is_closed) return 'مازال في الشركة';
+    if (o.is_closed) return 'تم التقفيل';
+    return 'خرج';
+  };
+
+  const filteredOrders = orderStatusFilter === 'all' ? orders : orders.filter(o => getOrderCategory(o) === orderStatusFilter);
+
   // Stats
-  const delivered = orders.filter(o => o.order_statuses?.name === 'تم التسليم');
-  const returned = orders.filter(o => ['مرتجع', 'رفض ولم يدفع شحن', 'رفض ودفع شحن'].includes(o.order_statuses?.name || ''));
-  const pending = orders.filter(o => ['مؤجل', 'قيد التوصيل', 'بدون حالة'].includes(o.order_statuses?.name || ''));
-  const partial = orders.filter(o => o.order_statuses?.name === 'تسليم جزئي');
-  const totalPrice = orders.reduce((sum, o) => sum + (Number(o.price) || 0), 0);
+  const delivered = filteredOrders.filter(o => o.order_statuses?.name === 'تم التسليم');
+  const returned = filteredOrders.filter(o => ['مرتجع', 'رفض ولم يدفع شحن', 'رفض ودفع شحن'].includes(o.order_statuses?.name || ''));
+  const pending = filteredOrders.filter(o => ['مؤجل', 'قيد التوصيل', 'بدون حالة'].includes(o.order_statuses?.name || ''));
+  const partial = filteredOrders.filter(o => o.order_statuses?.name === 'تسليم جزئي');
+  const totalPrice = filteredOrders.reduce((sum, o) => sum + (Number(o.price) || 0), 0);
 
   return (
     <div className="space-y-4">
@@ -68,6 +79,19 @@ export default function OfficeReport() {
           <Label className="text-xs">إلى تاريخ</Label>
           <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-40 bg-secondary border-border" />
         </div>
+        <div className="space-y-1">
+          <Label className="text-xs">حالة الأوردر</Label>
+          <Select value={orderStatusFilter} onValueChange={setOrderStatusFilter}>
+            <SelectTrigger className="w-44 bg-secondary border-border"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">الكل</SelectItem>
+              <SelectItem value="مع المندوب">مع المندوب</SelectItem>
+              <SelectItem value="مازال في الشركة">مازال في الشركة</SelectItem>
+              <SelectItem value="تم التقفيل">تم التقفيل</SelectItem>
+              <SelectItem value="خرج">خرج</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         {(dateFrom || dateTo) && (
           <button className="text-xs text-muted-foreground underline" onClick={() => { setDateFrom(''); setDateTo(''); }}>الكل</button>
         )}
@@ -76,7 +100,7 @@ export default function OfficeReport() {
       {selectedOffice && (
         <>
           <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-            <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">إجمالي</p><p className="text-lg font-bold">{orders.length}</p></CardContent></Card>
+            <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">إجمالي</p><p className="text-lg font-bold">{filteredOrders.length}</p></CardContent></Card>
             <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">تم التسليم</p><p className="text-lg font-bold text-emerald-500">{delivered.length}</p></CardContent></Card>
             <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">مرتجع</p><p className="text-lg font-bold text-destructive">{returned.length}</p></CardContent></Card>
             <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">معلق</p><p className="text-lg font-bold text-amber-500">{pending.length}</p></CardContent></Card>
@@ -101,9 +125,9 @@ export default function OfficeReport() {
                   <TableBody>
                     {loading ? (
                       <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">جاري التحميل...</TableCell></TableRow>
-                    ) : orders.length === 0 ? (
+                    ) : filteredOrders.length === 0 ? (
                       <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
-                    ) : orders.map((o, idx) => (
+                    ) : filteredOrders.map((o, idx) => (
                       <TableRow key={o.id} className="border-border">
                         <TableCell className="text-sm">{idx + 1}</TableCell>
                         <TableCell className="text-sm font-medium">{o.customer_name}</TableCell>

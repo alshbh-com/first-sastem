@@ -52,8 +52,12 @@ export default function Advances() {
   useEffect(() => {
     if (selectedEmployee) {
       loadAdvances();
-      const emp = employees.find(e => e.id === selectedEmployee);
-      setSalary(String(emp?.salary || 0));
+      // Load salary fresh from DB to avoid stale data
+      supabase.from('profiles').select('salary').eq('id', selectedEmployee).single().then(({ data }) => {
+        const s = data?.salary ?? 0;
+        setSalary(String(s));
+        setEmployees(prev => prev.map(e => e.id === selectedEmployee ? { ...e, salary: s } : e));
+      });
     }
   }, [selectedEmployee]);
 

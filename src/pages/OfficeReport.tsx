@@ -14,6 +14,7 @@ export default function OfficeReport() {
   const [dateTo, setDateTo] = useState('');
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [orderStatusFilter, setOrderStatusFilter] = useState('all');
 
   useEffect(() => {
     supabase.from('offices').select('id, name').order('name').then(({ data }) => setOffices(data || []));
@@ -41,12 +42,22 @@ export default function OfficeReport() {
     setLoading(false);
   };
 
+  // Filter by order status category
+  const getOrderCategory = (o: any) => {
+    if (o.courier_id && !o.is_closed && ['قيد التوصيل', 'مؤجل', 'بدون حالة'].includes(o.order_statuses?.name || '')) return 'مع المندوب';
+    if (!o.courier_id && !o.is_closed) return 'مازال في الشركة';
+    if (o.is_closed) return 'تم التقفيل';
+    return 'خرج';
+  };
+
+  const filteredOrders = orderStatusFilter === 'all' ? orders : orders.filter(o => getOrderCategory(o) === orderStatusFilter);
+
   // Stats
-  const delivered = orders.filter(o => o.order_statuses?.name === 'تم التسليم');
-  const returned = orders.filter(o => ['مرتجع', 'رفض ولم يدفع شحن', 'رفض ودفع شحن'].includes(o.order_statuses?.name || ''));
-  const pending = orders.filter(o => ['مؤجل', 'قيد التوصيل', 'بدون حالة'].includes(o.order_statuses?.name || ''));
-  const partial = orders.filter(o => o.order_statuses?.name === 'تسليم جزئي');
-  const totalPrice = orders.reduce((sum, o) => sum + (Number(o.price) || 0), 0);
+  const delivered = filteredOrders.filter(o => o.order_statuses?.name === 'تم التسليم');
+  const returned = filteredOrders.filter(o => ['مرتجع', 'رفض ولم يدفع شحن', 'رفض ودفع شحن'].includes(o.order_statuses?.name || ''));
+  const pending = filteredOrders.filter(o => ['مؤجل', 'قيد التوصيل', 'بدون حالة'].includes(o.order_statuses?.name || ''));
+  const partial = filteredOrders.filter(o => o.order_statuses?.name === 'تسليم جزئي');
+  const totalPrice = filteredOrders.reduce((sum, o) => sum + (Number(o.price) || 0), 0);
 
   return (
     <div className="space-y-4">

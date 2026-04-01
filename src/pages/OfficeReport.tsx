@@ -79,6 +79,19 @@ export default function OfficeReport() {
           <Label className="text-xs">إلى تاريخ</Label>
           <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-40 bg-secondary border-border" />
         </div>
+        <div className="space-y-1">
+          <Label className="text-xs">حالة الأوردر</Label>
+          <Select value={orderStatusFilter} onValueChange={setOrderStatusFilter}>
+            <SelectTrigger className="w-44 bg-secondary border-border"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">الكل</SelectItem>
+              <SelectItem value="مع المندوب">مع المندوب</SelectItem>
+              <SelectItem value="مازال في الشركة">مازال في الشركة</SelectItem>
+              <SelectItem value="تم التقفيل">تم التقفيل</SelectItem>
+              <SelectItem value="خرج">خرج</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         {(dateFrom || dateTo) && (
           <button className="text-xs text-muted-foreground underline" onClick={() => { setDateFrom(''); setDateTo(''); }}>الكل</button>
         )}

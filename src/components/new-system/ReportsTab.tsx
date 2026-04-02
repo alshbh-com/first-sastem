@@ -245,13 +245,13 @@ function CourierSalaryReport() {
   const exportPDF = () => {
     const doc = new jsPDF({ orientation: 'landscape' });
     doc.setFontSize(14);
-    doc.text(`Gadwal Rawateb ElManadeb - ${month}`, 140, 15, { align: 'center' });
+    doc.text(`Courier Salaries - ${month}`, 140, 15, { align: 'center' });
     autoTable(doc, {
       startY: 25,
-      head: [['ElEsm', 'ElRateb', 'Mokafa2at', 'Solaf', 'Waqod', 'Ta7seelat', 'Safi']],
+      head: [['Name', 'Salary', 'Bonuses', 'Advances', 'Fuel', 'Collections', 'Net']],
       body: salaryData.map(d => [d.full_name, d.salary, d.totalBonuses, d.totalAdvances, d.totalFuel, d.totalCollections, d.net]),
       headStyles: { fillColor: [147, 51, 234] },
-      foot: [['Igmali', '', '', '', '', '', salaryData.reduce((s, d) => s + d.net, 0).toLocaleString()]],
+      foot: [['Total', '', '', '', '', '', salaryData.reduce((s, d) => s + d.net, 0).toLocaleString('en-US')]],
     });
     doc.save(`salaries-${month}.pdf`);
     toast.success('تم تحميل جدول الرواتب');

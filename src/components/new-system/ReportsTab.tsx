@@ -42,22 +42,22 @@ function ComprehensivePDFReport() {
       const doc = new jsPDF({ orientation: 'landscape' });
       doc.setFont('helvetica');
       doc.setFontSize(16);
-      doc.text('Orders Report / Taqrir Al-Awrdat', 140, 15, { align: 'center' });
+      doc.text('FIRST - Orders Report', 140, 15, { align: 'center' });
       doc.setFontSize(10);
-      doc.text(`Min: ${dateFrom} - Ila: ${dateTo}`, 140, 22, { align: 'center' });
-      doc.text(`Igmali: ${orders.length} order`, 140, 28, { align: 'center' });
+      doc.text(`From: ${dateFrom} - To: ${dateTo}`, 140, 22, { align: 'center' });
+      doc.text(`Total: ${orders.length} orders`, 140, 28, { align: 'center' });
 
       const headers: string[] = [];
       const keys: string[] = [];
-      if (columns.tracking) { headers.push('Raqm Tatabo3'); keys.push('tracking_id'); }
-      if (columns.customer) { headers.push('El3ameel'); keys.push('customer_name'); }
-      if (columns.phone) { headers.push('ElTelefon'); keys.push('customer_phone'); }
-      if (columns.product) { headers.push('ElMontag'); keys.push('product_name'); }
-      if (columns.price) { headers.push('ElSe3r'); keys.push('price'); }
-      if (columns.delivery) { headers.push('ElTawseel'); keys.push('delivery_price'); }
-      if (columns.status) { headers.push('El7ala'); keys.push('_status'); }
-      if (columns.office) { headers.push('ElMaktab'); keys.push('_office'); }
-      if (columns.governorate) { headers.push('ElMo7afza'); keys.push('governorate'); }
+      if (columns.tracking) { headers.push('Tracking'); keys.push('tracking_id'); }
+      if (columns.customer) { headers.push('Customer'); keys.push('customer_name'); }
+      if (columns.phone) { headers.push('Phone'); keys.push('customer_phone'); }
+      if (columns.product) { headers.push('Product'); keys.push('product_name'); }
+      if (columns.price) { headers.push('Price'); keys.push('price'); }
+      if (columns.delivery) { headers.push('Delivery'); keys.push('delivery_price'); }
+      if (columns.status) { headers.push('Status'); keys.push('_status'); }
+      if (columns.office) { headers.push('Office'); keys.push('_office'); }
+      if (columns.governorate) { headers.push('Governorate'); keys.push('governorate'); }
 
       const officeMap = Object.fromEntries(offices.map(o => [o.id, o.name]));
       const rows = orders.map(o => keys.map(k => {

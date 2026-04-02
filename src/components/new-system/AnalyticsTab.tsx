@@ -354,6 +354,139 @@ export default function AnalyticsTab() {
           )}
         </CardContent>
       </Card>
+
+      {/* Row 6: Courier Daily Performance */}
+      <CourierDailyPerformance />
     </div>
+  );
+}
+
+// ============ Courier Daily Performance ============
+function CourierDailyPerformance() {
+  const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => { loadData(); }, [date]);
+
+  const loadData = async () => {
+    setLoading(true);
+    const startOfDay = `${date}T00:00:00`;
+    const endOfDay = `${date}T23:59:59`;
+
+    const [rolesRes, ordersRes, statusRes, profilesRes] = await Promise.all([
+      supabase.from('user_roles').select('user_id').eq('role', 'courier'),
+      supabase.from('orders').select('id, courier_id, status_id, price, delivery_price, shipping_paid, is_closed')
+        .not('courier_id', 'is', null)
+        .gte('updated_at', startOfDay).lte('updated_at', endOfDay),
+      supabase.from('order_statuses').select('id, name, color'),
+      supabase.from('profiles').select('id, full_name'),
+    ]);
+
+    const courierIds = (rolesRes.data || []).map(r => r.user_id);
+    const orders = ordersRes.data || [];
+    const statuses = statusRes.data || [];
+    const profiles = profilesRes.data || [];
+
+    const deliveredIds = statuses.filter(s => s.name === 'تم التسليم' || s.name === 'تسليم جزئي').map(s => s.id);
+    const rejectPaidId = statuses.find(s => s.name === 'رفض ودفع شحن')?.id;
+    const rejectNoPaidId = statuses.find(s => s.name === 'رفض ولم يدفع شحن')?.id;
+    const canceledId = statuses.find(s => s.name === 'ملغي')?.id;
+    const noAnswerId = statuses.find(s => s.name === 'لم يرد')?.id;
+    const evadeId = statuses.find(s => s.name === 'تهرب')?.id;
+
+    const courierData = courierIds.map(cId => {
+      const name = profiles.find(p => p.id === cId)?.full_name || 'بدون اسم';
+      const courierOrders = orders.filter(o => o.courier_id === cId);
+      const delivered = courierOrders.filter(o => deliveredIds.includes(o.status_id));
+      const rejectPaid = courierOrders.filter(o => o.status_id === rejectPaidId);
+      const rejectNoPaid = courierOrders.filter(o => o.status_id === rejectNoPaidId);
+      const canceled = courierOrders.filter(o => o.status_id === canceledId);
+      const noAnswer = courierOrders.filter(o => o.status_id === noAnswerId);
+      const evaded = courierOrders.filter(o => o.status_id === evadeId);
+      const pending = courierOrders.filter(o => !deliveredIds.includes(o.status_id) && o.status_id !== rejectPaidId && o.status_id !== rejectNoPaidId && o.status_id !== canceledId && o.status_id !== noAnswerId && o.status_id !== evadeId);
+
+      const totalCollection = delivered.reduce((s, o) => s + Number(o.price) + Number(o.delivery_price), 0)
+        + rejectPaid.reduce((s, o) => s + Number(o.shipping_paid || 0), 0);
+
+      return {
+        id: cId, name,
+        total: courierOrders.length,
+        delivered: delivered.length,
+        rejectPaid: rejectPaid.length,
+        rejectNoPaid: rejectNoPaid.length,
+        canceled: canceled.length,
+        noAnswer: noAnswer.length,
+        evaded: evaded.length,
+        pending: pending.length,
+        totalCollection,
+      };
+    }).filter(c => c.total > 0).sort((a, b) => b.delivered - a.delivered);
+
+    setData(courierData);
+    setLoading(false);
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <CardTitle className="text-sm flex items-center gap-2"><Truck className="h-4 w-4" /> أداء المناديب اليومي</CardTitle>
+          <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-[150px] text-xs" />
+        </div>
+      </CardHeader>
+      <CardContent>
+        {loading ? <p className="text-xs text-muted-foreground">جاري التحميل...</p> : data.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-4">لا توجد حركة للمناديب في هذا اليوم</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-right text-[10px]">المندوب</TableHead>
+                  <TableHead className="text-center text-[10px]">إجمالي</TableHead>
+                  <TableHead className="text-center text-[10px]">تسليم</TableHead>
+                  <TableHead className="text-center text-[10px]">رفض+شحن</TableHead>
+                  <TableHead className="text-center text-[10px]">رفض بدون</TableHead>
+                  <TableHead className="text-center text-[10px]">ملغي</TableHead>
+                  <TableHead className="text-center text-[10px]">لم يرد</TableHead>
+                  <TableHead className="text-center text-[10px]">تهرب</TableHead>
+                  <TableHead className="text-center text-[10px]">معلق</TableHead>
+                  <TableHead className="text-right text-[10px]">التحصيل</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.map(c => (
+                  <TableRow key={c.id}>
+                    <TableCell className="text-xs font-medium">{c.name}</TableCell>
+                    <TableCell className="text-center text-xs">{c.total}</TableCell>
+                    <TableCell className="text-center text-xs font-bold text-green-600">{c.delivered}</TableCell>
+                    <TableCell className="text-center text-xs text-orange-600">{c.rejectPaid}</TableCell>
+                    <TableCell className="text-center text-xs text-red-600">{c.rejectNoPaid}</TableCell>
+                    <TableCell className="text-center text-xs text-red-600">{c.canceled}</TableCell>
+                    <TableCell className="text-center text-xs text-muted-foreground">{c.noAnswer}</TableCell>
+                    <TableCell className="text-center text-xs text-red-600">{c.evaded}</TableCell>
+                    <TableCell className="text-center text-xs text-yellow-600">{c.pending}</TableCell>
+                    <TableCell className="text-xs font-bold">{c.totalCollection.toLocaleString('en-US')} ج.م</TableCell>
+                  </TableRow>
+                ))}
+                <TableRow className="bg-muted/50 font-bold">
+                  <TableCell className="text-xs">الإجمالي</TableCell>
+                  <TableCell className="text-center text-xs">{data.reduce((s, c) => s + c.total, 0)}</TableCell>
+                  <TableCell className="text-center text-xs text-green-600">{data.reduce((s, c) => s + c.delivered, 0)}</TableCell>
+                  <TableCell className="text-center text-xs text-orange-600">{data.reduce((s, c) => s + c.rejectPaid, 0)}</TableCell>
+                  <TableCell className="text-center text-xs text-red-600">{data.reduce((s, c) => s + c.rejectNoPaid, 0)}</TableCell>
+                  <TableCell className="text-center text-xs text-red-600">{data.reduce((s, c) => s + c.canceled, 0)}</TableCell>
+                  <TableCell className="text-center text-xs">{data.reduce((s, c) => s + c.noAnswer, 0)}</TableCell>
+                  <TableCell className="text-center text-xs text-red-600">{data.reduce((s, c) => s + c.evaded, 0)}</TableCell>
+                  <TableCell className="text-center text-xs text-yellow-600">{data.reduce((s, c) => s + c.pending, 0)}</TableCell>
+                  <TableCell className="text-xs font-bold">{data.reduce((s, c) => s + c.totalCollection, 0).toLocaleString('en-US')} ج.م</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

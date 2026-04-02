@@ -311,32 +311,45 @@ function CollectionReceipt() {
   const printReceipt = () => {
     if (!courierId || !amount) { toast.error('أكمل البيانات'); return; }
     const courierName = couriers.find(c => c.id === courierId)?.full_name || '';
-    const doc = new jsPDF();
     const now = new Date();
-    doc.setFontSize(18);
-    doc.text('FIRST - Money Receipt', 105, 20, { align: 'center' });
-    doc.setFontSize(10);
-    doc.text('-------------------------------------------', 105, 28, { align: 'center' });
+    const receiptNo = `REC-${Date.now().toString(36).toUpperCase()}`;
+    const dateStr = format(now, 'yyyy-MM-dd HH:mm');
+    const amountStr = Number(amount).toLocaleString('en-US');
 
-    autoTable(doc, {
-      startY: 35, theme: 'grid',
-      head: [['Description', 'Details']],
-      body: [
-        ['Date', format(now, 'yyyy-MM-dd HH:mm')],
-        ['Receipt No.', `REC-${Date.now().toString(36).toUpperCase()}`],
-        ['Courier', courierName],
-        ['Amount', `${Number(amount).toLocaleString('en-US')} EGP`],
-        ['Reason', reason],
-      ],
-      headStyles: { fillColor: [234, 179, 8] },
-      styles: { fontSize: 12 }
-    });
-
-    const y = (doc as any).lastAutoTable.finalY + 20;
-    doc.text('Signature: ___________________', 30, y);
-    doc.text('Received by: ___________________', 120, y);
-    doc.save(`receipt-${courierName}-${format(now, 'yyyyMMdd')}.pdf`);
-    toast.success('تم تحميل الإيصال');
+    const win = window.open('', '_blank', 'width=600,height=700');
+    if (!win) { toast.error('تم حظر النافذة المنبثقة'); return; }
+    win.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>إيصال استلام</title>
+    <style>
+      body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; padding: 30px; direction: rtl; }
+      h1 { text-align: center; font-size: 22px; margin-bottom: 5px; }
+      .line { border-bottom: 2px dashed #ccc; margin: 10px 0 20px; }
+      table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+      th { background: #f59e0b; color: #fff; padding: 10px; text-align: right; font-size: 14px; }
+      td { padding: 10px; border-bottom: 1px solid #ddd; font-size: 14px; }
+      .label { font-weight: bold; width: 35%; background: #fefce8; }
+      .signatures { display: flex; justify-content: space-between; margin-top: 40px; }
+      .sig-box { text-align: center; }
+      .sig-line { border-top: 1px solid #333; width: 180px; margin-top: 40px; padding-top: 5px; }
+      @media print { body { padding: 20px; } }
+    </style></head><body>
+    <h1>FIRST - إيصال استلام فلوس</h1>
+    <div class="line"></div>
+    <table>
+      <tr><th>البيان</th><th>التفاصيل</th></tr>
+      <tr><td class="label">التاريخ</td><td>${dateStr}</td></tr>
+      <tr><td class="label">رقم الإيصال</td><td>${receiptNo}</td></tr>
+      <tr><td class="label">المندوب</td><td>${courierName}</td></tr>
+      <tr><td class="label">المبلغ</td><td>${amountStr} ج.م</td></tr>
+      <tr><td class="label">السبب</td><td>${reason}</td></tr>
+    </table>
+    <div class="signatures">
+      <div class="sig-box"><div class="sig-line">المستلم</div></div>
+      <div class="sig-box"><div class="sig-line">التوقيع</div></div>
+    </div>
+    </body></html>`);
+    win.document.close();
+    setTimeout(() => win.print(), 300);
+    toast.success('تم فتح الإيصال للطباعة');
   };
 
   return (

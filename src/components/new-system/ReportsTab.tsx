@@ -141,18 +141,18 @@ function OfficeAccountStatement() {
     const doc = new jsPDF();
     const officeName = offices.find(o => o.id === officeId)?.name || '';
     doc.setFontSize(14);
-    doc.text(`Kashf Hesab - ${officeName}`, 105, 15, { align: 'center' });
+    doc.text(`Account Statement - ${officeName}`, 105, 15, { align: 'center' });
     doc.setFontSize(10);
-    doc.text(`Min: ${dateFrom} - Ila: ${dateTo}`, 105, 22, { align: 'center' });
+    doc.text(`From: ${dateFrom} - To: ${dateTo}`, 105, 22, { align: 'center' });
 
     autoTable(doc, {
-      startY: 30, head: [['ElBayan', 'ElMablagh']],
+      startY: 30, head: [['Description', 'Amount']],
       body: [
-        ['Igmali ElAwrdat', String(statement.totalOrders)],
-        ['Igmali ElMabi3at', statement.totalRevenue.toLocaleString()],
-        ['Igmali ElTawseel', statement.totalDelivery.toLocaleString()],
-        ['Igmali ElMadfo3at', statement.totalPayments.toLocaleString()],
-        ['ElRaseed', statement.balance.toLocaleString()],
+        ['Total Orders', String(statement.totalOrders)],
+        ['Total Sales', statement.totalRevenue.toLocaleString('en-US')],
+        ['Total Delivery', statement.totalDelivery.toLocaleString('en-US')],
+        ['Total Payments', statement.totalPayments.toLocaleString('en-US')],
+        ['Balance', statement.balance.toLocaleString('en-US')],
       ],
       headStyles: { fillColor: [34, 197, 94] }
     });
@@ -160,8 +160,8 @@ function OfficeAccountStatement() {
     if (statement.payments.length) {
       autoTable(doc, {
         startY: (doc as any).lastAutoTable.finalY + 10,
-        head: [['ElTareekh', 'ElMablagh', 'Mola7zat']],
-        body: statement.payments.map((p: any) => [format(new Date(p.created_at), 'yyyy-MM-dd'), p.amount.toLocaleString(), p.notes || '-']),
+        head: [['Date', 'Amount', 'Notes']],
+        body: statement.payments.map((p: any) => [format(new Date(p.created_at), 'yyyy-MM-dd'), p.amount.toLocaleString('en-US'), p.notes || '-']),
         headStyles: { fillColor: [59, 130, 246] }
       });
     }

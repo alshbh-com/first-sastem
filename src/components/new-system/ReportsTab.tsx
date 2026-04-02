@@ -189,9 +189,9 @@ function OfficeAccountStatement() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
                 { label: 'إجمالي الأوردرات', value: statement.totalOrders, color: 'text-blue-600' },
-                { label: 'إجمالي المبيعات', value: statement.totalRevenue.toLocaleString(), color: 'text-green-600' },
-                { label: 'إجمالي المدفوعات', value: statement.totalPayments.toLocaleString(), color: 'text-orange-600' },
-                { label: 'الرصيد', value: statement.balance.toLocaleString(), color: statement.balance >= 0 ? 'text-green-600' : 'text-red-600' },
+                { label: 'إجمالي المبيعات', value: statement.totalRevenue.toLocaleString('en-US'), color: 'text-green-600' },
+                { label: 'إجمالي المدفوعات', value: statement.totalPayments.toLocaleString('en-US'), color: 'text-orange-600' },
+                { label: 'الرصيد', value: statement.balance.toLocaleString('en-US'), color: statement.balance >= 0 ? 'text-green-600' : 'text-red-600' },
               ].map((item, i) => (
                 <div key={i} className="p-3 rounded-lg border bg-muted/30 text-center">
                   <p className="text-xs text-muted-foreground">{item.label}</p>
@@ -279,11 +279,11 @@ function CourierSalaryReport() {
                   {salaryData.map(d => (
                     <TableRow key={d.id}>
                       <TableCell className="font-medium">{d.full_name}</TableCell>
-                      <TableCell>{Number(d.salary).toLocaleString()}</TableCell>
-                      <TableCell className="text-green-600">+{d.totalBonuses.toLocaleString()}</TableCell>
-                      <TableCell className="text-red-600">-{d.totalAdvances.toLocaleString()}</TableCell>
-                      <TableCell className="text-orange-600">-{d.totalFuel.toLocaleString()}</TableCell>
-                      <TableCell className={`font-bold ${d.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>{d.net.toLocaleString()}</TableCell>
+                      <TableCell>{Number(d.salary).toLocaleString('en-US')}</TableCell>
+                      <TableCell className="text-green-600">+{d.totalBonuses.toLocaleString('en-US')}</TableCell>
+                      <TableCell className="text-red-600">-{d.totalAdvances.toLocaleString('en-US')}</TableCell>
+                      <TableCell className="text-orange-600">-{d.totalFuel.toLocaleString('en-US')}</TableCell>
+                      <TableCell className={`font-bold ${d.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>{d.net.toLocaleString('en-US')}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -403,8 +403,8 @@ function PeriodComparison() {
               return (
                 <div key={i} className="p-3 rounded-lg border bg-muted/30 text-center">
                   <p className="text-xs text-muted-foreground">{item.label}</p>
-                  <p className="text-lg font-bold">{item.curr.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">السابق: {item.prev.toLocaleString()}</p>
+                  <p className="text-lg font-bold">{item.curr.toLocaleString('en-US')}</p>
+                  <p className="text-xs text-muted-foreground">السابق: {item.prev.toLocaleString('en-US')}</p>
                   <Badge variant={change >= 0 ? 'default' : 'destructive'} className="mt-1">{change >= 0 ? '+' : ''}{change}%</Badge>
                 </div>
               );

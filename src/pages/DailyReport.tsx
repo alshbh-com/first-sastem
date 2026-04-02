@@ -65,7 +65,7 @@ export default function DailyReport() {
       <div class="sub">${new Date(date).toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} | عدد الأوردرات: ${totalOrders}</div>
       <table><thead><tr><th>#</th><th>الباركود</th><th>العميل</th><th>المكتب</th><th>العنوان</th><th>الحالة</th><th>الشحن</th></tr></thead>
       <tbody>${rows}</tbody></table>
-      <div class="summary">تسليم: ${delivered} | مرتجع: ${returned} | إيراد الشحن: ${totalShipping.toLocaleString()} ج.م</div>
+      <div class="summary">تسليم: ${delivered} | مرتجع: ${returned} | إيراد الشحن: ${totalShipping.toLocaleString('en-US')} ج.م</div>
     </body></html>`);
     w.document.close(); w.focus(); w.print();
   };
@@ -99,7 +99,7 @@ export default function DailyReport() {
         <Card className="bg-card border-border"><CardContent className="p-3 text-center">
           <Truck className="h-5 w-5 mx-auto mb-1 text-warning" />
           <p className="text-xs text-muted-foreground">إيراد الشحن</p>
-          <p className="text-xl font-bold">{totalShipping.toLocaleString()}</p>
+          <p className="text-xl font-bold">{totalShipping.toLocaleString('en-US')}</p>
         </CardContent></Card>
       </div>
 
@@ -147,7 +147,7 @@ export default function DailyReport() {
         <div className="flex justify-end">
           <Card className="bg-primary/10 border-primary/30">
             <CardContent className="p-3">
-              <span className="font-bold text-primary">إيراد الشحن: {totalShipping.toLocaleString()} ج.م</span>
+              <span className="font-bold text-primary">إيراد الشحن: {totalShipping.toLocaleString('en-US')} ج.م</span>
             </CardContent>
           </Card>
         </div>

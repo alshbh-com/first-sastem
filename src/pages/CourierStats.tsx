@@ -87,7 +87,7 @@ export default function CourierStats() {
                 <div className="flex-1 min-w-0">
                   <p className="font-bold truncate">{c.name}</p>
                   <p className="text-xs text-muted-foreground">{c.delivered} تسليم | نسبة النجاح {c.successRate}%</p>
-                  <p className="text-sm font-bold text-primary">{c.totalCollection.toLocaleString()} ج.م</p>
+                  <p className="text-sm font-bold text-primary">{c.totalCollection.toLocaleString('en-US')} ج.م</p>
                 </div>
               </CardContent>
             </Card>
@@ -148,7 +148,7 @@ export default function CourierStats() {
                         {c.successRate}%
                       </Badge>
                     </TableCell>
-                    <TableCell className="font-bold">{c.totalCollection.toLocaleString()} ج.م</TableCell>
+                    <TableCell className="font-bold">{c.totalCollection.toLocaleString('en-US')} ج.م</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

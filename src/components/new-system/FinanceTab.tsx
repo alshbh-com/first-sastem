@@ -66,8 +66,8 @@ function MonthlyBudget() {
         </div>
         <div className="space-y-2">
           <div className="flex justify-between text-xs">
-            <span>المصروف: {expenses.toLocaleString()} ج.م</span>
-            <span>المتبقي: {(budgetNum - expenses).toLocaleString()} ج.م</span>
+            <span>المصروف: {expenses.toLocaleString('en-US')} ج.م</span>
+            <span>المتبقي: {(budgetNum - expenses).toLocaleString('en-US')} ج.م</span>
           </div>
           <Progress value={percent} className="h-3" />
           <p className="text-[10px] text-muted-foreground text-center">{percent.toFixed(1)}% من الميزانية</p>
@@ -131,12 +131,12 @@ function CourierWallet() {
                 {couriers.map(c => (
                   <TableRow key={c.id}>
                     <TableCell className="text-xs font-medium">{c.name}</TableCell>
-                    <TableCell className="text-xs">{c.totalCollected.toLocaleString()}</TableCell>
-                    <TableCell className="text-xs text-red-500">{c.totalAdvances.toLocaleString()}</TableCell>
-                    <TableCell className="text-xs text-red-500">{c.totalDeductions.toLocaleString()}</TableCell>
-                    <TableCell className="text-xs text-green-500">{c.totalBonuses.toLocaleString()}</TableCell>
+                    <TableCell className="text-xs">{c.totalCollected.toLocaleString('en-US')}</TableCell>
+                    <TableCell className="text-xs text-red-500">{c.totalAdvances.toLocaleString('en-US')}</TableCell>
+                    <TableCell className="text-xs text-red-500">{c.totalDeductions.toLocaleString('en-US')}</TableCell>
+                    <TableCell className="text-xs text-green-500">{c.totalBonuses.toLocaleString('en-US')}</TableCell>
                     <TableCell className="text-xs font-bold">
-                      <Badge variant={c.balance >= 0 ? 'default' : 'destructive'}>{c.balance.toLocaleString()} ج.م</Badge>
+                      <Badge variant={c.balance >= 0 ? 'default' : 'destructive'}>{c.balance.toLocaleString('en-US')} ج.م</Badge>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -271,9 +271,9 @@ function DailyCashFlow() {
       <CardHeader><CardTitle className="text-sm flex items-center gap-2"><Receipt className="h-4 w-4" /> التدفق النقدي</CardTitle></CardHeader>
       <CardContent>
         <div className="grid grid-cols-3 gap-2 mb-3">
-          <div className="text-center p-2 rounded bg-green-500/10"><p className="text-[10px]">داخل</p><p className="text-sm font-bold text-green-600">{totalIn.toLocaleString()}</p></div>
-          <div className="text-center p-2 rounded bg-red-500/10"><p className="text-[10px]">خارج</p><p className="text-sm font-bold text-red-600">{totalOut.toLocaleString()}</p></div>
-          <div className="text-center p-2 rounded bg-blue-500/10"><p className="text-[10px]">صافي</p><p className="text-sm font-bold text-blue-600">{(totalIn - totalOut).toLocaleString()}</p></div>
+          <div className="text-center p-2 rounded bg-green-500/10"><p className="text-[10px]">داخل</p><p className="text-sm font-bold text-green-600">{totalIn.toLocaleString('en-US')}</p></div>
+          <div className="text-center p-2 rounded bg-red-500/10"><p className="text-[10px]">خارج</p><p className="text-sm font-bold text-red-600">{totalOut.toLocaleString('en-US')}</p></div>
+          <div className="text-center p-2 rounded bg-blue-500/10"><p className="text-[10px]">صافي</p><p className="text-sm font-bold text-blue-600">{(totalIn - totalOut).toLocaleString('en-US')}</p></div>
         </div>
         <div className="max-h-[200px] overflow-y-auto">
           <Table>
@@ -288,7 +288,7 @@ function DailyCashFlow() {
                 <TableRow key={e.id}>
                   <TableCell className="text-[10px]">{e.entry_date}</TableCell>
                   <TableCell><Badge variant={e.type === 'inside' ? 'default' : 'destructive'} className="text-[8px]">{e.type === 'inside' ? 'داخل' : 'خارج'}</Badge></TableCell>
-                  <TableCell className="text-[10px]">{Number(e.amount).toLocaleString()}</TableCell>
+                  <TableCell className="text-[10px]">{Number(e.amount).toLocaleString('en-US')}</TableCell>
                   <TableCell className="text-[10px] truncate max-w-[100px]">{e.reason || '-'}</TableCell>
                 </TableRow>
               ))}
@@ -345,9 +345,9 @@ function AutoSettlement() {
                 {offices.map(o => (
                   <TableRow key={o.id}>
                     <TableCell className="text-xs font-medium">{o.name}</TableCell>
-                    <TableCell className="text-xs">{o.totalRevenue.toLocaleString()}</TableCell>
-                    <TableCell className="text-xs text-green-600">{o.totalPaid.toLocaleString()}</TableCell>
-                    <TableCell><Badge variant={o.balance > 0 ? 'secondary' : 'default'} className="text-[10px]">{o.balance.toLocaleString()}</Badge></TableCell>
+                    <TableCell className="text-xs">{o.totalRevenue.toLocaleString('en-US')}</TableCell>
+                    <TableCell className="text-xs text-green-600">{o.totalPaid.toLocaleString('en-US')}</TableCell>
+                    <TableCell><Badge variant={o.balance > 0 ? 'secondary' : 'default'} className="text-[10px]">{o.balance.toLocaleString('en-US')}</Badge></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -386,13 +386,13 @@ function OperatingCost() {
           <div className="flex flex-col items-center">
             <ResponsiveContainer width="100%" height={200}>
               <PieChart>
-                <Pie data={data} cx="50%" cy="50%" outerRadius={70} dataKey="value" label={({ name, value }) => `${name}: ${value.toLocaleString()}`}>
+                <Pie data={data} cx="50%" cy="50%" outerRadius={70} dataKey="value" label={({ name, value }) => `${name}: ${value.toLocaleString('en-US')}`}>
                   {data.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
                 <Tooltip />
               </PieChart>
             </ResponsiveContainer>
-            <p className="text-xs font-bold mt-2">إجمالي: {data.reduce((s, d) => s + d.value, 0).toLocaleString()} ج.م</p>
+            <p className="text-xs font-bold mt-2">إجمالي: {data.reduce((s, d) => s + d.value, 0).toLocaleString('en-US')} ج.م</p>
           </div>
         ) : <p className="text-xs text-muted-foreground">لا توجد مصروفات هذا الشهر</p>}
       </CardContent>
@@ -421,11 +421,11 @@ function InvoiceGenerator() {
 فاتورة - ${office?.name}
 التاريخ: ${format(new Date(), 'dd/MM/yyyy')}
 عدد الأوردرات: ${orders.length}
-إجمالي مستحق: ${total.toLocaleString()} ج.م
+إجمالي مستحق: ${total.toLocaleString('en-US')} ج.م
 ---
-${orders.map((o, i) => `${i + 1}. ${o.tracking_id} - ${o.customer_name} - ${Number(o.delivery_price).toLocaleString()} ج.م`).join('\n')}
+${orders.map((o, i) => `${i + 1}. ${o.tracking_id} - ${o.customer_name} - ${Number(o.delivery_price).toLocaleString('en-US')} ج.م`).join('\n')}
 ---
-الإجمالي: ${total.toLocaleString()} ج.م
+الإجمالي: ${total.toLocaleString('en-US')} ج.م
     `.trim();
 
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });

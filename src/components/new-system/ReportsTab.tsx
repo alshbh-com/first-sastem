@@ -42,22 +42,22 @@ function ComprehensivePDFReport() {
       const doc = new jsPDF({ orientation: 'landscape' });
       doc.setFont('helvetica');
       doc.setFontSize(16);
-      doc.text('Orders Report / Taqrir Al-Awrdat', 140, 15, { align: 'center' });
+      doc.text('FIRST - Orders Report', 140, 15, { align: 'center' });
       doc.setFontSize(10);
-      doc.text(`Min: ${dateFrom} - Ila: ${dateTo}`, 140, 22, { align: 'center' });
-      doc.text(`Igmali: ${orders.length} order`, 140, 28, { align: 'center' });
+      doc.text(`From: ${dateFrom} - To: ${dateTo}`, 140, 22, { align: 'center' });
+      doc.text(`Total: ${orders.length} orders`, 140, 28, { align: 'center' });
 
       const headers: string[] = [];
       const keys: string[] = [];
-      if (columns.tracking) { headers.push('Raqm Tatabo3'); keys.push('tracking_id'); }
-      if (columns.customer) { headers.push('El3ameel'); keys.push('customer_name'); }
-      if (columns.phone) { headers.push('ElTelefon'); keys.push('customer_phone'); }
-      if (columns.product) { headers.push('ElMontag'); keys.push('product_name'); }
-      if (columns.price) { headers.push('ElSe3r'); keys.push('price'); }
-      if (columns.delivery) { headers.push('ElTawseel'); keys.push('delivery_price'); }
-      if (columns.status) { headers.push('El7ala'); keys.push('_status'); }
-      if (columns.office) { headers.push('ElMaktab'); keys.push('_office'); }
-      if (columns.governorate) { headers.push('ElMo7afza'); keys.push('governorate'); }
+      if (columns.tracking) { headers.push('Tracking'); keys.push('tracking_id'); }
+      if (columns.customer) { headers.push('Customer'); keys.push('customer_name'); }
+      if (columns.phone) { headers.push('Phone'); keys.push('customer_phone'); }
+      if (columns.product) { headers.push('Product'); keys.push('product_name'); }
+      if (columns.price) { headers.push('Price'); keys.push('price'); }
+      if (columns.delivery) { headers.push('Delivery'); keys.push('delivery_price'); }
+      if (columns.status) { headers.push('Status'); keys.push('_status'); }
+      if (columns.office) { headers.push('Office'); keys.push('_office'); }
+      if (columns.governorate) { headers.push('Governorate'); keys.push('governorate'); }
 
       const officeMap = Object.fromEntries(offices.map(o => [o.id, o.name]));
       const rows = orders.map(o => keys.map(k => {
@@ -141,18 +141,18 @@ function OfficeAccountStatement() {
     const doc = new jsPDF();
     const officeName = offices.find(o => o.id === officeId)?.name || '';
     doc.setFontSize(14);
-    doc.text(`Kashf Hesab - ${officeName}`, 105, 15, { align: 'center' });
+    doc.text(`Account Statement - ${officeName}`, 105, 15, { align: 'center' });
     doc.setFontSize(10);
-    doc.text(`Min: ${dateFrom} - Ila: ${dateTo}`, 105, 22, { align: 'center' });
+    doc.text(`From: ${dateFrom} - To: ${dateTo}`, 105, 22, { align: 'center' });
 
     autoTable(doc, {
-      startY: 30, head: [['ElBayan', 'ElMablagh']],
+      startY: 30, head: [['Description', 'Amount']],
       body: [
-        ['Igmali ElAwrdat', String(statement.totalOrders)],
-        ['Igmali ElMabi3at', statement.totalRevenue.toLocaleString()],
-        ['Igmali ElTawseel', statement.totalDelivery.toLocaleString()],
-        ['Igmali ElMadfo3at', statement.totalPayments.toLocaleString()],
-        ['ElRaseed', statement.balance.toLocaleString()],
+        ['Total Orders', String(statement.totalOrders)],
+        ['Total Sales', statement.totalRevenue.toLocaleString('en-US')],
+        ['Total Delivery', statement.totalDelivery.toLocaleString('en-US')],
+        ['Total Payments', statement.totalPayments.toLocaleString('en-US')],
+        ['Balance', statement.balance.toLocaleString('en-US')],
       ],
       headStyles: { fillColor: [34, 197, 94] }
     });
@@ -160,8 +160,8 @@ function OfficeAccountStatement() {
     if (statement.payments.length) {
       autoTable(doc, {
         startY: (doc as any).lastAutoTable.finalY + 10,
-        head: [['ElTareekh', 'ElMablagh', 'Mola7zat']],
-        body: statement.payments.map((p: any) => [format(new Date(p.created_at), 'yyyy-MM-dd'), p.amount.toLocaleString(), p.notes || '-']),
+        head: [['Date', 'Amount', 'Notes']],
+        body: statement.payments.map((p: any) => [format(new Date(p.created_at), 'yyyy-MM-dd'), p.amount.toLocaleString('en-US'), p.notes || '-']),
         headStyles: { fillColor: [59, 130, 246] }
       });
     }
@@ -189,9 +189,9 @@ function OfficeAccountStatement() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
                 { label: 'إجمالي الأوردرات', value: statement.totalOrders, color: 'text-blue-600' },
-                { label: 'إجمالي المبيعات', value: statement.totalRevenue.toLocaleString(), color: 'text-green-600' },
-                { label: 'إجمالي المدفوعات', value: statement.totalPayments.toLocaleString(), color: 'text-orange-600' },
-                { label: 'الرصيد', value: statement.balance.toLocaleString(), color: statement.balance >= 0 ? 'text-green-600' : 'text-red-600' },
+                { label: 'إجمالي المبيعات', value: statement.totalRevenue.toLocaleString('en-US'), color: 'text-green-600' },
+                { label: 'إجمالي المدفوعات', value: statement.totalPayments.toLocaleString('en-US'), color: 'text-orange-600' },
+                { label: 'الرصيد', value: statement.balance.toLocaleString('en-US'), color: statement.balance >= 0 ? 'text-green-600' : 'text-red-600' },
               ].map((item, i) => (
                 <div key={i} className="p-3 rounded-lg border bg-muted/30 text-center">
                   <p className="text-xs text-muted-foreground">{item.label}</p>
@@ -245,13 +245,13 @@ function CourierSalaryReport() {
   const exportPDF = () => {
     const doc = new jsPDF({ orientation: 'landscape' });
     doc.setFontSize(14);
-    doc.text(`Gadwal Rawateb ElManadeb - ${month}`, 140, 15, { align: 'center' });
+    doc.text(`Courier Salaries - ${month}`, 140, 15, { align: 'center' });
     autoTable(doc, {
       startY: 25,
-      head: [['ElEsm', 'ElRateb', 'Mokafa2at', 'Solaf', 'Waqod', 'Ta7seelat', 'Safi']],
+      head: [['Name', 'Salary', 'Bonuses', 'Advances', 'Fuel', 'Collections', 'Net']],
       body: salaryData.map(d => [d.full_name, d.salary, d.totalBonuses, d.totalAdvances, d.totalFuel, d.totalCollections, d.net]),
       headStyles: { fillColor: [147, 51, 234] },
-      foot: [['Igmali', '', '', '', '', '', salaryData.reduce((s, d) => s + d.net, 0).toLocaleString()]],
+      foot: [['Total', '', '', '', '', '', salaryData.reduce((s, d) => s + d.net, 0).toLocaleString('en-US')]],
     });
     doc.save(`salaries-${month}.pdf`);
     toast.success('تم تحميل جدول الرواتب');
@@ -279,11 +279,11 @@ function CourierSalaryReport() {
                   {salaryData.map(d => (
                     <TableRow key={d.id}>
                       <TableCell className="font-medium">{d.full_name}</TableCell>
-                      <TableCell>{Number(d.salary).toLocaleString()}</TableCell>
-                      <TableCell className="text-green-600">+{d.totalBonuses.toLocaleString()}</TableCell>
-                      <TableCell className="text-red-600">-{d.totalAdvances.toLocaleString()}</TableCell>
-                      <TableCell className="text-orange-600">-{d.totalFuel.toLocaleString()}</TableCell>
-                      <TableCell className={`font-bold ${d.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>{d.net.toLocaleString()}</TableCell>
+                      <TableCell>{Number(d.salary).toLocaleString('en-US')}</TableCell>
+                      <TableCell className="text-green-600">+{d.totalBonuses.toLocaleString('en-US')}</TableCell>
+                      <TableCell className="text-red-600">-{d.totalAdvances.toLocaleString('en-US')}</TableCell>
+                      <TableCell className="text-orange-600">-{d.totalFuel.toLocaleString('en-US')}</TableCell>
+                      <TableCell className={`font-bold ${d.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>{d.net.toLocaleString('en-US')}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -314,27 +314,27 @@ function CollectionReceipt() {
     const doc = new jsPDF();
     const now = new Date();
     doc.setFontSize(18);
-    doc.text('Esal Estelam Feloos', 105, 20, { align: 'center' });
+    doc.text('FIRST - Money Receipt', 105, 20, { align: 'center' });
     doc.setFontSize(10);
     doc.text('-------------------------------------------', 105, 28, { align: 'center' });
 
     autoTable(doc, {
       startY: 35, theme: 'grid',
-      head: [['ElBayan', 'ElTafaseel']],
+      head: [['Description', 'Details']],
       body: [
-        ['ElTareekh', format(now, 'yyyy-MM-dd HH:mm')],
-        ['Raqm ElEsal', `REC-${Date.now().toString(36).toUpperCase()}`],
-        ['ElMandob', courierName],
-        ['ElMablagh', `${Number(amount).toLocaleString()} EGP`],
-        ['ElSabab', reason],
+        ['Date', format(now, 'yyyy-MM-dd HH:mm')],
+        ['Receipt No.', `REC-${Date.now().toString(36).toUpperCase()}`],
+        ['Courier', courierName],
+        ['Amount', `${Number(amount).toLocaleString('en-US')} EGP`],
+        ['Reason', reason],
       ],
       headStyles: { fillColor: [234, 179, 8] },
       styles: { fontSize: 12 }
     });
 
     const y = (doc as any).lastAutoTable.finalY + 20;
-    doc.text('ElTawqe3: ___________________', 30, y);
-    doc.text('ElMostalam: ___________________', 120, y);
+    doc.text('Signature: ___________________', 30, y);
+    doc.text('Received by: ___________________', 120, y);
     doc.save(`receipt-${courierName}-${format(now, 'yyyyMMdd')}.pdf`);
     toast.success('تم تحميل الإيصال');
   };
@@ -403,8 +403,8 @@ function PeriodComparison() {
               return (
                 <div key={i} className="p-3 rounded-lg border bg-muted/30 text-center">
                   <p className="text-xs text-muted-foreground">{item.label}</p>
-                  <p className="text-lg font-bold">{item.curr.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">السابق: {item.prev.toLocaleString()}</p>
+                  <p className="text-lg font-bold">{item.curr.toLocaleString('en-US')}</p>
+                  <p className="text-xs text-muted-foreground">السابق: {item.prev.toLocaleString('en-US')}</p>
                   <Badge variant={change >= 0 ? 'default' : 'destructive'} className="mt-1">{change >= 0 ? '+' : ''}{change}%</Badge>
                 </div>
               );

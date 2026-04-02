@@ -4,9 +4,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Cell } from 'recharts';
-import { TrendingUp, MapPin, RotateCcw, Clock, CheckCircle, AlertTriangle, ListChecks } from 'lucide-react';
+import { TrendingUp, MapPin, RotateCcw, Clock, CheckCircle, AlertTriangle, ListChecks, Truck } from 'lucide-react';
+import { format } from 'date-fns';
 
 export default function AnalyticsTab() {
   const [weeklyForecast, setWeeklyForecast] = useState(0);

@@ -15,9 +15,12 @@ export default function OfficeReport() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [orderStatusFilter, setOrderStatusFilter] = useState('all');
+  const [statuses, setStatuses] = useState<any[]>([]);
+  const [orderNotes, setOrderNotes] = useState<Record<string, string>>({});
 
   useEffect(() => {
     supabase.from('offices').select('id, name').order('name').then(({ data }) => setOffices(data || []));
+    supabase.from('order_statuses').select('id, name, color').order('sort_order').then(({ data }) => setStatuses(data || []));
   }, []);
 
   useEffect(() => {
@@ -42,15 +45,9 @@ export default function OfficeReport() {
     setLoading(false);
   };
 
-  // Filter by order status category
-  const getOrderCategory = (o: any) => {
-    if (o.courier_id && !o.is_closed && ['قيد التوصيل', 'مؤجل', 'بدون حالة'].includes(o.order_statuses?.name || '')) return 'مع المندوب';
-    if (!o.courier_id && !o.is_closed) return 'مازال في الشركة';
-    if (o.is_closed) return 'تم التقفيل';
-    return 'خرج';
-  };
-
-  const filteredOrders = orderStatusFilter === 'all' ? orders : orders.filter(o => getOrderCategory(o) === orderStatusFilter);
+  const filteredOrders = orderStatusFilter === 'all'
+    ? orders
+    : orders.filter(o => o.order_statuses?.name === orderStatusFilter);
 
   // Stats
   const delivered = filteredOrders.filter(o => o.order_statuses?.name === 'تم التسليم');
@@ -85,10 +82,14 @@ export default function OfficeReport() {
             <SelectTrigger className="w-44 bg-secondary border-border"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">الكل</SelectItem>
-              <SelectItem value="مع المندوب">مع المندوب</SelectItem>
-              <SelectItem value="مازال في الشركة">مازال في الشركة</SelectItem>
-              <SelectItem value="تم التقفيل">تم التقفيل</SelectItem>
-              <SelectItem value="خرج">خرج</SelectItem>
+              {statuses.map(s => (
+                <SelectItem key={s.id} value={s.name}>
+                  <span className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: s.color || '#6b7280' }} />
+                    {s.name}
+                  </span>
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -105,7 +106,7 @@ export default function OfficeReport() {
             <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">مرتجع</p><p className="text-lg font-bold text-destructive">{returned.length}</p></CardContent></Card>
             <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">معلق</p><p className="text-lg font-bold text-amber-500">{pending.length}</p></CardContent></Card>
             <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">تسليم جزئي</p><p className="text-lg font-bold text-blue-500">{partial.length}</p></CardContent></Card>
-            <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">إجمالي الأسعار</p><p className="text-lg font-bold text-primary">{totalPrice.toLocaleString('ar-EG')} ج.م</p></CardContent></Card>
+            <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">إجمالي الأسعار</p><p className="text-lg font-bold text-primary">{totalPrice.toLocaleString('en-US')} ج.م</p></CardContent></Card>
           </div>
 
           <Card className="bg-card border-border">
@@ -120,13 +121,14 @@ export default function OfficeReport() {
                       <TableHead className="text-right">السعر</TableHead>
                       <TableHead className="text-right">الحالة</TableHead>
                       <TableHead className="text-right">التاريخ</TableHead>
+                      <TableHead className="text-right">ملاحظات</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {loading ? (
-                      <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">جاري التحميل...</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">جاري التحميل...</TableCell></TableRow>
                     ) : filteredOrders.length === 0 ? (
-                      <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
                     ) : filteredOrders.map((o, idx) => (
                       <TableRow key={o.id} className="border-border">
                         <TableCell className="text-sm">{idx + 1}</TableCell>
@@ -134,11 +136,19 @@ export default function OfficeReport() {
                         <TableCell className="font-mono text-xs">{o.customer_code || '-'}</TableCell>
                         <TableCell className="text-sm font-bold">{o.price} ج.م</TableCell>
                         <TableCell>
-                          <Badge style={{ backgroundColor: o.order_statuses?.color }} className="text-xs">
+                          <Badge style={{ backgroundColor: o.order_statuses?.color }} className="text-xs text-white">
                             {o.order_statuses?.name || '-'}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleDateString('ar-EG')}</TableCell>
+                        <TableCell>
+                          <Input
+                            className="h-7 text-xs min-w-[120px] bg-secondary border-border"
+                            placeholder="اكتب ملاحظة..."
+                            value={orderNotes[o.id] || ''}
+                            onChange={e => setOrderNotes(prev => ({ ...prev, [o.id]: e.target.value }))}
+                          />
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

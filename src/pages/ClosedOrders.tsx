@@ -117,16 +117,18 @@ export default function ClosedOrders() {
                   <TableHead className="text-right">الإجمالي</TableHead>
                   <TableHead className="text-right hidden md:table-cell">المكتب</TableHead>
                   <TableHead className="text-right">الحالة</TableHead>
+                  <TableHead className="text-right">تاريخ التسجيل</TableHead>
+                  <TableHead className="text-right">تاريخ التقفيل</TableHead>
                   <TableHead className="text-right">حالة المرتجع</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={isOwner ? 10 : 9} className="text-center text-muted-foreground py-8">لا توجد أوردرات مقفلة</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={isOwner ? 12 : 11} className="text-center text-muted-foreground py-8">لا توجد أوردرات مقفلة</TableCell></TableRow>
                 ) : filtered.map(order => (
                   <TableRow key={order.id} className="border-border">
                     {isOwner && <TableCell><Checkbox checked={selected.has(order.id)} onCheckedChange={() => toggleSelect(order.id)} /></TableCell>}
-                    <TableCell className="text-xs"><div className="text-muted-foreground">{new Date(order.created_at).toLocaleDateString('ar-EG')}</div><div className="font-mono font-bold">{order.barcode || '-'}</div></TableCell>
+                    <TableCell className="text-xs"><div className="font-mono font-bold">{order.barcode || '-'}</div></TableCell>
                     <TableCell className="font-mono text-xs">{order.customer_code || '-'}</TableCell>
                     <TableCell className="text-sm">{order.customer_name}</TableCell>
                     <TableCell className="text-sm truncate max-w-[120px]">{order.address || '-'}</TableCell>
@@ -138,6 +140,8 @@ export default function ClosedOrders() {
                         {order.order_statuses?.name || '-'}
                       </Badge>
                     </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleDateString('ar-EG')}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{order.updated_at ? new Date(order.updated_at).toLocaleDateString('ar-EG') : '-'}</TableCell>
                     <TableCell>
                       <Select value={order.return_status || 'none'} onValueChange={(v) => updateReturnStatus(order.id, v)}>
                         <SelectTrigger className="h-7 text-xs w-32 bg-secondary border-border">

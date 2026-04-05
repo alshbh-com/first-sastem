@@ -224,7 +224,7 @@ export default function Orders() {
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={15} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={16} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
                 ) : filtered.map((order) => {
                   const hasCourier = !!order.courier_id;
                   return (

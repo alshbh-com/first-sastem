@@ -58,7 +58,7 @@ export default function CourierCollections() {
   const loadCourierData = async () => {
     const { data: orderData } = await supabase
       .from('orders')
-      .select('*, order_statuses(name, color)')
+      .select('*, order_statuses(name, color), offices(name)')
       .eq('courier_id', selectedCourier)
       .eq('is_closed', false)
       .eq('is_pending_approval', false)
@@ -327,6 +327,8 @@ export default function CourierCollections() {
                       <TableHead className="text-right">الباركود</TableHead>
                       <TableHead className="text-right">الكود</TableHead>
                       <TableHead className="text-right">العميل</TableHead>
+                      <TableHead className="text-right">عدد القطع</TableHead>
+                      <TableHead className="text-right">المكتب</TableHead>
                       <TableHead className="text-right">السعر</TableHead>
                       <TableHead className="text-right">التوصيل</TableHead>
                       <TableHead className="text-right">الإجمالي</TableHead>
@@ -337,8 +339,8 @@ export default function CourierCollections() {
                   </TableHeader>
                   <TableBody>
                     {orders.length === 0 ? (
-                      <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-4">لا توجد أوردرات</TableCell></TableRow>
-                    ) : orders.map(o => {
+                       <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-4">لا توجد أوردرات</TableCell></TableRow>
+                     ) : orders.map(o => {
                       const collected = getCollectedAmount(o);
                       return (
                         <TableRow key={o.id} className="border-border">
@@ -346,6 +348,8 @@ export default function CourierCollections() {
                           <TableCell className="font-mono text-xs">{o.barcode || '-'}</TableCell>
                           <TableCell className="font-mono text-xs">{o.customer_code || '-'}</TableCell>
                           <TableCell>{o.customer_name}</TableCell>
+                          <TableCell className="text-center">{o.quantity || 1}</TableCell>
+                          <TableCell className="text-sm">{o.offices?.name || '-'}</TableCell>
                           <TableCell>{o.price} ج.م</TableCell>
                           <TableCell>{o.delivery_price} ج.م</TableCell>
                           <TableCell className="font-bold">{Number(o.price) + Number(o.delivery_price)} ج.م</TableCell>

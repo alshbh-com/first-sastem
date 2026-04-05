@@ -211,6 +211,7 @@ export default function Orders() {
                   <TableHead className="text-right">العنوان</TableHead>
                   <TableHead className="text-right hidden sm:table-cell">الهاتف</TableHead>
                   <TableHead className="text-right hidden md:table-cell">المنتج</TableHead>
+                  <TableHead className="text-right">القطع</TableHead>
                   <TableHead className="text-right">السعر</TableHead>
                   <TableHead className="text-right">الشحن</TableHead>
                   <TableHead className="text-right">الإجمالي</TableHead>
@@ -223,7 +224,7 @@ export default function Orders() {
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={15} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={16} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
                 ) : filtered.map((order) => {
                   const hasCourier = !!order.courier_id;
                   return (
@@ -247,6 +248,7 @@ export default function Orders() {
                       </TableCell>
                       <TableCell dir="ltr" className="hidden sm:table-cell text-sm">{order.customer_phone}</TableCell>
                       <TableCell className="hidden md:table-cell text-sm">{order.product_name}</TableCell>
+                      <TableCell className="text-sm text-center">{order.quantity || 1}</TableCell>
                       <TableCell className="text-sm">{Number(order.price)} ج.م</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{Number(order.delivery_price)} ج.م</TableCell>
                       <TableCell className="font-bold text-sm">{Number(order.price) + Number(order.delivery_price)} ج.م</TableCell>

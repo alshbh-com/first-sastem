@@ -42,8 +42,19 @@ export default function OfficeReport() {
     if (dateTo) query = query.lte('created_at', `${dateTo}T23:59:59`);
 
     const { data } = await query.limit(1000);
-    setOrders(data || []);
+    const ordersData = data || [];
+    setOrders(ordersData);
+    // Load existing notes
+    const notesMap: Record<string, string> = {};
+    ordersData.forEach(o => { if (o.notes) notesMap[o.id] = o.notes; });
+    setOrderNotes(notesMap);
     setLoading(false);
+  };
+
+  const saveNote = async (orderId: string, note: string) => {
+    setSavingNote(orderId);
+    await supabase.from('orders').update({ notes: note }).eq('id', orderId);
+    setSavingNote(null);
   };
 
   const filteredOrders = orderStatusFilter === 'all'

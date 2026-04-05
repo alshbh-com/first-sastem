@@ -61,12 +61,14 @@ export default function OfficeReport() {
     ? orders
     : orders.filter(o => o.order_statuses?.name === orderStatusFilter);
 
-  // Stats
-  const delivered = filteredOrders.filter(o => o.order_statuses?.name === 'تم التسليم');
-  const returned = filteredOrders.filter(o => ['مرتجع', 'رفض ولم يدفع شحن', 'رفض ودفع شحن'].includes(o.order_statuses?.name || ''));
-  const pending = filteredOrders.filter(o => ['مؤجل', 'قيد التوصيل', 'بدون حالة'].includes(o.order_statuses?.name || ''));
-  const partial = filteredOrders.filter(o => o.order_statuses?.name === 'تسليم جزئي');
   const totalPrice = filteredOrders.reduce((sum, o) => sum + (Number(o.price) || 0), 0);
+
+  // Count per status
+  const statusCounts: Record<string, number> = {};
+  filteredOrders.forEach(o => {
+    const name = o.order_statuses?.name || 'بدون حالة';
+    statusCounts[name] = (statusCounts[name] || 0) + 1;
+  });
 
   return (
     <div className="space-y-4">
@@ -112,12 +114,23 @@ export default function OfficeReport() {
 
       {selectedOffice && (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+          <div className="flex flex-wrap gap-2">
             <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">إجمالي</p><p className="text-lg font-bold">{filteredOrders.length}</p></CardContent></Card>
-            <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">تم التسليم</p><p className="text-lg font-bold text-emerald-500">{delivered.length}</p></CardContent></Card>
-            <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">مرتجع</p><p className="text-lg font-bold text-destructive">{returned.length}</p></CardContent></Card>
-            <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">معلق</p><p className="text-lg font-bold text-amber-500">{pending.length}</p></CardContent></Card>
-            <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">تسليم جزئي</p><p className="text-lg font-bold text-blue-500">{partial.length}</p></CardContent></Card>
+            {statuses.map(s => {
+              const count = statusCounts[s.name] || 0;
+              if (count === 0 && orderStatusFilter !== 'all') return null;
+              return (
+                <Card key={s.id} className="bg-card border-border">
+                  <CardContent className="p-3 text-center">
+                    <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                      <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: s.color || '#6b7280' }} />
+                      {s.name}
+                    </p>
+                    <p className="text-lg font-bold" style={{ color: s.color || undefined }}>{count}</p>
+                  </CardContent>
+                </Card>
+              );
+            })}
             <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">إجمالي الأسعار</p><p className="text-lg font-bold text-primary">{totalPrice.toLocaleString('en-US')} ج.م</p></CardContent></Card>
           </div>
 

@@ -204,36 +204,37 @@ export default function Orders() {
             <Table>
               <TableHeader>
                 <TableRow className="border-border">
-                  <TableHead className="w-10"><Checkbox checked={filtered.length > 0 && selected.size === filtered.length} onCheckedChange={toggleAll} /></TableHead>
-                  <TableHead className="text-right">الباركود</TableHead>
-                  <TableHead className="text-right">الكود</TableHead>
-                  <TableHead className="text-right">العميل</TableHead>
-                  <TableHead className="text-right">العنوان</TableHead>
-                  <TableHead className="text-right hidden sm:table-cell">الهاتف</TableHead>
-                  <TableHead className="text-right hidden md:table-cell">المنتج</TableHead>
-                  <TableHead className="text-right">القطع</TableHead>
-                  <TableHead className="text-right">السعر</TableHead>
-                  <TableHead className="text-right">الشحن</TableHead>
-                  <TableHead className="text-right">الإجمالي</TableHead>
-                  <TableHead className="text-right hidden md:table-cell">المكتب</TableHead>
-                  <TableHead className="text-right">المندوب</TableHead>
-                  <TableHead className="text-right">الحالة</TableHead>
-                  <TableHead className="text-right">واتساب</TableHead>
-                  <TableHead className="text-right w-10">تعديل</TableHead>
+                   <TableHead className="w-10"><Checkbox checked={filtered.length > 0 && selected.size === filtered.length} onCheckedChange={toggleAll} /></TableHead>
+                   <TableHead className="text-right">تاريخ التسجيل</TableHead>
+                   <TableHead className="text-right">الباركود</TableHead>
+                   <TableHead className="text-right">الكود</TableHead>
+                   <TableHead className="text-right">العميل</TableHead>
+                   <TableHead className="text-right">العنوان</TableHead>
+                   <TableHead className="text-right hidden sm:table-cell">الهاتف</TableHead>
+                   <TableHead className="text-right hidden md:table-cell">المنتج</TableHead>
+                   <TableHead className="text-right">القطع</TableHead>
+                   <TableHead className="text-right">السعر</TableHead>
+                   <TableHead className="text-right">الشحن</TableHead>
+                   <TableHead className="text-right">الإجمالي</TableHead>
+                   <TableHead className="text-right hidden md:table-cell">المكتب</TableHead>
+                   <TableHead className="text-right">المندوب</TableHead>
+                   <TableHead className="text-right">الحالة</TableHead>
+                   <TableHead className="text-right">واتساب</TableHead>
+                   <TableHead className="text-right w-10">تعديل</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={16} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
-                ) : filtered.map((order) => {
-                  const hasCourier = !!order.courier_id;
-                  return (
-                    <TableRow key={order.id} className={`border-border ${hasCourier ? 'bg-muted/30' : ''}`}>
-                      <TableCell><Checkbox checked={selected.has(order.id)} onCheckedChange={() => toggleSelect(order.id)} /></TableCell>
-                      <TableCell className="text-xs">
-                        <div className="text-muted-foreground">{new Date(order.created_at).toLocaleDateString('ar-EG', { day: 'numeric', month: 'numeric', year: 'numeric' })}</div>
-                        <div className="font-mono font-bold">{order.barcode || '-'}</div>
-                      </TableCell>
+                   <TableRow><TableCell colSpan={17} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
+                 ) : filtered.map((order) => {
+                   const hasCourier = !!order.courier_id;
+                   return (
+                     <TableRow key={order.id} className={`border-border ${hasCourier ? 'bg-muted/30' : ''}`}>
+                       <TableCell><Checkbox checked={selected.has(order.id)} onCheckedChange={() => toggleSelect(order.id)} /></TableCell>
+                       <TableCell className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleDateString('ar-EG', { day: 'numeric', month: 'numeric', year: 'numeric' })}</TableCell>
+                       <TableCell className="text-xs">
+                         <div className="font-mono font-bold">{order.barcode || '-'}</div>
+                       </TableCell>
                       <TableCell className="font-mono text-xs">{order.customer_code || '-'}</TableCell>
                       <TableCell className="text-sm">
                         <div className="flex items-center gap-1">

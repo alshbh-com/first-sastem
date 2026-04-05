@@ -1,0 +1,1 @@
+INSERT INTO public.order_statuses (name, color, is_fixed, sort_order) VALUES ('استبدال', '#8B5CF6', true, 12);

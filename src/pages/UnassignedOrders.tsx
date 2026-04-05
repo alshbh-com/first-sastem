@@ -165,8 +165,9 @@ export default function UnassignedOrders() {
                   <TableHead className="w-10"><Checkbox checked={filtered.length > 0 && selected.size === filtered.length} onCheckedChange={toggleAll} /></TableHead>
                   <TableHead className="text-right">الباركود</TableHead>
                   <TableHead className="text-right">الكود</TableHead>
-                  <TableHead className="text-right">العميل</TableHead>
-                  <TableHead className="text-right">العنوان</TableHead>
+                   <TableHead className="text-right">العميل</TableHead>
+                   <TableHead className="text-right">الهاتف</TableHead>
+                   <TableHead className="text-right">العنوان</TableHead>
                    <TableHead className="text-right hidden sm:table-cell">المنتج</TableHead>
                    <TableHead className="text-right">القطع</TableHead>
                    <TableHead className="text-right">الإجمالي</TableHead>
@@ -177,13 +178,14 @@ export default function UnassignedOrders() {
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
                 ) : filtered.map(order => (
                   <TableRow key={order.id} className={`border-border ${order.courier_id ? 'bg-muted/30' : ''}`}>
                     <TableCell><Checkbox checked={selected.has(order.id)} onCheckedChange={() => toggleSelect(order.id)} /></TableCell>
                     <TableCell className="text-xs"><div className="text-muted-foreground">{new Date(order.created_at).toLocaleDateString('ar-EG')}</div><div className="font-mono font-bold">{order.barcode || '-'}</div></TableCell>
                     <TableCell className="font-mono text-xs">{order.customer_code || '-'}</TableCell>
                     <TableCell className="text-sm">{order.customer_name}</TableCell>
+                    <TableCell className="text-sm font-mono">{order.customer_phone || '-'}</TableCell>
                     <TableCell className="text-sm truncate max-w-[120px]">{order.address || '-'}</TableCell>
                     <TableCell className="hidden sm:table-cell text-sm">{order.product_name}</TableCell>
                     <TableCell className="text-sm text-center">{order.quantity || 1}</TableCell>

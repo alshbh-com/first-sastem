@@ -348,6 +348,8 @@ export default function CourierCollections() {
                           <TableCell className="font-mono text-xs">{o.barcode || '-'}</TableCell>
                           <TableCell className="font-mono text-xs">{o.customer_code || '-'}</TableCell>
                           <TableCell>{o.customer_name}</TableCell>
+                          <TableCell className="text-center">{o.quantity || 1}</TableCell>
+                          <TableCell className="text-sm">{o.offices?.name || '-'}</TableCell>
                           <TableCell>{o.price} ج.م</TableCell>
                           <TableCell>{o.delivery_price} ج.م</TableCell>
                           <TableCell className="font-bold">{Number(o.price) + Number(o.delivery_price)} ج.م</TableCell>

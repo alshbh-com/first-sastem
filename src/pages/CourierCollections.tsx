@@ -339,8 +339,8 @@ export default function CourierCollections() {
                   </TableHeader>
                   <TableBody>
                     {orders.length === 0 ? (
-                      <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-4">لا توجد أوردرات</TableCell></TableRow>
-                    ) : orders.map(o => {
+                       <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-4">لا توجد أوردرات</TableCell></TableRow>
+                     ) : orders.map(o => {
                       const collected = getCollectedAmount(o);
                       return (
                         <TableRow key={o.id} className="border-border">

@@ -159,7 +159,9 @@ export default function OfficeReport() {
                             placeholder="اكتب ملاحظة..."
                             value={orderNotes[o.id] || ''}
                             onChange={e => setOrderNotes(prev => ({ ...prev, [o.id]: e.target.value }))}
+                            onBlur={() => saveNote(o.id, orderNotes[o.id] || '')}
                           />
+                          {savingNote === o.id && <span className="text-[10px] text-muted-foreground">حفظ...</span>}
                         </TableCell>
                       </TableRow>
                     ))}

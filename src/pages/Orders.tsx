@@ -225,16 +225,16 @@ export default function Orders() {
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={16} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
-                ) : filtered.map((order) => {
-                  const hasCourier = !!order.courier_id;
-                  return (
-                    <TableRow key={order.id} className={`border-border ${hasCourier ? 'bg-muted/30' : ''}`}>
-                      <TableCell><Checkbox checked={selected.has(order.id)} onCheckedChange={() => toggleSelect(order.id)} /></TableCell>
-                      <TableCell className="text-xs">
-                        <div className="text-muted-foreground">{new Date(order.created_at).toLocaleDateString('ar-EG', { day: 'numeric', month: 'numeric', year: 'numeric' })}</div>
-                        <div className="font-mono font-bold">{order.barcode || '-'}</div>
-                      </TableCell>
+                   <TableRow><TableCell colSpan={17} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
+                 ) : filtered.map((order) => {
+                   const hasCourier = !!order.courier_id;
+                   return (
+                     <TableRow key={order.id} className={`border-border ${hasCourier ? 'bg-muted/30' : ''}`}>
+                       <TableCell><Checkbox checked={selected.has(order.id)} onCheckedChange={() => toggleSelect(order.id)} /></TableCell>
+                       <TableCell className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleDateString('ar-EG', { day: 'numeric', month: 'numeric', year: 'numeric' })}</TableCell>
+                       <TableCell className="text-xs">
+                         <div className="font-mono font-bold">{order.barcode || '-'}</div>
+                       </TableCell>
                       <TableCell className="font-mono text-xs">{order.customer_code || '-'}</TableCell>
                       <TableCell className="text-sm">
                         <div className="flex items-center gap-1">

@@ -186,6 +186,7 @@ export default function UnassignedOrders() {
                     <TableCell className="text-sm">{order.customer_name}</TableCell>
                     <TableCell className="text-sm truncate max-w-[120px]">{order.address || '-'}</TableCell>
                     <TableCell className="hidden sm:table-cell text-sm">{order.product_name}</TableCell>
+                    <TableCell className="text-sm text-center">{order.quantity || 1}</TableCell>
                     <TableCell className="text-sm font-bold">{Number(order.price) + Number(order.delivery_price)} ج.م</TableCell>
                     <TableCell className="hidden md:table-cell text-sm">{order.offices?.name || '-'}</TableCell>
                     <TableCell className="text-sm">{courierName(order.courier_id)}</TableCell>

@@ -248,6 +248,7 @@ export default function Orders() {
                       </TableCell>
                       <TableCell dir="ltr" className="hidden sm:table-cell text-sm">{order.customer_phone}</TableCell>
                       <TableCell className="hidden md:table-cell text-sm">{order.product_name}</TableCell>
+                      <TableCell className="text-sm text-center">{order.quantity || 1}</TableCell>
                       <TableCell className="text-sm">{Number(order.price)} ج.م</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{Number(order.delivery_price)} ج.م</TableCell>
                       <TableCell className="font-bold text-sm">{Number(order.price) + Number(order.delivery_price)} ج.م</TableCell>

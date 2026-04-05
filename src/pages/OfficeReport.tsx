@@ -17,6 +17,7 @@ export default function OfficeReport() {
   const [orderStatusFilter, setOrderStatusFilter] = useState('all');
   const [statuses, setStatuses] = useState<any[]>([]);
   const [orderNotes, setOrderNotes] = useState<Record<string, string>>({});
+  const [savingNote, setSavingNote] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.from('offices').select('id, name').order('name').then(({ data }) => setOffices(data || []));

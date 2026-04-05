@@ -167,8 +167,9 @@ export default function UnassignedOrders() {
                   <TableHead className="text-right">الكود</TableHead>
                   <TableHead className="text-right">العميل</TableHead>
                   <TableHead className="text-right">العنوان</TableHead>
-                  <TableHead className="text-right hidden sm:table-cell">المنتج</TableHead>
-                  <TableHead className="text-right">الإجمالي</TableHead>
+                   <TableHead className="text-right hidden sm:table-cell">المنتج</TableHead>
+                   <TableHead className="text-right">القطع</TableHead>
+                   <TableHead className="text-right">الإجمالي</TableHead>
                   <TableHead className="text-right hidden md:table-cell">المكتب</TableHead>
                   <TableHead className="text-right">المندوب</TableHead>
                   <TableHead className="text-right">الحالة</TableHead>

@@ -327,6 +327,8 @@ export default function CourierCollections() {
                       <TableHead className="text-right">الباركود</TableHead>
                       <TableHead className="text-right">الكود</TableHead>
                       <TableHead className="text-right">العميل</TableHead>
+                      <TableHead className="text-right">عدد القطع</TableHead>
+                      <TableHead className="text-right">المكتب</TableHead>
                       <TableHead className="text-right">السعر</TableHead>
                       <TableHead className="text-right">التوصيل</TableHead>
                       <TableHead className="text-right">الإجمالي</TableHead>

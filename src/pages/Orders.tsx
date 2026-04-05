@@ -211,6 +211,7 @@ export default function Orders() {
                   <TableHead className="text-right">العنوان</TableHead>
                   <TableHead className="text-right hidden sm:table-cell">الهاتف</TableHead>
                   <TableHead className="text-right hidden md:table-cell">المنتج</TableHead>
+                  <TableHead className="text-right">القطع</TableHead>
                   <TableHead className="text-right">السعر</TableHead>
                   <TableHead className="text-right">الشحن</TableHead>
                   <TableHead className="text-right">الإجمالي</TableHead>

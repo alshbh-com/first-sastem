@@ -58,7 +58,7 @@ export default function CourierCollections() {
   const loadCourierData = async () => {
     const { data: orderData } = await supabase
       .from('orders')
-      .select('*, order_statuses(name, color)')
+      .select('*, order_statuses(name, color), offices(name)')
       .eq('courier_id', selectedCourier)
       .eq('is_closed', false)
       .eq('is_pending_approval', false)

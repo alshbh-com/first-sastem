@@ -136,29 +136,42 @@ export default function DeliveryPrices() {
 
   const filtered = filterOffice === 'all' ? prices : prices.filter(p => p.office_id === filterOffice);
 
-  // PDF export for a price list
+  // PDF export for a price list using HTML print window for Arabic support
   const exportListPDF = (list: any) => {
     const items = priceListItems.filter(i => i.price_list_id === list.id);
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    doc.setFont('Helvetica');
-    doc.setFontSize(18);
-    doc.text(list.name, doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+    const printWindow = window.open('', '_blank', 'width=800,height=1000');
+    if (!printWindow) { toast.error('تعذر فتح نافذة الطباعة'); return; }
 
-    autoTable(doc, {
-      startY: 30,
-      head: [['#', 'المحافظة / المنطقة', 'سعر التوصيل', 'البيك اب']],
-      body: items.map((item, i) => [
-        i + 1,
-        item.governorate,
-        `${item.price}`,
-        `${item.pickup_price || 0}`,
-      ]),
-      styles: { font: 'Helvetica', halign: 'center', fontSize: 11 },
-      headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-    });
+    const rows = items.map((item, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${item.governorate}</td>
+        <td>${item.price}</td>
+        <td>${item.pickup_price || 0}</td>
+      </tr>
+    `).join('');
 
-    doc.save(`${list.name}.pdf`);
-    toast.success('تم تصدير PDF');
+    printWindow.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8">
+      <title>${list.name}</title>
+      <style>
+        @page { size: A4; margin: 15mm; }
+        body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; margin: 20px; direction: rtl; }
+        h1 { text-align: center; font-size: 22px; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #333; padding: 10px 14px; text-align: center; font-size: 14px; }
+        th { background: #2980b9; color: #fff; font-weight: bold; }
+        tr:nth-child(even) { background: #f2f2f2; }
+      </style></head><body>
+      <h1>${list.name}</h1>
+      <table>
+        <thead><tr><th>#</th><th>المحافظة / المنطقة</th><th>سعر التوصيل</th><th>البيك اب</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </body></html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    toast.success('تم فتح نافذة الطباعة');
   };
 
   return (

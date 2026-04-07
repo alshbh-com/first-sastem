@@ -70,6 +70,19 @@ export default function OfficeReport() {
     statusCounts[name] = (statusCounts[name] || 0) + 1;
   });
 
+  // Closed orders (is_closed = true)
+  const closedOrders = filteredOrders.filter(o => o.is_closed);
+  const closedCount = closedOrders.length;
+  const closedPrice = closedOrders.reduce((sum, o) => sum + (Number(o.price) || 0), 0);
+
+  // Pending orders (بدون حالة + قيد التوصيل)
+  const pendingOrders = filteredOrders.filter(o => {
+    const name = o.order_statuses?.name;
+    return name === 'بدون حالة' || name === 'قيد التوصيل';
+  });
+  const pendingCount = pendingOrders.length;
+  const pendingPrice = pendingOrders.reduce((sum, o) => sum + (Number(o.price) || 0), 0);
+
   return (
     <div className="space-y-4">
       <h1 className="text-xl sm:text-2xl font-bold">تقرير المكاتب</h1>

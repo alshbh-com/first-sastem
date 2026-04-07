@@ -172,7 +172,10 @@ export default function OfficeReport() {
                     ) : filteredOrders.map((o, idx) => (
                       <TableRow key={o.id} className="border-border">
                         <TableCell className="text-sm">{idx + 1}</TableCell>
-                        <TableCell className="text-sm font-medium">{o.customer_name}</TableCell>
+                        <TableCell className="text-sm font-medium">
+                          {o.customer_name}
+                          {o.is_closed && <Badge variant="outline" className="mr-1 text-[10px] border-green-500 text-green-500">مقفل ✅</Badge>}
+                        </TableCell>
                         <TableCell className="font-mono text-xs">{o.customer_code || '-'}</TableCell>
                         <TableCell className="text-sm font-bold">{o.price} ج.م</TableCell>
                         <TableCell>

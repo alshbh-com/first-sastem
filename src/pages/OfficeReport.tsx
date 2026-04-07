@@ -70,6 +70,19 @@ export default function OfficeReport() {
     statusCounts[name] = (statusCounts[name] || 0) + 1;
   });
 
+  // Closed orders (is_closed = true)
+  const closedOrders = filteredOrders.filter(o => o.is_closed);
+  const closedCount = closedOrders.length;
+  const closedPrice = closedOrders.reduce((sum, o) => sum + (Number(o.price) || 0), 0);
+
+  // Pending orders (بدون حالة + قيد التوصيل)
+  const pendingOrders = filteredOrders.filter(o => {
+    const name = o.order_statuses?.name;
+    return name === 'بدون حالة' || name === 'قيد التوصيل';
+  });
+  const pendingCount = pendingOrders.length;
+  const pendingPrice = pendingOrders.reduce((sum, o) => sum + (Number(o.price) || 0), 0);
+
   return (
     <div className="space-y-4">
       <h1 className="text-xl sm:text-2xl font-bold">تقرير المكاتب</h1>
@@ -132,6 +145,8 @@ export default function OfficeReport() {
               );
             })}
             <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">إجمالي الأسعار</p><p className="text-lg font-bold text-primary">{totalPrice.toLocaleString('en-US')} ج.م</p></CardContent></Card>
+            <Card className="bg-card border-border border-green-500/50"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">المقفل ✅</p><p className="text-lg font-bold text-green-500">{closedCount}</p><p className="text-[10px] text-muted-foreground">{closedPrice.toLocaleString('en-US')} ج.م</p></CardContent></Card>
+            <Card className="bg-card border-border border-yellow-500/50"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">المعلق ⏳</p><p className="text-lg font-bold text-yellow-500">{pendingCount}</p><p className="text-[10px] text-muted-foreground">{pendingPrice.toLocaleString('en-US')} ج.م</p></CardContent></Card>
           </div>
 
           <Card className="bg-card border-border">
@@ -157,7 +172,10 @@ export default function OfficeReport() {
                     ) : filteredOrders.map((o, idx) => (
                       <TableRow key={o.id} className="border-border">
                         <TableCell className="text-sm">{idx + 1}</TableCell>
-                        <TableCell className="text-sm font-medium">{o.customer_name}</TableCell>
+                        <TableCell className="text-sm font-medium">
+                          {o.customer_name}
+                          {o.is_closed && <Badge variant="outline" className="mr-1 text-[10px] border-green-500 text-green-500">مقفل ✅</Badge>}
+                        </TableCell>
                         <TableCell className="font-mono text-xs">{o.customer_code || '-'}</TableCell>
                         <TableCell className="text-sm font-bold">{o.price} ج.م</TableCell>
                         <TableCell>

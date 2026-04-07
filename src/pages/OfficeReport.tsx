@@ -145,6 +145,8 @@ export default function OfficeReport() {
               );
             })}
             <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">إجمالي الأسعار</p><p className="text-lg font-bold text-primary">{totalPrice.toLocaleString('en-US')} ج.م</p></CardContent></Card>
+            <Card className="bg-card border-border border-green-500/50"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">المقفل ✅</p><p className="text-lg font-bold text-green-500">{closedCount}</p><p className="text-[10px] text-muted-foreground">{closedPrice.toLocaleString('en-US')} ج.م</p></CardContent></Card>
+            <Card className="bg-card border-border border-yellow-500/50"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">المعلق ⏳</p><p className="text-lg font-bold text-yellow-500">{pendingCount}</p><p className="text-[10px] text-muted-foreground">{pendingPrice.toLocaleString('en-US')} ج.م</p></CardContent></Card>
           </div>
 
           <Card className="bg-card border-border">

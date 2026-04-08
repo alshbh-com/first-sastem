@@ -251,18 +251,28 @@ function CourierSalaryReport() {
   };
 
   const exportPDF = () => {
-    const doc = new jsPDF({ orientation: 'landscape' });
-    doc.setFontSize(14);
-    doc.text(`Courier Salaries - ${month}`, 140, 15, { align: 'center' });
-    autoTable(doc, {
-      startY: 25,
-      head: [['Name', 'Salary', 'Bonuses', 'Advances', 'Fuel', 'Collections', 'Net']],
-      body: salaryData.map(d => [d.full_name, d.salary, d.totalBonuses, d.totalAdvances, d.totalFuel, d.totalCollections, d.net]),
-      headStyles: { fillColor: [147, 51, 234] },
-      foot: [['Total', '', '', '', '', '', salaryData.reduce((s, d) => s + d.net, 0).toLocaleString('en-US')]],
-    });
-    doc.save(`salaries-${month}.pdf`);
-    toast.success('تم تحميل جدول الرواتب');
+    const win = window.open('', '_blank', 'width=900,height=700');
+    if (!win) { toast.error('تم حظر النافذة'); return; }
+    const totalNet = salaryData.reduce((s, d) => s + d.net, 0);
+    const rows = salaryData.map(d =>
+      `<tr><td>${d.full_name}</td><td>${Number(d.salary).toLocaleString('en-US')}</td><td class="g">+${d.totalBonuses.toLocaleString('en-US')}</td><td class="r">-${d.totalAdvances.toLocaleString('en-US')}</td><td class="o">-${d.totalFuel.toLocaleString('en-US')}</td><td>${d.totalCollections.toLocaleString('en-US')}</td><td class="b">${d.net.toLocaleString('en-US')}</td></tr>`
+    ).join('');
+    win.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>جدول رواتب</title>
+    <style>body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;padding:20px;direction:rtl}
+    h2{text-align:center}table{width:100%;border-collapse:collapse;margin-top:15px}
+    th{background:#9333ea;color:#fff;padding:8px;text-align:right;font-size:12px}
+    td{padding:6px 8px;border-bottom:1px solid #ddd;font-size:12px}
+    .g{color:#16a34a}.r{color:#dc2626}.o{color:#ea580c}.b{font-weight:bold}
+    tfoot td{font-weight:bold;background:#f3f4f6;border-top:2px solid #333}
+    @media print{body{padding:10px}}</style></head><body>
+    <h2>جدول رواتب المندوبين - ${month}</h2>
+    <table><thead><tr><th>الاسم</th><th>الراتب</th><th>مكافآت</th><th>سلف</th><th>وقود</th><th>تحصيلات</th><th>الصافي</th></tr></thead>
+    <tbody>${rows}</tbody>
+    <tfoot><tr><td>الإجمالي</td><td></td><td></td><td></td><td></td><td></td><td>${totalNet.toLocaleString('en-US')} ج.م</td></tr></tfoot>
+    </table></body></html>`);
+    win.document.close();
+    setTimeout(() => win.print(), 300);
+    toast.success('تم فتح جدول الرواتب للطباعة');
   };
 
   return (

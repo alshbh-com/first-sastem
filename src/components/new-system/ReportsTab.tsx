@@ -145,35 +145,36 @@ function OfficeAccountStatement() {
 
   const exportPDF = () => {
     if (!statement) return;
-    const doc = new jsPDF();
     const officeName = offices.find(o => o.id === officeId)?.name || '';
-    doc.setFontSize(14);
-    doc.text(`Account Statement - ${officeName}`, 105, 15, { align: 'center' });
-    doc.setFontSize(10);
-    doc.text(`From: ${dateFrom} - To: ${dateTo}`, 105, 22, { align: 'center' });
-
-    autoTable(doc, {
-      startY: 30, head: [['Description', 'Amount']],
-      body: [
-        ['Total Orders', String(statement.totalOrders)],
-        ['Total Sales', statement.totalRevenue.toLocaleString('en-US')],
-        ['Total Delivery', statement.totalDelivery.toLocaleString('en-US')],
-        ['Total Payments', statement.totalPayments.toLocaleString('en-US')],
-        ['Balance', statement.balance.toLocaleString('en-US')],
-      ],
-      headStyles: { fillColor: [34, 197, 94] }
-    });
-
-    if (statement.payments.length) {
-      autoTable(doc, {
-        startY: (doc as any).lastAutoTable.finalY + 10,
-        head: [['Date', 'Amount', 'Notes']],
-        body: statement.payments.map((p: any) => [format(new Date(p.created_at), 'yyyy-MM-dd'), p.amount.toLocaleString('en-US'), p.notes || '-']),
-        headStyles: { fillColor: [59, 130, 246] }
-      });
-    }
-    doc.save(`statement-${officeName}-${dateFrom}.pdf`);
-    toast.success('تم تحميل كشف الحساب');
+    const win = window.open('', '_blank', 'width=800,height=700');
+    if (!win) { toast.error('تم حظر النافذة'); return; }
+    const paymentsRows = statement.payments.map((p: any) =>
+      `<tr><td>${format(new Date(p.created_at), 'yyyy-MM-dd')}</td><td>${Number(p.amount).toLocaleString('en-US')}</td><td>${p.notes || '-'}</td></tr>`
+    ).join('');
+    win.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>كشف حساب</title>
+    <style>body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;padding:20px;direction:rtl}
+    h2{text-align:center}p.sub{text-align:center;color:#666;font-size:13px}
+    table{width:100%;border-collapse:collapse;margin-top:15px}
+    th{background:#22c55e;color:#fff;padding:8px;text-align:right;font-size:13px}
+    td{padding:6px 8px;border-bottom:1px solid #ddd;font-size:13px}
+    h3{margin-top:25px;color:#3b82f6}
+    @media print{body{padding:10px}}</style></head><body>
+    <h2>كشف حساب - ${officeName}</h2>
+    <p class="sub">من: ${dateFrom} - إلى: ${dateTo}</p>
+    <table><thead><tr><th>البيان</th><th>القيمة</th></tr></thead><tbody>
+    <tr><td>إجمالي الأوردرات</td><td>${statement.totalOrders}</td></tr>
+    <tr><td>إجمالي المبيعات</td><td>${statement.totalRevenue.toLocaleString('en-US')} ج.م</td></tr>
+    <tr><td>إجمالي الشحن</td><td>${statement.totalDelivery.toLocaleString('en-US')} ج.م</td></tr>
+    <tr><td>إجمالي المدفوعات</td><td>${statement.totalPayments.toLocaleString('en-US')} ج.م</td></tr>
+    <tr><td><strong>الرصيد</strong></td><td><strong>${statement.balance.toLocaleString('en-US')} ج.م</strong></td></tr>
+    </tbody></table>
+    ${statement.payments.length ? `<h3>تفاصيل المدفوعات</h3>
+    <table><thead><tr><th>التاريخ</th><th>المبلغ</th><th>ملاحظات</th></tr></thead>
+    <tbody>${paymentsRows}</tbody></table>` : ''}
+    </body></html>`);
+    win.document.close();
+    setTimeout(() => win.print(), 300);
+    toast.success('تم فتح كشف الحساب للطباعة');
   };
 
   return (

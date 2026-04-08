@@ -39,36 +39,43 @@ function ComprehensivePDFReport() {
       const { data: orders } = await query.limit(5000);
       if (!orders?.length) { toast.error('لا توجد بيانات'); setLoading(false); return; }
 
-      const doc = new jsPDF({ orientation: 'landscape' });
-      doc.setFont('helvetica');
-      doc.setFontSize(16);
-      doc.text('FIRST - Orders Report', 140, 15, { align: 'center' });
-      doc.setFontSize(10);
-      doc.text(`From: ${dateFrom} - To: ${dateTo}`, 140, 22, { align: 'center' });
-      doc.text(`Total: ${orders.length} orders`, 140, 28, { align: 'center' });
-
+      const officeMap = Object.fromEntries(offices.map(o => [o.id, o.name]));
       const headers: string[] = [];
       const keys: string[] = [];
-      if (columns.tracking) { headers.push('Tracking'); keys.push('tracking_id'); }
-      if (columns.customer) { headers.push('Customer'); keys.push('customer_name'); }
-      if (columns.phone) { headers.push('Phone'); keys.push('customer_phone'); }
-      if (columns.product) { headers.push('Product'); keys.push('product_name'); }
-      if (columns.price) { headers.push('Price'); keys.push('price'); }
-      if (columns.delivery) { headers.push('Delivery'); keys.push('delivery_price'); }
-      if (columns.status) { headers.push('Status'); keys.push('_status'); }
-      if (columns.office) { headers.push('Office'); keys.push('_office'); }
-      if (columns.governorate) { headers.push('Governorate'); keys.push('governorate'); }
+      if (columns.tracking) { headers.push('رقم التتبع'); keys.push('tracking_id'); }
+      if (columns.customer) { headers.push('العميل'); keys.push('customer_name'); }
+      if (columns.phone) { headers.push('الهاتف'); keys.push('customer_phone'); }
+      if (columns.product) { headers.push('المنتج'); keys.push('product_name'); }
+      if (columns.price) { headers.push('السعر'); keys.push('price'); }
+      if (columns.delivery) { headers.push('التوصيل'); keys.push('delivery_price'); }
+      if (columns.status) { headers.push('الحالة'); keys.push('_status'); }
+      if (columns.office) { headers.push('المكتب'); keys.push('_office'); }
+      if (columns.governorate) { headers.push('المحافظة'); keys.push('governorate'); }
 
-      const officeMap = Object.fromEntries(offices.map(o => [o.id, o.name]));
       const rows = orders.map(o => keys.map(k => {
         if (k === '_status') return (o as any).order_statuses?.name || '-';
         if (k === '_office') return officeMap[o.office_id || ''] || '-';
         return String((o as any)[k] ?? '-');
       }));
 
-      autoTable(doc, { head: [headers], body: rows, startY: 34, styles: { fontSize: 7, cellPadding: 2 }, headStyles: { fillColor: [59, 130, 246] } });
-      doc.save(`orders-report-${dateFrom}.pdf`);
-      toast.success('تم تحميل التقرير');
+      const win = window.open('', '_blank', 'width=900,height=700');
+      if (!win) { toast.error('تم حظر النافذة'); setLoading(false); return; }
+      win.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>تقرير الأوردرات</title>
+      <style>body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;padding:20px;direction:rtl}
+      h2{text-align:center;margin-bottom:5px}p.sub{text-align:center;color:#666;font-size:13px}
+      table{width:100%;border-collapse:collapse;margin-top:15px}
+      th{background:#3b82f6;color:#fff;padding:8px;text-align:right;font-size:12px}
+      td{padding:6px 8px;border-bottom:1px solid #ddd;font-size:12px}
+      tr:nth-child(even){background:#f9fafb}
+      @media print{body{padding:10px}}</style></head><body>
+      <h2>FIRST - تقرير الأوردرات الشامل</h2>
+      <p class="sub">من: ${dateFrom} - إلى: ${dateTo} | إجمالي: ${orders.length} أوردر</p>
+      <table><thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+      <tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>
+      </body></html>`);
+      win.document.close();
+      setTimeout(() => win.print(), 300);
+      toast.success('تم فتح التقرير للطباعة');
     } catch { toast.error('حدث خطأ'); }
     setLoading(false);
   };

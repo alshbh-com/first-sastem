@@ -35,6 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const mountedRef = useRef(true);
   const loginInProgressRef = useRef(false);
   const rolesRef = useRef<AppRole[]>([]);
+  const loadingRef = useRef(true);
   const bootstrappedRef = useRef(false);
 
   const fetchRoles = useCallback(async (userId: string): Promise<AppRole[]> => {
@@ -52,6 +53,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     rolesRef.current = roles;
   }, [roles]);
+
+  useEffect(() => {
+    loadingRef.current = loading;
+  }, [loading]);
 
   const applySignedOutState = useCallback(() => {
     if (!mountedRef.current) return;
@@ -146,7 +151,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearTimeout(timeout);
       subscription.unsubscribe();
     };
-  }, [applySignedInState, applySignedOutState, loading]);
+  }, [applySignedInState, applySignedOutState]);
 
   const login = useCallback(async (password: string): Promise<{ error?: string }> => {
     try {

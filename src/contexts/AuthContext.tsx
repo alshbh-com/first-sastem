@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Session, User } from '@supabase/supabase-js';
 
@@ -32,8 +32,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
-  const initializedRef = useRef(false);
-  const skipNextRoleFetch = useRef(false);
+  const mountedRef = useRef(true);
+  const loginInProgressRef = useRef(false);
+  const sessionSetRef = useRef(false);
 
   const fetchRoles = async (userId: string): Promise<AppRole[]> => {
     try {
@@ -48,73 +49,92 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    let mounted = true;
+    mountedRef.current = true;
+    let initialDone = false;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, sess) => {
-      if (!mounted) return;
-      
+      if (!mountedRef.current) return;
+
+      console.log('[Auth] Event:', event, 'session:', !!sess, 'loginInProgress:', loginInProgressRef.current);
+
       if (event === 'SIGNED_OUT') {
+        // Don't process SIGNED_OUT if login is in progress
+        if (loginInProgressRef.current) return;
         setSession(null);
         setUser(null);
         setRoles([]);
+        sessionSetRef.current = false;
         setLoading(false);
         return;
       }
 
-      if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-        setSession(sess);
-        setUser(sess?.user ?? null);
-
+      if (event === 'INITIAL_SESSION') {
+        initialDone = true;
         if (sess?.user) {
-          if (skipNextRoleFetch.current) {
-            skipNextRoleFetch.current = false;
+          setSession(sess);
+          setUser(sess.user);
+          sessionSetRef.current = true;
+          // Fetch roles for existing session
+          const userRoles = await fetchRoles(sess.user.id);
+          if (mountedRef.current) {
+            setRoles(userRoles);
             setLoading(false);
-            return;
           }
-          setTimeout(async () => {
-            if (!mounted) return;
-            const userRoles = await fetchRoles(sess.user.id);
-            if (mounted) {
-              setRoles(userRoles);
-              setLoading(false);
-            }
-          }, 0);
         } else {
+          setSession(null);
+          setUser(null);
           setRoles([]);
+          setLoading(false);
+        }
+        return;
+      }
+
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (!sess?.user) return;
+        
+        setSession(sess);
+        setUser(sess.user);
+        sessionSetRef.current = true;
+
+        // If login just happened, roles are already set by login()
+        if (loginInProgressRef.current) {
+          loginInProgressRef.current = false;
+          setLoading(false);
+          return;
+        }
+
+        // For TOKEN_REFRESHED, don't re-fetch roles if we already have them
+        if (event === 'TOKEN_REFRESHED' && roles.length > 0) {
+          return;
+        }
+
+        // Fetch roles
+        const userRoles = await fetchRoles(sess.user.id);
+        if (mountedRef.current) {
+          setRoles(userRoles);
           setLoading(false);
         }
       }
     });
 
-    supabase.auth.getSession().then(async ({ data: { session: sess }, error }) => {
-      if (!mounted) return;
-      if (error || !sess) {
-        setSession(null);
-        setUser(null);
-        setRoles([]);
-        setLoading(false);
-        if (error) {
-          await supabase.auth.signOut();
-        }
-        return;
-      }
-    });
-
+    // Safety timeout
     const timeout = setTimeout(() => {
-      if (mounted && loading) {
+      if (mountedRef.current && loading) {
         setLoading(false);
       }
     }, 5000);
 
     return () => {
-      mounted = false;
+      mountedRef.current = false;
       clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, []);
 
-  const login = async (password: string): Promise<{ error?: string }> => {
+  const login = useCallback(async (password: string): Promise<{ error?: string }> => {
     try {
+      loginInProgressRef.current = true;
+      
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const res = await fetch(
         `https://${projectId}.supabase.co/functions/v1/auth-login`,
@@ -128,30 +148,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       );
       const data = await res.json();
-      if (!res.ok) return { error: data.error || 'خطأ في تسجيل الدخول' };
+      if (!res.ok) {
+        loginInProgressRef.current = false;
+        return { error: data.error || 'خطأ في تسجيل الدخول' };
+      }
       
       if (data.session) {
         const userRoles = (data.roles || []) as AppRole[];
         setRoles(userRoles);
-        skipNextRoleFetch.current = true;
         
         await supabase.auth.setSession({
           access_token: data.session.access_token,
           refresh_token: data.session.refresh_token,
         });
+        
+        // If onAuthStateChange didn't fire yet, ensure state is set
+        if (mountedRef.current && data.session) {
+          sessionSetRef.current = true;
+          setLoading(false);
+        }
       }
       return {};
     } catch {
+      loginInProgressRef.current = false;
       return { error: 'خطأ في الاتصال بالخادم' };
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
+    loginInProgressRef.current = false;
+    sessionSetRef.current = false;
     setRoles([]);
     setSession(null);
     setUser(null);
     await supabase.auth.signOut();
-  };
+  }, []);
 
   const isOwner = roles.includes('owner');
   const isAdmin = roles.includes('admin');

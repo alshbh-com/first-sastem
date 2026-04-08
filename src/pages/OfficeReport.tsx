@@ -16,7 +16,7 @@ export default function OfficeReport() {
   const [loading, setLoading] = useState(false);
   const [orderStatusFilter, setOrderStatusFilter] = useState('all');
   const [statuses, setStatuses] = useState<any[]>([]);
-  const [orderNotes, setOrderNotes] = useState<Record<string, string>>({});
+  const [reportNotes, setReportNotes] = useState<Record<string, string>>({});
   const [savingNote, setSavingNote] = useState<string | null>(null);
 
   useEffect(() => {
@@ -44,16 +44,30 @@ export default function OfficeReport() {
     const { data } = await query.limit(1000);
     const ordersData = data || [];
     setOrders(ordersData);
-    // Load existing notes
-    const notesMap: Record<string, string> = {};
-    ordersData.forEach(o => { if (o.notes) notesMap[o.id] = o.notes; });
-    setOrderNotes(notesMap);
+
+    // Load report-specific notes from office_report_notes table
+    if (ordersData.length > 0) {
+      const orderIds = ordersData.map(o => o.id);
+      const { data: notesData } = await supabase
+        .from('office_report_notes')
+        .select('order_id, note')
+        .in('order_id', orderIds);
+      const notesMap: Record<string, string> = {};
+      notesData?.forEach((n: any) => { notesMap[n.order_id] = n.note; });
+      setReportNotes(notesMap);
+    } else {
+      setReportNotes({});
+    }
     setLoading(false);
   };
 
-  const saveNote = async (orderId: string, note: string) => {
+  const saveReportNote = async (orderId: string, note: string) => {
     setSavingNote(orderId);
-    await supabase.from('orders').update({ notes: note }).eq('id', orderId);
+    // Upsert into office_report_notes
+    const { error } = await supabase
+      .from('office_report_notes')
+      .upsert({ order_id: orderId, note, updated_at: new Date().toISOString() }, { onConflict: 'order_id' });
+    if (error) console.error('Error saving note:', error);
     setSavingNote(null);
   };
 
@@ -161,7 +175,7 @@ export default function OfficeReport() {
                       <TableHead className="text-right">السعر</TableHead>
                       <TableHead className="text-right">الحالة</TableHead>
                       <TableHead className="text-right">التاريخ</TableHead>
-                      <TableHead className="text-right">ملاحظات</TableHead>
+                      <TableHead className="text-right">ملاحظات التقرير</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -188,9 +202,9 @@ export default function OfficeReport() {
                           <Input
                             className="h-7 text-xs min-w-[120px] bg-secondary border-border"
                             placeholder="اكتب ملاحظة..."
-                            value={orderNotes[o.id] || ''}
-                            onChange={e => setOrderNotes(prev => ({ ...prev, [o.id]: e.target.value }))}
-                            onBlur={() => saveNote(o.id, orderNotes[o.id] || '')}
+                            value={reportNotes[o.id] || ''}
+                            onChange={e => setReportNotes(prev => ({ ...prev, [o.id]: e.target.value }))}
+                            onBlur={() => saveReportNote(o.id, reportNotes[o.id] || '')}
                           />
                           {savingNote === o.id && <span className="text-[10px] text-muted-foreground">حفظ...</span>}
                         </TableCell>

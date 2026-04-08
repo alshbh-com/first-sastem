@@ -11,8 +11,6 @@ import { FileText, FileBarChart, Receipt, Calendar, Users, DollarSign, Clock, Ba
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 
 // ============ 1. تقرير PDF شامل ============
 function ComprehensivePDFReport() {
@@ -39,36 +37,43 @@ function ComprehensivePDFReport() {
       const { data: orders } = await query.limit(5000);
       if (!orders?.length) { toast.error('لا توجد بيانات'); setLoading(false); return; }
 
-      const doc = new jsPDF({ orientation: 'landscape' });
-      doc.setFont('helvetica');
-      doc.setFontSize(16);
-      doc.text('FIRST - Orders Report', 140, 15, { align: 'center' });
-      doc.setFontSize(10);
-      doc.text(`From: ${dateFrom} - To: ${dateTo}`, 140, 22, { align: 'center' });
-      doc.text(`Total: ${orders.length} orders`, 140, 28, { align: 'center' });
-
+      const officeMap = Object.fromEntries(offices.map(o => [o.id, o.name]));
       const headers: string[] = [];
       const keys: string[] = [];
-      if (columns.tracking) { headers.push('Tracking'); keys.push('tracking_id'); }
-      if (columns.customer) { headers.push('Customer'); keys.push('customer_name'); }
-      if (columns.phone) { headers.push('Phone'); keys.push('customer_phone'); }
-      if (columns.product) { headers.push('Product'); keys.push('product_name'); }
-      if (columns.price) { headers.push('Price'); keys.push('price'); }
-      if (columns.delivery) { headers.push('Delivery'); keys.push('delivery_price'); }
-      if (columns.status) { headers.push('Status'); keys.push('_status'); }
-      if (columns.office) { headers.push('Office'); keys.push('_office'); }
-      if (columns.governorate) { headers.push('Governorate'); keys.push('governorate'); }
+      if (columns.tracking) { headers.push('رقم التتبع'); keys.push('tracking_id'); }
+      if (columns.customer) { headers.push('العميل'); keys.push('customer_name'); }
+      if (columns.phone) { headers.push('الهاتف'); keys.push('customer_phone'); }
+      if (columns.product) { headers.push('المنتج'); keys.push('product_name'); }
+      if (columns.price) { headers.push('السعر'); keys.push('price'); }
+      if (columns.delivery) { headers.push('التوصيل'); keys.push('delivery_price'); }
+      if (columns.status) { headers.push('الحالة'); keys.push('_status'); }
+      if (columns.office) { headers.push('المكتب'); keys.push('_office'); }
+      if (columns.governorate) { headers.push('المحافظة'); keys.push('governorate'); }
 
-      const officeMap = Object.fromEntries(offices.map(o => [o.id, o.name]));
       const rows = orders.map(o => keys.map(k => {
         if (k === '_status') return (o as any).order_statuses?.name || '-';
         if (k === '_office') return officeMap[o.office_id || ''] || '-';
         return String((o as any)[k] ?? '-');
       }));
 
-      autoTable(doc, { head: [headers], body: rows, startY: 34, styles: { fontSize: 7, cellPadding: 2 }, headStyles: { fillColor: [59, 130, 246] } });
-      doc.save(`orders-report-${dateFrom}.pdf`);
-      toast.success('تم تحميل التقرير');
+      const win = window.open('', '_blank', 'width=900,height=700');
+      if (!win) { toast.error('تم حظر النافذة'); setLoading(false); return; }
+      win.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>تقرير الأوردرات</title>
+      <style>body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;padding:20px;direction:rtl}
+      h2{text-align:center;margin-bottom:5px}p.sub{text-align:center;color:#666;font-size:13px}
+      table{width:100%;border-collapse:collapse;margin-top:15px}
+      th{background:#3b82f6;color:#fff;padding:8px;text-align:right;font-size:12px}
+      td{padding:6px 8px;border-bottom:1px solid #ddd;font-size:12px}
+      tr:nth-child(even){background:#f9fafb}
+      @media print{body{padding:10px}}</style></head><body>
+      <h2>FIRST - تقرير الأوردرات الشامل</h2>
+      <p class="sub">من: ${dateFrom} - إلى: ${dateTo} | إجمالي: ${orders.length} أوردر</p>
+      <table><thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+      <tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>
+      </body></html>`);
+      win.document.close();
+      setTimeout(() => win.print(), 300);
+      toast.success('تم فتح التقرير للطباعة');
     } catch { toast.error('حدث خطأ'); }
     setLoading(false);
   };
@@ -138,35 +143,36 @@ function OfficeAccountStatement() {
 
   const exportPDF = () => {
     if (!statement) return;
-    const doc = new jsPDF();
     const officeName = offices.find(o => o.id === officeId)?.name || '';
-    doc.setFontSize(14);
-    doc.text(`Account Statement - ${officeName}`, 105, 15, { align: 'center' });
-    doc.setFontSize(10);
-    doc.text(`From: ${dateFrom} - To: ${dateTo}`, 105, 22, { align: 'center' });
-
-    autoTable(doc, {
-      startY: 30, head: [['Description', 'Amount']],
-      body: [
-        ['Total Orders', String(statement.totalOrders)],
-        ['Total Sales', statement.totalRevenue.toLocaleString('en-US')],
-        ['Total Delivery', statement.totalDelivery.toLocaleString('en-US')],
-        ['Total Payments', statement.totalPayments.toLocaleString('en-US')],
-        ['Balance', statement.balance.toLocaleString('en-US')],
-      ],
-      headStyles: { fillColor: [34, 197, 94] }
-    });
-
-    if (statement.payments.length) {
-      autoTable(doc, {
-        startY: (doc as any).lastAutoTable.finalY + 10,
-        head: [['Date', 'Amount', 'Notes']],
-        body: statement.payments.map((p: any) => [format(new Date(p.created_at), 'yyyy-MM-dd'), p.amount.toLocaleString('en-US'), p.notes || '-']),
-        headStyles: { fillColor: [59, 130, 246] }
-      });
-    }
-    doc.save(`statement-${officeName}-${dateFrom}.pdf`);
-    toast.success('تم تحميل كشف الحساب');
+    const win = window.open('', '_blank', 'width=800,height=700');
+    if (!win) { toast.error('تم حظر النافذة'); return; }
+    const paymentsRows = statement.payments.map((p: any) =>
+      `<tr><td>${format(new Date(p.created_at), 'yyyy-MM-dd')}</td><td>${Number(p.amount).toLocaleString('en-US')}</td><td>${p.notes || '-'}</td></tr>`
+    ).join('');
+    win.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>كشف حساب</title>
+    <style>body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;padding:20px;direction:rtl}
+    h2{text-align:center}p.sub{text-align:center;color:#666;font-size:13px}
+    table{width:100%;border-collapse:collapse;margin-top:15px}
+    th{background:#22c55e;color:#fff;padding:8px;text-align:right;font-size:13px}
+    td{padding:6px 8px;border-bottom:1px solid #ddd;font-size:13px}
+    h3{margin-top:25px;color:#3b82f6}
+    @media print{body{padding:10px}}</style></head><body>
+    <h2>كشف حساب - ${officeName}</h2>
+    <p class="sub">من: ${dateFrom} - إلى: ${dateTo}</p>
+    <table><thead><tr><th>البيان</th><th>القيمة</th></tr></thead><tbody>
+    <tr><td>إجمالي الأوردرات</td><td>${statement.totalOrders}</td></tr>
+    <tr><td>إجمالي المبيعات</td><td>${statement.totalRevenue.toLocaleString('en-US')} ج.م</td></tr>
+    <tr><td>إجمالي الشحن</td><td>${statement.totalDelivery.toLocaleString('en-US')} ج.م</td></tr>
+    <tr><td>إجمالي المدفوعات</td><td>${statement.totalPayments.toLocaleString('en-US')} ج.م</td></tr>
+    <tr><td><strong>الرصيد</strong></td><td><strong>${statement.balance.toLocaleString('en-US')} ج.م</strong></td></tr>
+    </tbody></table>
+    ${statement.payments.length ? `<h3>تفاصيل المدفوعات</h3>
+    <table><thead><tr><th>التاريخ</th><th>المبلغ</th><th>ملاحظات</th></tr></thead>
+    <tbody>${paymentsRows}</tbody></table>` : ''}
+    </body></html>`);
+    win.document.close();
+    setTimeout(() => win.print(), 300);
+    toast.success('تم فتح كشف الحساب للطباعة');
   };
 
   return (
@@ -243,18 +249,28 @@ function CourierSalaryReport() {
   };
 
   const exportPDF = () => {
-    const doc = new jsPDF({ orientation: 'landscape' });
-    doc.setFontSize(14);
-    doc.text(`Courier Salaries - ${month}`, 140, 15, { align: 'center' });
-    autoTable(doc, {
-      startY: 25,
-      head: [['Name', 'Salary', 'Bonuses', 'Advances', 'Fuel', 'Collections', 'Net']],
-      body: salaryData.map(d => [d.full_name, d.salary, d.totalBonuses, d.totalAdvances, d.totalFuel, d.totalCollections, d.net]),
-      headStyles: { fillColor: [147, 51, 234] },
-      foot: [['Total', '', '', '', '', '', salaryData.reduce((s, d) => s + d.net, 0).toLocaleString('en-US')]],
-    });
-    doc.save(`salaries-${month}.pdf`);
-    toast.success('تم تحميل جدول الرواتب');
+    const win = window.open('', '_blank', 'width=900,height=700');
+    if (!win) { toast.error('تم حظر النافذة'); return; }
+    const totalNet = salaryData.reduce((s, d) => s + d.net, 0);
+    const rows = salaryData.map(d =>
+      `<tr><td>${d.full_name}</td><td>${Number(d.salary).toLocaleString('en-US')}</td><td class="g">+${d.totalBonuses.toLocaleString('en-US')}</td><td class="r">-${d.totalAdvances.toLocaleString('en-US')}</td><td class="o">-${d.totalFuel.toLocaleString('en-US')}</td><td>${d.totalCollections.toLocaleString('en-US')}</td><td class="b">${d.net.toLocaleString('en-US')}</td></tr>`
+    ).join('');
+    win.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>جدول رواتب</title>
+    <style>body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;padding:20px;direction:rtl}
+    h2{text-align:center}table{width:100%;border-collapse:collapse;margin-top:15px}
+    th{background:#9333ea;color:#fff;padding:8px;text-align:right;font-size:12px}
+    td{padding:6px 8px;border-bottom:1px solid #ddd;font-size:12px}
+    .g{color:#16a34a}.r{color:#dc2626}.o{color:#ea580c}.b{font-weight:bold}
+    tfoot td{font-weight:bold;background:#f3f4f6;border-top:2px solid #333}
+    @media print{body{padding:10px}}</style></head><body>
+    <h2>جدول رواتب المندوبين - ${month}</h2>
+    <table><thead><tr><th>الاسم</th><th>الراتب</th><th>مكافآت</th><th>سلف</th><th>وقود</th><th>تحصيلات</th><th>الصافي</th></tr></thead>
+    <tbody>${rows}</tbody>
+    <tfoot><tr><td>الإجمالي</td><td></td><td></td><td></td><td></td><td></td><td>${totalNet.toLocaleString('en-US')} ج.م</td></tr></tfoot>
+    </table></body></html>`);
+    win.document.close();
+    setTimeout(() => win.print(), 300);
+    toast.success('تم فتح جدول الرواتب للطباعة');
   };
 
   return (

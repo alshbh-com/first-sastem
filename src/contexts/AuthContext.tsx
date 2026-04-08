@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Session, User } from '@supabase/supabase-js';
 
@@ -34,9 +34,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const mountedRef = useRef(true);
   const loginInProgressRef = useRef(false);
-  const sessionSetRef = useRef(false);
+  const rolesRef = useRef<AppRole[]>([]);
+  const bootstrappedRef = useRef(false);
 
-  const fetchRoles = async (userId: string): Promise<AppRole[]> => {
+  const fetchRoles = useCallback(async (userId: string): Promise<AppRole[]> => {
     try {
       const { data } = await supabase
         .from('user_roles')
@@ -46,78 +47,94 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       return [];
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    rolesRef.current = roles;
+  }, [roles]);
+
+  const applySignedOutState = useCallback(() => {
+    if (!mountedRef.current) return;
+
+    setSession(null);
+    setUser(null);
+    setRoles([]);
+    setLoading(false);
+  }, []);
+
+  const applySignedInState = useCallback(async (nextSession: Session, presetRoles?: AppRole[]) => {
+    if (!mountedRef.current) return;
+
+    setSession(nextSession);
+    setUser(nextSession.user);
+
+    const resolvedRoles = presetRoles ?? await fetchRoles(nextSession.user.id);
+    if (!mountedRef.current) return;
+
+    setRoles(resolvedRoles);
+    setLoading(false);
+  }, [fetchRoles]);
 
   useEffect(() => {
     mountedRef.current = true;
-    let initialDone = false;
+    bootstrappedRef.current = false;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, sess) => {
+    const syncAuthState = async (nextSession: Session | null, presetRoles?: AppRole[]) => {
+      if (!nextSession?.user) {
+        applySignedOutState();
+        return;
+      }
+
+      await applySignedInState(nextSession, presetRoles);
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, sess) => {
       if (!mountedRef.current) return;
 
       console.log('[Auth] Event:', event, 'session:', !!sess, 'loginInProgress:', loginInProgressRef.current);
 
       if (event === 'SIGNED_OUT') {
-        // Don't process SIGNED_OUT if login is in progress
         if (loginInProgressRef.current) return;
-        setSession(null);
-        setUser(null);
-        setRoles([]);
-        sessionSetRef.current = false;
-        setLoading(false);
+        void syncAuthState(null);
         return;
       }
 
       if (event === 'INITIAL_SESSION') {
-        initialDone = true;
-        if (sess?.user) {
-          setSession(sess);
-          setUser(sess.user);
-          sessionSetRef.current = true;
-          // Fetch roles for existing session
-          const userRoles = await fetchRoles(sess.user.id);
-          if (mountedRef.current) {
-            setRoles(userRoles);
-            setLoading(false);
-          }
-        } else {
-          setSession(null);
-          setUser(null);
-          setRoles([]);
-          setLoading(false);
-        }
+        if (bootstrappedRef.current) return;
+        bootstrappedRef.current = true;
+        void syncAuthState(sess);
         return;
       }
 
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         if (!sess?.user) return;
-        
-        setSession(sess);
-        setUser(sess.user);
-        sessionSetRef.current = true;
 
-        // If login just happened, roles are already set by login()
         if (loginInProgressRef.current) {
           loginInProgressRef.current = false;
-          setLoading(false);
-          return;
         }
 
-        // For TOKEN_REFRESHED, don't re-fetch roles if we already have them
-        if (event === 'TOKEN_REFRESHED' && roles.length > 0) {
-          return;
-        }
+        const presetRoles = event === 'TOKEN_REFRESHED' && rolesRef.current.length > 0
+          ? rolesRef.current
+          : undefined;
 
-        // Fetch roles
-        const userRoles = await fetchRoles(sess.user.id);
-        if (mountedRef.current) {
-          setRoles(userRoles);
-          setLoading(false);
-        }
+        void syncAuthState(sess, presetRoles);
       }
     });
 
-    // Safety timeout
+    void supabase.auth.getSession()
+      .then(({ data: { session: currentSession } }) => {
+        if (!mountedRef.current || bootstrappedRef.current) return;
+
+        bootstrappedRef.current = true;
+        void syncAuthState(currentSession);
+      })
+      .catch(() => {
+        if (!mountedRef.current || bootstrappedRef.current) return;
+
+        bootstrappedRef.current = true;
+        applySignedOutState();
+      });
+
     const timeout = setTimeout(() => {
       if (mountedRef.current && loading) {
         setLoading(false);
@@ -129,11 +146,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearTimeout(timeout);
       subscription.unsubscribe();
     };
-  }, []);
+  }, [applySignedInState, applySignedOutState, loading]);
 
   const login = useCallback(async (password: string): Promise<{ error?: string }> => {
     try {
       loginInProgressRef.current = true;
+      setLoading(true);
       
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const res = await fetch(
@@ -150,39 +168,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json();
       if (!res.ok) {
         loginInProgressRef.current = false;
+        setLoading(false);
         return { error: data.error || 'خطأ في تسجيل الدخول' };
       }
       
       if (data.session) {
         const userRoles = (data.roles || []) as AppRole[];
-        setRoles(userRoles);
+        if (mountedRef.current) {
+          setSession(data.session as Session);
+          setUser((data.user ?? data.session.user) as User);
+          setRoles(userRoles);
+          setLoading(false);
+        }
         
-        await supabase.auth.setSession({
+        const { error: sessionError } = await supabase.auth.setSession({
           access_token: data.session.access_token,
           refresh_token: data.session.refresh_token,
         });
-        
-        // If onAuthStateChange didn't fire yet, ensure state is set
-        if (mountedRef.current && data.session) {
-          sessionSetRef.current = true;
+
+        loginInProgressRef.current = false;
+
+        if (sessionError) {
+          applySignedOutState();
+          return { error: 'حصلت مشكلة في فتح الجلسة، جرّب تاني' };
+        }
+
+        if (mountedRef.current) {
           setLoading(false);
         }
       }
       return {};
     } catch {
       loginInProgressRef.current = false;
+      setLoading(false);
       return { error: 'خطأ في الاتصال بالخادم' };
     }
-  }, []);
+  }, [applySignedOutState]);
 
   const logout = useCallback(async () => {
     loginInProgressRef.current = false;
-    sessionSetRef.current = false;
-    setRoles([]);
-    setSession(null);
-    setUser(null);
+    applySignedOutState();
     await supabase.auth.signOut();
-  }, []);
+  }, [applySignedOutState]);
 
   const isOwner = roles.includes('owner');
   const isAdmin = roles.includes('admin');

@@ -11,8 +11,6 @@ import { FileText, FileBarChart, Receipt, Calendar, Users, DollarSign, Clock, Ba
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 
 // ============ 1. تقرير PDF شامل ============
 function ComprehensivePDFReport() {

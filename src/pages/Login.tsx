@@ -1,5 +1,5 @@
 import { useState } from 'react';
-// Navigation handled by LoginRedirect in App.tsx
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,8 +24,10 @@ export default function Login() {
     if (result.error) {
       setError(result.error);
       setLoading(false);
+    } else {
+      // Login succeeded - navigate immediately
+      navigate('/', { replace: true });
     }
-    // Navigation is handled by LoginRedirect in App.tsx based on session state
   };
 
   return (

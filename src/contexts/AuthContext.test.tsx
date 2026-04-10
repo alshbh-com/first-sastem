@@ -1,5 +1,4 @@
 import { act, render } from '@testing-library/react';
-import { fireEvent, screen, waitFor } from '@testing-library/dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 type AuthChangeEvent = 'INITIAL_SESSION' | 'SIGNED_IN' | 'SIGNED_OUT' | 'TOKEN_REFRESHED';
@@ -25,6 +24,12 @@ function deferred<T>() {
   });
 
   return { promise, resolve, reject };
+}
+
+async function flushAsyncWork(cycles = 6) {
+  for (let index = 0; index < cycles; index += 1) {
+    await Promise.resolve();
+  }
 }
 
 let authListener: ((event: AuthChangeEvent, session: typeof mockSession | null) => void) | null = null;
@@ -86,27 +91,26 @@ describe('AuthProvider login bootstrap race', () => {
   });
 
   it('keeps the new session when the initial getSession resolves late with null', async () => {
-    render(
+    const view = render(
       <AuthProvider>
         <TestConsumer />
       </AuthProvider>
     );
 
-    fireEvent.click(screen.getByText('login'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('session-user')).toHaveTextContent('user-1');
+    await act(async () => {
+      view.getByText('login').click();
+      await flushAsyncWork();
     });
+
+    expect(view.getByTestId('session-user')).toHaveTextContent('user-1');
 
     await act(async () => {
       getSessionDeferred.resolve({ data: { session: null } });
-      await Promise.resolve();
+      await flushAsyncWork();
     });
 
-    await waitFor(() => {
-      expect(screen.getByTestId('session-user')).toHaveTextContent('user-1');
-      expect(screen.getByTestId('loading-state')).toHaveTextContent('false');
-    });
+    expect(view.getByTestId('session-user')).toHaveTextContent('user-1');
+    expect(view.getByTestId('loading-state')).toHaveTextContent('false');
 
     expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
     expect(mockSetSession).toHaveBeenCalledWith({

@@ -1,5 +1,6 @@
-import { act, render } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 type AuthChangeEvent = 'INITIAL_SESSION' | 'SIGNED_IN' | 'SIGNED_OUT' | 'TOKEN_REFRESHED';
 
@@ -34,6 +35,8 @@ async function flushAsyncWork(cycles = 6) {
 
 let authListener: ((event: AuthChangeEvent, session: typeof mockSession | null) => void) | null = null;
 let getSessionDeferred = deferred<{ data: { session: typeof mockSession | null } }>();
+let container: HTMLDivElement;
+let root: Root;
 
 const mockSignOut = vi.fn(async () => ({ error: null }));
 const mockSetSession = vi.fn(async () => {
@@ -80,6 +83,9 @@ describe('AuthProvider login bootstrap race', () => {
     getSessionDeferred = deferred();
     mockSignOut.mockClear();
     mockSetSession.mockClear();
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    root = createRoot(container);
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -90,27 +96,40 @@ describe('AuthProvider login bootstrap race', () => {
     }));
   });
 
-  it('keeps the new session when the initial getSession resolves late with null', async () => {
-    const view = render(
-      <AuthProvider>
-        <TestConsumer />
-      </AuthProvider>
-    );
-
+  afterEach(async () => {
     await act(async () => {
-      view.getByText('login').click();
+      root.unmount();
+      await flushAsyncWork(2);
+    });
+
+    container.remove();
+    vi.unstubAllGlobals();
+  });
+
+  it('keeps the new session when the initial getSession resolves late with null', async () => {
+    await act(async () => {
+      root.render(
+        <AuthProvider>
+          <TestConsumer />
+        </AuthProvider>
+      );
       await flushAsyncWork();
     });
 
-    expect(view.getByTestId('session-user')).toHaveTextContent('user-1');
+    await act(async () => {
+      container.querySelector('button')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await flushAsyncWork();
+    });
+
+    expect(container.querySelector('[data-testid="session-user"]')?.textContent).toBe('user-1');
 
     await act(async () => {
       getSessionDeferred.resolve({ data: { session: null } });
       await flushAsyncWork();
     });
 
-    expect(view.getByTestId('session-user')).toHaveTextContent('user-1');
-    expect(view.getByTestId('loading-state')).toHaveTextContent('false');
+    expect(container.querySelector('[data-testid="session-user"]')?.textContent).toBe('user-1');
+    expect(container.querySelector('[data-testid="loading-state"]')?.textContent).toBe('false');
 
     expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
     expect(mockSetSession).toHaveBeenCalledWith({

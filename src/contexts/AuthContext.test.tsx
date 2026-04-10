@@ -4,28 +4,45 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 type AuthChangeEvent = 'INITIAL_SESSION' | 'SIGNED_IN' | 'SIGNED_OUT' | 'TOKEN_REFRESHED';
 
-const mockUser = {
-  id: 'user-1',
-  email: '0127800@first.ship',
-};
+const mockState = vi.hoisted(() => {
+  function createDeferred<T>() {
+    let resolve!: (value: T) => void;
+    let reject!: (reason?: unknown) => void;
 
-const mockSession = {
-  access_token: 'access-token',
-  refresh_token: 'refresh-token',
-  user: mockUser,
-};
+    const promise = new Promise<T>((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
 
-function deferred<T>() {
-  let resolve!: (value: T) => void;
-  let reject!: (reason?: unknown) => void;
+    return { promise, resolve, reject };
+  }
 
-  const promise = new Promise<T>((res, rej) => {
-    resolve = res;
-    reject = rej;
-  });
+  const mockUser = {
+    id: 'user-1',
+    email: '0127800@first.ship',
+  };
 
-  return { promise, resolve, reject };
-}
+  const mockSession = {
+    access_token: 'access-token',
+    refresh_token: 'refresh-token',
+    user: mockUser,
+  };
+
+  const state = {
+    createDeferred,
+    mockUser,
+    mockSession,
+    authListener: null as ((event: AuthChangeEvent, session: typeof mockSession | null) => void) | null,
+    getSessionDeferred: createDeferred<{ data: { session: typeof mockSession | null } }>(),
+    mockSignOut: vi.fn(async () => ({ error: null })),
+    mockSetSession: vi.fn(async () => {
+      state.authListener?.('SIGNED_IN', state.mockSession);
+      return { data: { session: state.mockSession, user: state.mockUser }, error: null };
+    }),
+  };
+
+  return state;
+});
 
 async function flushAsyncWork(cycles = 6) {
   for (let index = 0; index < cycles; index += 1) {
@@ -38,22 +55,16 @@ let getSessionDeferred = deferred<{ data: { session: typeof mockSession | null }
 let container: HTMLDivElement;
 let root: Root;
 
-const mockSignOut = vi.fn(async () => ({ error: null }));
-const mockSetSession = vi.fn(async () => {
-  authListener?.('SIGNED_IN', mockSession);
-  return { data: { session: mockSession, user: mockUser }, error: null };
-});
-
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
     auth: {
-      onAuthStateChange: vi.fn((callback: typeof authListener) => {
-        authListener = callback;
+      onAuthStateChange: vi.fn((callback: typeof mockState.authListener) => {
+        mockState.authListener = callback;
         return { data: { subscription: { unsubscribe: vi.fn() } } };
       }),
-      getSession: vi.fn(() => getSessionDeferred.promise),
-      setSession: mockSetSession,
-      signOut: mockSignOut,
+      getSession: vi.fn(() => mockState.getSessionDeferred.promise),
+      setSession: mockState.mockSetSession,
+      signOut: mockState.mockSignOut,
     },
     from: vi.fn(() => ({
       select: vi.fn(() => ({
@@ -79,18 +90,18 @@ function TestConsumer() {
 
 describe('AuthProvider login bootstrap race', () => {
   beforeEach(() => {
-    authListener = null;
-    getSessionDeferred = deferred();
-    mockSignOut.mockClear();
-    mockSetSession.mockClear();
+    mockState.authListener = null;
+    mockState.getSessionDeferred = mockState.createDeferred();
+    mockState.mockSignOut.mockClear();
+    mockState.mockSetSession.mockClear();
     container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
-        session: mockSession,
-        user: mockUser,
+        session: mockState.mockSession,
+        user: mockState.mockUser,
         roles: ['admin'],
       }),
     }));
@@ -124,15 +135,15 @@ describe('AuthProvider login bootstrap race', () => {
     expect(container.querySelector('[data-testid="session-user"]')?.textContent).toBe('user-1');
 
     await act(async () => {
-      getSessionDeferred.resolve({ data: { session: null } });
+      mockState.getSessionDeferred.resolve({ data: { session: null } });
       await flushAsyncWork();
     });
 
     expect(container.querySelector('[data-testid="session-user"]')?.textContent).toBe('user-1');
     expect(container.querySelector('[data-testid="loading-state"]')?.textContent).toBe('false');
 
-    expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
-    expect(mockSetSession).toHaveBeenCalledWith({
+    expect(mockState.mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
+    expect(mockState.mockSetSession).toHaveBeenCalledWith({
       access_token: 'access-token',
       refresh_token: 'refresh-token',
     });

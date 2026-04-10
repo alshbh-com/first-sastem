@@ -155,6 +155,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (password: string): Promise<{ error?: string }> => {
     try {
+      bootstrappedRef.current = true;
       loginInProgressRef.current = true;
       setLoading(true);
       
@@ -177,31 +178,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error: data.error || 'خطأ في تسجيل الدخول' };
       }
       
-      if (data.session) {
-        const userRoles = (data.roles || []) as AppRole[];
-        if (mountedRef.current) {
-          setSession(data.session as Session);
-          setUser((data.user ?? data.session.user) as User);
-          setRoles(userRoles);
-          setLoading(false);
-        }
-        
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token: data.session.access_token,
-          refresh_token: data.session.refresh_token,
-        });
-
+      if (!data.session) {
         loginInProgressRef.current = false;
-
-        if (sessionError) {
-          applySignedOutState();
-          return { error: 'حصلت مشكلة في فتح الجلسة، جرّب تاني' };
-        }
-
-        if (mountedRef.current) {
-          setLoading(false);
-        }
+        setLoading(false);
+        return { error: 'تعذر إنشاء جلسة الدخول' };
       }
+
+      const userRoles = (data.roles || []) as AppRole[];
+
+      await supabase.auth.signOut({ scope: 'local' });
+
+      const { data: persistedAuth, error: sessionError } = await supabase.auth.setSession({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+      });
+
+      loginInProgressRef.current = false;
+
+      if (sessionError) {
+        applySignedOutState();
+        return { error: 'حصلت مشكلة في فتح الجلسة، جرّب تاني' };
+      }
+
+      if (mountedRef.current) {
+        const activeSession = (persistedAuth.session ?? data.session) as Session;
+        setSession(activeSession);
+        setUser((persistedAuth.user ?? data.user ?? activeSession.user) as User);
+        setRoles(userRoles);
+        setLoading(false);
+      }
+
       return {};
     } catch {
       loginInProgressRef.current = false;

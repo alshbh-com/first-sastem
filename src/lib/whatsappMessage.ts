@@ -5,18 +5,21 @@ export function generateWhatsAppMessage(order: {
   tracking_id: string;
   product_name: string;
   price: number;
+  delivery_price?: number;
   confirmation_token: string;
   customer_name: string;
 }): string {
   const baseUrl = window.location.origin;
+  const total = Number(order.price) + Number(order.delivery_price || 0);
 
   return `مرحباً ${order.customer_name} 👋
+احنا شركة *FIRST* للشحن 🚛
 
 تم تسجيل طلب لك في *FIRST Shipping*.
 
 📦 رقم الطلب: *${order.tracking_id}*
 🛍️ المنتج: *${order.product_name}*
-💰 السعر: *${order.price}* د.ل
+💵 مبلغ التحصيل: *${total}* د.ل
 
 ━━━━━━━━━━━━━━━
 

@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
     // Get order details
     const { data: order, error: orderError } = await supabase
       .from("orders")
-      .select("id, tracking_id, customer_name, customer_phone, product_name, price, confirmation_token")
+      .select("id, tracking_id, customer_name, customer_phone, product_name, price, delivery_price, confirmation_token")
       .eq("id", order_id)
       .single();
 
@@ -50,7 +50,6 @@ Deno.serve(async (req) => {
     const serverUrl = setting?.value;
 
     if (!serverUrl) {
-      // Log as pending if no server configured
       await supabase.from("whatsapp_messages").insert({
         order_id: order.id,
         phone: order.customer_phone,
@@ -73,14 +72,17 @@ Deno.serve(async (req) => {
 
     const appUrl = appUrlSetting?.value || "https://first-route-logistics.lovable.app";
 
+    const total = Number(order.price) + Number(order.delivery_price || 0);
+
     // Build message
     const message = `مرحباً ${order.customer_name} 👋
+احنا شركة *FIRST* للشحن 🚛
 
 تم تسجيل طلب لك في *FIRST Shipping*.
 
 📦 رقم الطلب: *${order.tracking_id}*
 🛍️ المنتج: *${order.product_name}*
-💰 السعر: *${order.price}* د.ل
+💵 مبلغ التحصيل: *${total}* د.ل
 
 ━━━━━━━━━━━━━━━
 

@@ -21,6 +21,7 @@ function buildOrderMessage(order: any, courierMap: Record<string, string>) {
   const total = Number(order.price) + Number(order.delivery_price);
   const parts = [
     `مرحباً ${order.customer_name} 👋`,
+    'احنا شركة *FIRST* للشحن 🚛',
     '',
     `تم تسجيل طلب لك في *${order.offices?.name || 'المكتب'}*.`,
     '',
@@ -30,8 +31,6 @@ function buildOrderMessage(order: any, courierMap: Record<string, string>) {
     order.quantity > 1 ? `📊 الكمية: *${order.quantity}*` : null,
     order.color ? `🎨 اللون: *${order.color}*` : null,
     order.size ? `📐 المقاس: *${order.size}*` : null,
-    `💰 السعر: *${order.price}* ج.م`,
-    `🚚 الشحن: *${order.delivery_price}* ج.م`,
     `💵 مبلغ التحصيل: *${total}* ج.م`,
     `📍 العنوان: *${order.address || '-'}*`,
     order.governorate ? `🏙️ المحافظة: *${order.governorate}*` : null,

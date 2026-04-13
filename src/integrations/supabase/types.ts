@@ -965,6 +965,27 @@ export type Database = {
           },
         ]
       }
+      office_report_hidden_orders: {
+        Row: {
+          created_at: string
+          hidden_by: string | null
+          id: string
+          order_id: string
+        }
+        Insert: {
+          created_at?: string
+          hidden_by?: string | null
+          id?: string
+          order_id: string
+        }
+        Update: {
+          created_at?: string
+          hidden_by?: string | null
+          id?: string
+          order_id?: string
+        }
+        Relationships: []
+      }
       office_report_notes: {
         Row: {
           created_at: string

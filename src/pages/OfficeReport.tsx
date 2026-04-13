@@ -6,8 +6,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
+import { Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function OfficeReport() {
+  const { user } = useAuth();
   const [offices, setOffices] = useState<any[]>([]);
   const [selectedOffice, setSelectedOffice] = useState('');
   const [dateFrom, setDateFrom] = useState('');
@@ -18,6 +24,8 @@ export default function OfficeReport() {
   const [statuses, setStatuses] = useState<any[]>([]);
   const [reportNotes, setReportNotes] = useState<Record<string, string>>({});
   const [savingNote, setSavingNote] = useState<string | null>(null);
+  const [hiddenOrderIds, setHiddenOrderIds] = useState<Set<string>>(new Set());
+  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     supabase.from('offices').select('id, name').order('name').then(({ data }) => setOffices(data || []));
@@ -31,6 +39,7 @@ export default function OfficeReport() {
 
   const loadOrders = async () => {
     setLoading(true);
+    setSelectedOrders(new Set());
     let query = supabase
       .from('orders')
       .select('*, order_statuses(name, color)')
@@ -43,27 +52,32 @@ export default function OfficeReport() {
 
     const { data } = await query.limit(1000);
     const ordersData = data || [];
-    setOrders(ordersData);
 
-    // Load report-specific notes from office_report_notes table
+    // Load hidden order IDs
     if (ordersData.length > 0) {
       const orderIds = ordersData.map(o => o.id);
-      const { data: notesData } = await supabase
-        .from('office_report_notes')
-        .select('order_id, note')
-        .in('order_id', orderIds);
+      const [notesRes, hiddenRes] = await Promise.all([
+        supabase.from('office_report_notes').select('order_id, note').in('order_id', orderIds),
+        supabase.from('office_report_hidden_orders').select('order_id').in('order_id', orderIds),
+      ]);
+      
       const notesMap: Record<string, string> = {};
-      notesData?.forEach((n: any) => { notesMap[n.order_id] = n.note; });
+      notesRes.data?.forEach((n: any) => { notesMap[n.order_id] = n.note; });
       setReportNotes(notesMap);
+
+      const hidden = new Set<string>(hiddenRes.data?.map((h: any) => h.order_id) || []);
+      setHiddenOrderIds(hidden);
     } else {
       setReportNotes({});
+      setHiddenOrderIds(new Set());
     }
+
+    setOrders(ordersData);
     setLoading(false);
   };
 
   const saveReportNote = async (orderId: string, note: string) => {
     setSavingNote(orderId);
-    // Upsert into office_report_notes
     const { error } = await supabase
       .from('office_report_notes')
       .upsert({ order_id: orderId, note, updated_at: new Date().toISOString() }, { onConflict: 'order_id' });
@@ -71,25 +85,60 @@ export default function OfficeReport() {
     setSavingNote(null);
   };
 
+  const hideSelectedOrders = async () => {
+    if (selectedOrders.size === 0) return;
+    const rows = Array.from(selectedOrders).map(order_id => ({
+      order_id,
+      hidden_by: user?.id || null,
+    }));
+    const { error } = await supabase.from('office_report_hidden_orders').upsert(rows, { onConflict: 'order_id' });
+    if (error) {
+      toast.error('حدث خطأ أثناء إخفاء الأوردرات');
+      return;
+    }
+    setHiddenOrderIds(prev => {
+      const next = new Set(prev);
+      selectedOrders.forEach(id => next.add(id));
+      return next;
+    });
+    setSelectedOrders(new Set());
+    toast.success(`تم إخفاء ${rows.length} أوردر من التقرير`);
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedOrders(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  // Filter out hidden orders, then apply status filter
+  const visibleOrders = orders.filter(o => !hiddenOrderIds.has(o.id));
   const filteredOrders = orderStatusFilter === 'all'
-    ? orders
-    : orders.filter(o => o.order_statuses?.name === orderStatusFilter);
+    ? visibleOrders
+    : visibleOrders.filter(o => o.order_statuses?.name === orderStatusFilter);
+
+  const selectAll = () => {
+    if (selectedOrders.size === filteredOrders.length) {
+      setSelectedOrders(new Set());
+    } else {
+      setSelectedOrders(new Set(filteredOrders.map(o => o.id)));
+    }
+  };
 
   const totalPrice = filteredOrders.reduce((sum, o) => sum + (Number(o.price) || 0), 0);
 
-  // Count per status
   const statusCounts: Record<string, number> = {};
   filteredOrders.forEach(o => {
     const name = o.order_statuses?.name || 'بدون حالة';
     statusCounts[name] = (statusCounts[name] || 0) + 1;
   });
 
-  // Closed orders (is_closed = true)
   const closedOrders = filteredOrders.filter(o => o.is_closed);
   const closedCount = closedOrders.length;
   const closedPrice = closedOrders.reduce((sum, o) => sum + (Number(o.price) || 0), 0);
 
-  // Pending orders (بدون حالة + قيد التوصيل)
   const pendingOrders = filteredOrders.filter(o => {
     const name = o.order_statuses?.name;
     return name === 'بدون حالة' || name === 'قيد التوصيل';
@@ -163,12 +212,28 @@ export default function OfficeReport() {
             <Card className="bg-card border-border border-yellow-500/50"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">المعلق ⏳</p><p className="text-lg font-bold text-yellow-500">{pendingCount}</p><p className="text-[10px] text-muted-foreground">{pendingPrice.toLocaleString('en-US')} ج.م</p></CardContent></Card>
           </div>
 
+          {selectedOrders.size > 0 && (
+            <div className="flex items-center gap-3 p-2 bg-destructive/10 rounded-lg border border-destructive/30">
+              <span className="text-sm font-medium">تم تحديد {selectedOrders.size} أوردر</span>
+              <Button size="sm" variant="destructive" onClick={hideSelectedOrders} className="gap-1">
+                <Trash2 className="h-3.5 w-3.5" />
+                إخفاء من التقرير
+              </Button>
+            </div>
+          )}
+
           <Card className="bg-card border-border">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="border-border">
+                      <TableHead className="text-center w-10">
+                        <Checkbox
+                          checked={filteredOrders.length > 0 && selectedOrders.size === filteredOrders.length}
+                          onCheckedChange={selectAll}
+                        />
+                      </TableHead>
                       <TableHead className="text-right">#</TableHead>
                       <TableHead className="text-right">الاسم</TableHead>
                       <TableHead className="text-right">الكود</TableHead>
@@ -180,11 +245,17 @@ export default function OfficeReport() {
                   </TableHeader>
                   <TableBody>
                     {loading ? (
-                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">جاري التحميل...</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">جاري التحميل...</TableCell></TableRow>
                     ) : filteredOrders.length === 0 ? (
-                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
                     ) : filteredOrders.map((o, idx) => (
-                      <TableRow key={o.id} className="border-border">
+                      <TableRow key={o.id} className={`border-border ${selectedOrders.has(o.id) ? 'bg-destructive/5' : ''}`}>
+                        <TableCell className="text-center">
+                          <Checkbox
+                            checked={selectedOrders.has(o.id)}
+                            onCheckedChange={() => toggleSelect(o.id)}
+                          />
+                        </TableCell>
                         <TableCell className="text-sm">{idx + 1}</TableCell>
                         <TableCell className="text-sm font-medium">
                           {o.customer_name}

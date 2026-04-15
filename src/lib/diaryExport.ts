@@ -29,12 +29,9 @@ function calcOrangeRow(dOrder: any) {
   const manualShipping = Number((dOrder as any).manual_shipping_amount);
   const total = manualTotal > 0 ? manualTotal : (order?.price || 0) + (order?.delivery_price || 0);
   const shipping = manualShipping > 0 ? manualShipping : (order?.delivery_price || 0);
-  const pickup = Number(dOrder.manual_pickup) || Number(order?.shipping_paid) || 0;
-  const manualArrived = Number(dOrder.manual_arrived);
-  let arrived = 0;
-  if (manualArrived > 0) arrived = manualArrived;
-  else if (dOrder.status_inside_diary === 'تم التسليم') arrived = total;
-  else if (dOrder.status_inside_diary === 'تسليم جزئي') arrived = (dOrder.partial_amount || 0) + shipping;
+  // Pickup and arrived are fully manual - match UI logic
+  const pickup = (dOrder.manual_pickup != null && dOrder.manual_pickup !== 0) ? Number(dOrder.manual_pickup) : 0;
+  const arrived = (dOrder.manual_arrived != null && dOrder.manual_arrived !== 0) ? Number(dOrder.manual_arrived) : 0;
   return { total, shipping, pickup, arrived, status: dOrder.status_inside_diary, returnStatus: dOrder.manual_return_status || '' };
 }
 

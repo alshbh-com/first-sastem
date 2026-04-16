@@ -96,6 +96,24 @@ export default function OfficeDiaries() {
     },
   });
 
+  const toggleArchive = useMutation({
+    mutationFn: async (diary: any) => {
+      const newArchived = !diary.is_archived;
+      const updates: any = { is_archived: newArchived };
+      if (newArchived && !diary.is_closed) {
+        updates.is_closed = true;
+        updates.closed_at = new Date().toISOString();
+      }
+      const { error } = await supabase.from('diaries').update(updates).eq('id', diary.id);
+      if (error) throw error;
+      await logActivity(newArchived ? 'أرشفة يومية' : 'إلغاء أرشفة يومية', { diary_id: diary.id });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['diaries', officeId] });
+      toast.success('تم تحديث حالة الأرشفة');
+    },
+  });
+
   const deleteDiary = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('diaries').update({ deleted_at: new Date().toISOString() }).eq('id', id);
@@ -157,6 +175,9 @@ export default function OfficeDiaries() {
             </Button>
             <Button size="sm" variant="ghost" onClick={() => toggleClose.mutate(diary)} title={diary.is_closed ? 'إعادة فتح' : 'قفل'}>
               {diary.is_closed ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => toggleArchive.mutate(diary)} title={diary.is_archived ? 'إلغاء الأرشفة' : 'أرشفة'}>
+              <Archive className="h-4 w-4" />
             </Button>
             <Button size="sm" variant="ghost" className="text-destructive" onClick={() => {
               if (confirm('هل أنت متأكد من حذف هذه اليومية وجميع بياناتها؟')) deleteDiary.mutate(diary.id);

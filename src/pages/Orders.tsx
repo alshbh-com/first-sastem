@@ -146,6 +146,8 @@ export default function Orders() {
     if (!confirm(`هل تريد نقل ${selected.size} أوردر إلى سلة المحذوفات؟`)) return;
     const ids = Array.from(selected);
     moveToTrash(ids);
+    // Remove from diaries first
+    await supabase.from('diary_orders').delete().in('order_id', ids);
     const { error } = await supabase.from('orders').update({ is_closed: true }).in('id', ids);
     if (error) { toast.error(error.message); return; }
     logActivity('نقل أوردرات لسلة المحذوفات', { count: selected.size });

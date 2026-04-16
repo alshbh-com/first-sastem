@@ -176,6 +176,9 @@ export default function OfficeDiaries() {
             <Button size="sm" variant="ghost" onClick={() => toggleClose.mutate(diary)} title={diary.is_closed ? 'إعادة فتح' : 'قفل'}>
               {diary.is_closed ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
             </Button>
+            <Button size="sm" variant="ghost" onClick={() => toggleArchive.mutate(diary)} title={diary.is_archived ? 'إلغاء الأرشفة' : 'أرشفة'}>
+              <Archive className="h-4 w-4" />
+            </Button>
             <Button size="sm" variant="ghost" className="text-destructive" onClick={() => {
               if (confirm('هل أنت متأكد من حذف هذه اليومية وجميع بياناتها؟')) deleteDiary.mutate(diary.id);
             }}>

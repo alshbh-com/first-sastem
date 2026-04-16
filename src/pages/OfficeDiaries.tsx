@@ -96,6 +96,24 @@ export default function OfficeDiaries() {
     },
   });
 
+  const toggleArchive = useMutation({
+    mutationFn: async (diary: any) => {
+      const newArchived = !diary.is_archived;
+      const updates: any = { is_archived: newArchived };
+      if (newArchived && !diary.is_closed) {
+        updates.is_closed = true;
+        updates.closed_at = new Date().toISOString();
+      }
+      const { error } = await supabase.from('diaries').update(updates).eq('id', diary.id);
+      if (error) throw error;
+      await logActivity(newArchived ? 'أرشفة يومية' : 'إلغاء أرشفة يومية', { diary_id: diary.id });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['diaries', officeId] });
+      toast.success('تم تحديث حالة الأرشفة');
+    },
+  });
+
   const deleteDiary = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('diaries').update({ deleted_at: new Date().toISOString() }).eq('id', id);

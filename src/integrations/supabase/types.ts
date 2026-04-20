@@ -1010,6 +1010,80 @@ export type Database = {
         }
         Relationships: []
       }
+      office_simple_diaries: {
+        Row: {
+          arrived: number
+          created_at: string
+          created_by: string | null
+          customer_due_direction: string
+          deleted_at: string | null
+          descent_value: number
+          diary_date: string
+          id: string
+          net_diary_direction: string
+          net_with_descent_direction: string
+          new_diary_value: number
+          notes: string | null
+          office_id: string
+          previous_him: number
+          previous_us: number
+          reject_shipping: number
+          return_count: number
+          return_value: number
+          updated_at: string
+        }
+        Insert: {
+          arrived?: number
+          created_at?: string
+          created_by?: string | null
+          customer_due_direction?: string
+          deleted_at?: string | null
+          descent_value?: number
+          diary_date?: string
+          id?: string
+          net_diary_direction?: string
+          net_with_descent_direction?: string
+          new_diary_value?: number
+          notes?: string | null
+          office_id: string
+          previous_him?: number
+          previous_us?: number
+          reject_shipping?: number
+          return_count?: number
+          return_value?: number
+          updated_at?: string
+        }
+        Update: {
+          arrived?: number
+          created_at?: string
+          created_by?: string | null
+          customer_due_direction?: string
+          deleted_at?: string | null
+          descent_value?: number
+          diary_date?: string
+          id?: string
+          net_diary_direction?: string
+          net_with_descent_direction?: string
+          new_diary_value?: number
+          notes?: string | null
+          office_id?: string
+          previous_him?: number
+          previous_us?: number
+          reject_shipping?: number
+          return_count?: number
+          return_value?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "office_simple_diaries_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       offices: {
         Row: {
           address: string | null

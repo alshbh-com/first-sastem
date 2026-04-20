@@ -1,6 +1,6 @@
 import { Outlet, useNavigate } from 'react-router-dom';
 import {
-  Building2, Calculator, ClipboardList, ArrowRight,
+  Building2, Calculator, ClipboardList, ArrowRight, Briefcase, Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,8 +14,10 @@ import AccountingPasswordGate from '@/components/AccountingPasswordGate';
 
 const navItems = [
   { title: 'المكاتب - اليوميات', url: '/accounting-system', icon: Building2, end: true },
+  { title: 'مكاتب (يوميات بسيطة)', url: '/accounting-system/simple-offices', icon: Briefcase },
   { title: 'الحسابات', url: '/accounting-system/dashboard', icon: Calculator },
   { title: 'تقفيلة المكاتب', url: '/accounting-system/office-settlement', icon: ClipboardList },
+  { title: 'سلة محذوفات (بسيطة)', url: '/accounting-system/simple-trash', icon: Trash2 },
 ];
 
 export default function AccountingLayout() {

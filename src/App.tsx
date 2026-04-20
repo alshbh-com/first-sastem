@@ -44,6 +44,10 @@ import DiaryView from "@/pages/DiaryView";
 import AccountingDashboard from "@/pages/AccountingDashboard";
 import AccountingLayout from "@/components/AccountingLayout";
 import OfficeReport from "@/pages/OfficeReport";
+import SimpleOffices from "@/pages/SimpleOffices";
+import SimpleOfficeDiaries from "@/pages/SimpleOfficeDiaries";
+import SimpleDiaryView from "@/pages/SimpleDiaryView";
+import SimpleDiariesTrash from "@/pages/SimpleDiariesTrash";
 import TrashBin from "@/pages/TrashBin";
 import ThemesPage from "@/pages/ThemesPage";
 import OrderAction from "@/pages/OrderAction";
@@ -92,6 +96,10 @@ const App = () => (
               <Route path="offices/:officeId/diary/:diaryId" element={<DiaryView />} />
               <Route path="dashboard" element={<AccountingDashboard />} />
               <Route path="office-settlement" element={<OfficeSettlement />} />
+              <Route path="simple-offices" element={<SimpleOffices />} />
+              <Route path="simple-offices/:officeId" element={<SimpleOfficeDiaries />} />
+              <Route path="simple-offices/:officeId/diary/:diaryId" element={<SimpleDiaryView />} />
+              <Route path="simple-trash" element={<SimpleDiariesTrash />} />
             </Route>
             {/* Main shipping system */}
             <Route element={

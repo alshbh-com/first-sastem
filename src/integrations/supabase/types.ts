@@ -1017,11 +1017,13 @@ export type Database = {
           created_by: string | null
           customer_due_direction: string
           deleted_at: string | null
+          descent_orders_count: number
           descent_value: number
           diary_date: string
           id: string
           net_diary_direction: string
           net_with_descent_direction: string
+          new_diary_orders_count: number
           new_diary_value: number
           notes: string | null
           office_id: string
@@ -1038,11 +1040,13 @@ export type Database = {
           created_by?: string | null
           customer_due_direction?: string
           deleted_at?: string | null
+          descent_orders_count?: number
           descent_value?: number
           diary_date?: string
           id?: string
           net_diary_direction?: string
           net_with_descent_direction?: string
+          new_diary_orders_count?: number
           new_diary_value?: number
           notes?: string | null
           office_id: string
@@ -1059,11 +1063,13 @@ export type Database = {
           created_by?: string | null
           customer_due_direction?: string
           deleted_at?: string | null
+          descent_orders_count?: number
           descent_value?: number
           diary_date?: string
           id?: string
           net_diary_direction?: string
           net_with_descent_direction?: string
+          new_diary_orders_count?: number
           new_diary_value?: number
           notes?: string | null
           office_id?: string

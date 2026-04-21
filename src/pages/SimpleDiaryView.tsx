@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ArrowRight, Save } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -20,12 +19,11 @@ type Diary = {
   return_count: number;
   return_value: number;
   reject_shipping: number;
-  customer_due_direction: 'him' | 'us';
   new_diary_value: number;
+  new_diary_orders_count: number;
   arrived: number;
-  net_diary_direction: 'him' | 'us';
   descent_value: number;
-  net_with_descent_direction: 'him' | 'us';
+  descent_orders_count: number;
   notes: string;
 };
 
@@ -54,7 +52,7 @@ export default function SimpleDiaryView() {
         .eq('id', diaryId!)
         .single();
       if (error) throw error;
-      return data as Diary;
+      return data as any as Diary;
     },
     enabled: !!diaryId,
   });
@@ -75,14 +73,13 @@ export default function SimpleDiaryView() {
           return_count: form.return_count,
           return_value: form.return_value,
           reject_shipping: form.reject_shipping,
-          customer_due_direction: form.customer_due_direction,
           new_diary_value: form.new_diary_value,
+          new_diary_orders_count: form.new_diary_orders_count,
           arrived: form.arrived,
-          net_diary_direction: form.net_diary_direction,
           descent_value: form.descent_value,
-          net_with_descent_direction: form.net_with_descent_direction,
+          descent_orders_count: form.descent_orders_count,
           notes: form.notes,
-        })
+        } as any)
         .eq('id', diaryId!);
       if (error) throw error;
     },
@@ -95,61 +92,45 @@ export default function SimpleDiaryView() {
 
   if (!form) return <div className="p-8 text-center">جاري التحميل...</div>;
 
-  // Calculations
+  // Calculations - signed: positive = له, negative = لينا
   const customerDue = form.previous_him - (form.previous_us + form.return_value + form.reject_shipping);
-  const customerDueAbs = Math.abs(customerDue);
-
-  // مستحق العميل بالاتجاه المختار: لو him فموجب يعني له، لو us فموجب يعني لينا
-  const customerDueSigned = form.customer_due_direction === 'him' ? customerDueAbs : -customerDueAbs;
-
-  const netDiary = (customerDueSigned + form.new_diary_value) - form.arrived;
-  const netDiaryAbs = Math.abs(netDiary);
-  const netDiarySigned = form.net_diary_direction === 'him' ? netDiaryAbs : -netDiaryAbs;
-
-  const netWithDescent = netDiarySigned + form.descent_value;
-  const netWithDescentAbs = Math.abs(netWithDescent);
+  const netDiary = (customerDue + form.new_diary_value) - form.arrived;
+  const netWithDescent = netDiary + form.descent_value;
 
   const set = (k: keyof Diary, v: any) => setForm((p) => (p ? { ...p, [k]: v } : p));
 
-  const numberInput = (label: string, key: keyof Diary) => (
-    <div className="space-y-1">
-      <Label className="text-sm">{label}</Label>
-      <Input
-        type="number"
-        value={(form as any)[key] || 0}
-        onChange={(e) => set(key, parseFloat(e.target.value) || 0)}
-      />
-    </div>
-  );
+  const numberInput = (label: string, key: keyof Diary) => {
+    const value = (form as any)[key];
+    const isZero = !value || value === 0;
+    return (
+      <div className="space-y-1">
+        <Label className="text-sm">{label}</Label>
+        <Input
+          type="number"
+          value={isZero ? '' : value}
+          placeholder="0"
+          onChange={(e) => set(key, e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
+          className={isZero ? 'placeholder:text-muted-foreground/40' : ''}
+        />
+      </div>
+    );
+  };
 
-  const directionRadio = (key: keyof Diary) => (
-    <RadioGroup
-      value={(form as any)[key]}
-      onValueChange={(v) => set(key, v)}
-      className="flex flex-col gap-1 mt-2"
-    >
-      <div className="flex items-center gap-2">
-        <RadioGroupItem value="him" id={`${key}-him`} />
-        <Label htmlFor={`${key}-him`} className="text-sm cursor-pointer">له</Label>
+  const result = (label: string, signedValue: number) => {
+    const isHim = signedValue >= 0;
+    const abs = Math.abs(signedValue);
+    return (
+      <div className="rounded-lg bg-primary/5 border-2 border-primary/30 p-3">
+        <div className="text-xs text-muted-foreground">{label}</div>
+        <div className="text-2xl font-bold text-foreground">
+          {abs.toLocaleString('en-US')}
+        </div>
+        <div className={`text-sm font-bold mt-1 ${isHim ? 'text-green-600' : 'text-red-600'}`}>
+          {isHim ? 'له' : 'لينا'}
+        </div>
       </div>
-      <div className="flex items-center gap-2">
-        <RadioGroupItem value="us" id={`${key}-us`} />
-        <Label htmlFor={`${key}-us`} className="text-sm cursor-pointer">لينا</Label>
-      </div>
-    </RadioGroup>
-  );
-
-  const result = (label: string, value: number, dir: 'him' | 'us') => (
-    <div className="rounded-lg bg-primary/5 border-2 border-primary/30 p-3">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="text-2xl font-bold text-foreground">
-        {value.toLocaleString('en-US')}
-      </div>
-      <div className="text-sm font-medium text-primary mt-1">
-        {dir === 'him' ? 'له' : 'لينا'}
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-4" dir="rtl">
@@ -204,15 +185,7 @@ export default function SimpleDiaryView() {
             {numberInput('قيمة المرتجع', 'return_value')}
             {numberInput('رفض شحن', 'reject_shipping')}
           </div>
-          <div className="flex items-start gap-4 flex-wrap">
-            <div className="flex-1 min-w-[200px]">
-              {result('مستحق للعميل', customerDueAbs, form.customer_due_direction)}
-            </div>
-            <div>
-              <Label className="text-sm font-medium">اختر الاتجاه:</Label>
-              {directionRadio('customer_due_direction')}
-            </div>
-          </div>
+          <div>{result('مستحق للعميل', customerDue)}</div>
         </CardContent>
       </Card>
 
@@ -220,19 +193,12 @@ export default function SimpleDiaryView() {
       <Card>
         <CardContent className="p-4 space-y-4">
           <h2 className="font-bold text-foreground">اليومية الجديدة</h2>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {numberInput('قيمتها', 'new_diary_value')}
             {numberInput('الواصل', 'arrived')}
+            {numberInput('عدد الأوردرات', 'new_diary_orders_count')}
           </div>
-          <div className="flex items-start gap-4 flex-wrap">
-            <div className="flex-1 min-w-[200px]">
-              {result('صافي اليومية', netDiaryAbs, form.net_diary_direction)}
-            </div>
-            <div>
-              <Label className="text-sm font-medium">اختر الاتجاه:</Label>
-              {directionRadio('net_diary_direction')}
-            </div>
-          </div>
+          <div>{result('صافي اليومية', netDiary)}</div>
         </CardContent>
       </Card>
 
@@ -240,16 +206,11 @@ export default function SimpleDiaryView() {
       <Card>
         <CardContent className="p-4 space-y-4">
           <h2 className="font-bold text-foreground">النزول</h2>
-          <div>{numberInput('قيمة النزول', 'descent_value')}</div>
-          <div className="flex items-start gap-4 flex-wrap">
-            <div className="flex-1 min-w-[200px]">
-              {result('الصافي بالنزول', netWithDescentAbs, form.net_with_descent_direction)}
-            </div>
-            <div>
-              <Label className="text-sm font-medium">اختر الاتجاه:</Label>
-              {directionRadio('net_with_descent_direction')}
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {numberInput('قيمة النزول', 'descent_value')}
+            {numberInput('عدد الأوردرات', 'descent_orders_count')}
           </div>
+          <div>{result('الصافي بالنزول', netWithDescent)}</div>
         </CardContent>
       </Card>
 

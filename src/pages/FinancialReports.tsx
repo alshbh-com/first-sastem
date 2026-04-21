@@ -28,11 +28,13 @@ export default function FinancialReports() {
   const deliveredStatusIds = statuses.filter(s => s.name === 'تم التسليم' || s.name === 'تسليم جزئي').map(s => s.id);
   const rejectPaidShipId = statuses.find(s => s.name === 'رفض ودفع شحن')?.id;
   const halfShipId = statuses.find(s => s.name === 'استلم ودفع نص الشحن')?.id;
+  const exchangeId = statuses.find(s => s.name === 'استبدال')?.id;
+  const shippingPaidIds = [rejectPaidShipId, halfShipId, exchangeId].filter(Boolean);
 
-  // Shipping revenue = deliveries shipping + reject paid shipping + half ship
+  // Shipping revenue = deliveries shipping + reject paid shipping + half ship + exchange
   const totalShipping = orders.reduce((s, o) => {
     if (deliveredStatusIds.includes(o.status_id)) return s + Number(o.delivery_price);
-    if (o.status_id === rejectPaidShipId || o.status_id === halfShipId) return s + Number(o.shipping_paid || 0);
+    if (shippingPaidIds.includes(o.status_id)) return s + Number(o.shipping_paid || 0);
     return s;
   }, 0);
   const totalOrders = orders.length;
@@ -45,7 +47,7 @@ export default function FinancialReports() {
     const day = new Date(o.created_at).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' });
     const existing = dailyMap.get(day) || { date: day, shipping: 0, count: 0 };
     if (deliveredStatusIds.includes(o.status_id)) existing.shipping += Number(o.delivery_price);
-    else if (o.status_id === rejectPaidShipId || o.status_id === halfShipId) existing.shipping += Number(o.shipping_paid || 0);
+    else if (shippingPaidIds.includes(o.status_id)) existing.shipping += Number(o.shipping_paid || 0);
     existing.count++;
     dailyMap.set(day, existing);
   });

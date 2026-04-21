@@ -31,10 +31,12 @@ export default function ProfitReport() {
   const returnedStatusIds = statuses.filter(s => ['مرتجع', 'رفض ولم يدفع شحن', 'تهرب', 'ملغي', 'لم يرد'].includes(s.name)).map(s => s.id);
   const rejectPaidShipId = statuses.find(s => s.name === 'رفض ودفع شحن')?.id;
   const halfShipId = statuses.find(s => s.name === 'استلم ودفع نص الشحن')?.id;
+  const exchangeId = statuses.find(s => s.name === 'استبدال')?.id;
+  const shippingPaidIds = [rejectPaidShipId, halfShipId, exchangeId].filter(Boolean);
 
   const deliveredOrders = orders.filter(o => deliveredStatusIds.includes(o.status_id));
   const rejectedOrders = orders.filter(o => returnedStatusIds.includes(o.status_id));
-  const rejectPaidOrders = orders.filter(o => o.status_id === rejectPaidShipId || o.status_id === halfShipId);
+  const rejectPaidOrders = orders.filter(o => shippingPaidIds.includes(o.status_id));
 
   const totalDelivered = deliveredOrders.length;
   const totalRejected = rejectedOrders.length;

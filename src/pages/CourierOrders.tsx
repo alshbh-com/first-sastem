@@ -144,10 +144,18 @@ export default function CourierOrders() {
   const postponedStatus = statuses.find(s => s.name === 'مؤجل');
   const partialDeliveryStatus = statuses.find(s => s.name === 'تسليم جزئي');
   const receivedHalfShipStatus = statuses.find(s => s.name === 'استلم ودفع نص الشحن');
+  const exchangeStatus = statuses.find(s => s.name === 'استبدال');
 
   const updateStatus = async (orderId: string, statusId: string) => {
-    if (statusId === rejectWithShipStatus?.id || statusId === receivedHalfShipStatus?.id) {
-      const type = statusId === receivedHalfShipStatus?.id ? 'half_ship' : 'reject';
+    if (
+      statusId === rejectWithShipStatus?.id ||
+      statusId === receivedHalfShipStatus?.id ||
+      statusId === exchangeStatus?.id
+    ) {
+      const type =
+        statusId === receivedHalfShipStatus?.id ? 'half_ship'
+        : statusId === exchangeStatus?.id ? 'exchange'
+        : 'reject';
       setShippingDialog({ orderId, statusId, type });
       setShippingAmount('');
       return;
@@ -304,7 +312,7 @@ export default function CourierOrders() {
                 .filter(o => o.order_statuses?.name === 'تسليم جزئي')
                 .reduce((sum, o) => sum + Number(o.partial_amount || 0), 0);
               const rejectShipTotal = orders
-                .filter(o => ['رفض ودفع شحن', 'استلم ودفع نص الشحن'].includes(o.order_statuses?.name))
+                .filter(o => ['رفض ودفع شحن', 'استلم ودفع نص الشحن', 'استبدال'].includes(o.order_statuses?.name))
                 .reduce((sum, o) => sum + Number(o.shipping_paid || 0), 0);
               const totalCollection = deliveredTotal + partialTotal + rejectShipTotal;
               return (
@@ -377,7 +385,9 @@ export default function CourierOrders() {
         <DialogContent className="bg-card border-border">
           <DialogHeader>
             <DialogTitle>
-              {shippingDialog?.type === 'half_ship' ? 'استلم ودفع نص الشحن' : 'رفض ودفع شحن'}
+              {shippingDialog?.type === 'half_ship' ? 'استلم ودفع نص الشحن'
+                : shippingDialog?.type === 'exchange' ? 'استبدال - أدخل مبلغ التحصيل'
+                : 'رفض ودفع شحن'}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
@@ -385,7 +395,7 @@ export default function CourierOrders() {
               type="number"
               value={shippingAmount}
               onChange={e => setShippingAmount(e.target.value)}
-              placeholder="اكتب مبلغ الشحن المحصل"
+              placeholder={shippingDialog?.type === 'exchange' ? 'اكتب مبلغ التحصيل' : 'اكتب مبلغ الشحن المحصل'}
               className="bg-secondary border-border"
             />
             <Button onClick={confirmShippingPaid} className="w-full">تأكيد</Button>

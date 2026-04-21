@@ -82,11 +82,16 @@ export default function CourierCollections() {
   const rejectWithShipStatus = statuses.find(s => s.name === 'رفض ودفع شحن');
   const halfShipStatus = statuses.find(s => s.name === 'استلم ودفع نص الشحن');
   const partialDeliveryStatus = statuses.find(s => s.name === 'تسليم جزئي');
+  const exchangeStatus = statuses.find(s => s.name === 'استبدال');
 
   const getCollectedAmount = (order: any) => {
     if (order.status_id === deliveredStatus?.id) return Number(order.price) + Number(order.delivery_price);
     if (order.status_id === partialDeliveryStatus?.id) return Number(order.partial_amount || 0);
-    if (order.status_id === rejectWithShipStatus?.id || order.status_id === halfShipStatus?.id) return Number(order.shipping_paid || 0);
+    if (
+      order.status_id === rejectWithShipStatus?.id ||
+      order.status_id === halfShipStatus?.id ||
+      order.status_id === exchangeStatus?.id
+    ) return Number(order.shipping_paid || 0);
     return 0;
   };
 

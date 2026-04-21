@@ -27,14 +27,16 @@ export default function OfficeStats() {
   const deliveredStatusIds = statuses.filter(s => s.name === 'تم التسليم' || s.name === 'تسليم جزئي').map(s => s.id);
   const rejectPaidShipId = statuses.find(s => s.name === 'رفض ودفع شحن')?.id;
   const halfShipId = statuses.find(s => s.name === 'استلم ودفع نص الشحن')?.id;
+  const exchangeId = statuses.find(s => s.name === 'استبدال')?.id;
+  const shippingPaidIds = [rejectPaidShipId, halfShipId, exchangeId].filter(Boolean);
 
   const officeData = offices.map(o => {
     const officeOrders = orders.filter(ord => ord.office_id === o.id);
     const delivered = officeOrders.filter(ord => deliveredStatusIds.includes(ord.status_id));
-    // Revenue = shipping from deliveries + shipping_paid from reject+paid
+    // Revenue = shipping from deliveries + shipping_paid from reject+paid+exchange
     const shippingRevenue = officeOrders.reduce((s, ord) => {
       if (deliveredStatusIds.includes(ord.status_id)) return s + Number(ord.delivery_price);
-      if (ord.status_id === rejectPaidShipId || ord.status_id === halfShipId) return s + Number(ord.shipping_paid || 0);
+      if (shippingPaidIds.includes(ord.status_id)) return s + Number(ord.shipping_paid || 0);
       return s;
     }, 0);
 

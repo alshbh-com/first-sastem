@@ -385,7 +385,9 @@ export default function CourierOrders() {
         <DialogContent className="bg-card border-border">
           <DialogHeader>
             <DialogTitle>
-              {shippingDialog?.type === 'half_ship' ? 'استلم ودفع نص الشحن' : 'رفض ودفع شحن'}
+              {shippingDialog?.type === 'half_ship' ? 'استلم ودفع نص الشحن'
+                : shippingDialog?.type === 'exchange' ? 'استبدال - أدخل مبلغ التحصيل'
+                : 'رفض ودفع شحن'}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
@@ -393,7 +395,7 @@ export default function CourierOrders() {
               type="number"
               value={shippingAmount}
               onChange={e => setShippingAmount(e.target.value)}
-              placeholder="اكتب مبلغ الشحن المحصل"
+              placeholder={shippingDialog?.type === 'exchange' ? 'اكتب مبلغ التحصيل' : 'اكتب مبلغ الشحن المحصل'}
               className="bg-secondary border-border"
             />
             <Button onClick={confirmShippingPaid} className="w-full">تأكيد</Button>

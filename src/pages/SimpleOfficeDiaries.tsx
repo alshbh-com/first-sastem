@@ -1,8 +1,14 @@
+import { useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '@/components/ui/dialog';
 import { ArrowRight, Plus, Trash2, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -14,6 +20,8 @@ export default function SimpleOfficeDiaries() {
   const filterDate = searchParams.get('date');
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const [openNew, setOpenNew] = useState(false);
+  const [newDate, setNewDate] = useState(format(new Date(), 'yyyy-MM-dd'));
 
   const { data: office } = useQuery({
     queryKey: ['simple-office', officeId],
@@ -44,10 +52,9 @@ export default function SimpleOfficeDiaries() {
 
   const createDiary = useMutation({
     mutationFn: async () => {
-      const today = format(new Date(), 'yyyy-MM-dd');
       const { data, error } = await supabase
         .from('office_simple_diaries')
-        .insert({ office_id: officeId!, diary_date: today })
+        .insert({ office_id: officeId!, diary_date: newDate })
         .select()
         .single();
       if (error) throw error;
@@ -56,6 +63,7 @@ export default function SimpleOfficeDiaries() {
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['simple-diaries', officeId] });
+      setOpenNew(false);
       navigate(`/accounting-system/simple-offices/${officeId}/diary/${data.id}`);
     },
     onError: (e: any) => toast.error(e.message),
@@ -90,7 +98,7 @@ export default function SimpleOfficeDiaries() {
             </p>
           </div>
         </div>
-        <Button onClick={() => createDiary.mutate()} disabled={createDiary.isPending}>
+        <Button onClick={() => { setNewDate(format(new Date(), 'yyyy-MM-dd')); setOpenNew(true); }}>
           <Plus className="h-4 w-4 ml-1" />
           فتح يومية جديدة
         </Button>
@@ -128,6 +136,24 @@ export default function SimpleOfficeDiaries() {
           ))}
         </div>
       )}
+
+      <Dialog open={openNew} onOpenChange={setOpenNew}>
+        <DialogContent dir="rtl">
+          <DialogHeader>
+            <DialogTitle>فتح يومية جديدة</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Label>تاريخ اليومية</Label>
+            <Input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setOpenNew(false)}>إلغاء</Button>
+            <Button onClick={() => createDiary.mutate()} disabled={createDiary.isPending}>
+              فتح وحفظ
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

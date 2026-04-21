@@ -144,10 +144,18 @@ export default function CourierOrders() {
   const postponedStatus = statuses.find(s => s.name === 'مؤجل');
   const partialDeliveryStatus = statuses.find(s => s.name === 'تسليم جزئي');
   const receivedHalfShipStatus = statuses.find(s => s.name === 'استلم ودفع نص الشحن');
+  const exchangeStatus = statuses.find(s => s.name === 'استبدال');
 
   const updateStatus = async (orderId: string, statusId: string) => {
-    if (statusId === rejectWithShipStatus?.id || statusId === receivedHalfShipStatus?.id) {
-      const type = statusId === receivedHalfShipStatus?.id ? 'half_ship' : 'reject';
+    if (
+      statusId === rejectWithShipStatus?.id ||
+      statusId === receivedHalfShipStatus?.id ||
+      statusId === exchangeStatus?.id
+    ) {
+      const type =
+        statusId === receivedHalfShipStatus?.id ? 'half_ship'
+        : statusId === exchangeStatus?.id ? 'exchange'
+        : 'reject';
       setShippingDialog({ orderId, statusId, type });
       setShippingAmount('');
       return;

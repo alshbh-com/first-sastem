@@ -4,7 +4,17 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUp, ArrowDown, Lock } from 'lucide-react';
+import { ArrowUp, ArrowDown, Lock, Palette } from 'lucide-react';
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from '@/components/ui/popover';
+import { toast } from 'sonner';
+
+const PRESET_COLORS = [
+  '#707e99', '#3b82f6', '#22c55e', '#e11414', '#3c9f3e', '#df3416',
+  '#496950', '#d91717', '#9333ea', '#b51c1c', '#a61111', '#8B5CF6',
+  '#f59e0b', '#06b6d4', '#ec4899', '#14b8a6', '#f97316', '#6366f1',
+];
 
 export default function StatusManagement() {
   const [statuses, setStatuses] = useState<any[]>([]);
@@ -45,6 +55,13 @@ export default function StatusManagement() {
     loadData();
   };
 
+  const updateColor = async (id: string, color: string) => {
+    const { error } = await supabase.from('order_statuses').update({ color }).eq('id', id);
+    if (error) { toast.error(error.message); return; }
+    toast.success('تم تغيير اللون');
+    loadData();
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
@@ -62,7 +79,6 @@ export default function StatusManagement() {
                   <TableHead className="text-center">اللون</TableHead>
                   <TableHead className="text-center">عدد الأوردرات</TableHead>
                   <TableHead className="text-center">نوع</TableHead>
-                  <TableHead className="text-center">إجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -78,7 +94,40 @@ export default function StatusManagement() {
                       <Badge style={{ backgroundColor: (s.color || '#6b7280') + '30', color: s.color || '#6b7280' }}>{s.name}</Badge>
                     </TableCell>
                     <TableCell className="text-center">
-                      <div className="w-6 h-6 rounded-full mx-auto" style={{ backgroundColor: s.color || '#6b7280' }} />
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button
+                            className="w-7 h-7 rounded-full mx-auto border-2 border-border hover:scale-110 transition-transform"
+                            style={{ backgroundColor: s.color || '#6b7280' }}
+                            title="اضغط لتغيير اللون"
+                          />
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64 p-3" dir="rtl">
+                          <div className="space-y-2">
+                            <div className="text-sm font-medium flex items-center gap-1">
+                              <Palette className="h-3 w-3" /> اختر لون
+                            </div>
+                            <div className="grid grid-cols-6 gap-2">
+                              {PRESET_COLORS.map(c => (
+                                <button
+                                  key={c}
+                                  className="w-8 h-8 rounded-full border-2 border-border hover:scale-110 transition-transform"
+                                  style={{ backgroundColor: c }}
+                                  onClick={() => updateColor(s.id, c)}
+                                />
+                              ))}
+                            </div>
+                            <div className="pt-2 border-t border-border">
+                              <input
+                                type="color"
+                                defaultValue={s.color || '#6b7280'}
+                                onChange={(e) => updateColor(s.id, e.target.value)}
+                                className="w-full h-8 rounded cursor-pointer"
+                              />
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     </TableCell>
                     <TableCell className="text-center font-bold">{orderCounts[s.id] || 0}</TableCell>
                     <TableCell className="text-center">
@@ -87,11 +136,6 @@ export default function StatusManagement() {
                       ) : (
                         <Badge variant="secondary" className="text-xs">مخصصة</Badge>
                       )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1 justify-center">
-                        <Badge variant="outline" className="text-xs gap-1"><Lock className="h-3 w-3" />محمية</Badge>
-                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

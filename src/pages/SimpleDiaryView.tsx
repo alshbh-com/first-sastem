@@ -21,9 +21,12 @@ type Diary = {
   reject_shipping: number;
   new_diary_value: number;
   new_diary_orders_count: number;
+  new_diary_pieces_count: number;
   arrived: number;
   descent_value: number;
+  descent_discount: number;
   descent_orders_count: number;
+  descent_pieces_count: number;
   notes: string;
 };
 

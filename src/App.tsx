@@ -91,12 +91,13 @@ const App = () => (
             <Route path="/accounting-system" element={
               <ProtectedRoute requiredRole="owner_or_admin"><AccountingLayout /></ProtectedRoute>
             }>
-              <Route index element={<DiaryOffices />} />
+              <Route index element={<SimpleOffices />} />
+              <Route path="diaries" element={<DiaryOffices />} />
               <Route path="offices/:officeId" element={<OfficeDiaries />} />
               <Route path="offices/:officeId/diary/:diaryId" element={<DiaryView />} />
               <Route path="dashboard" element={<AccountingDashboard />} />
               <Route path="office-settlement" element={<OfficeSettlement />} />
-              <Route path="simple-offices" element={<SimpleOffices />} />
+              <Route path="simple-offices" element={<Navigate to="/accounting-system" replace />} />
               <Route path="simple-offices/:officeId" element={<SimpleOfficeDiaries />} />
               <Route path="simple-offices/:officeId/diary/:diaryId" element={<SimpleDiaryView />} />
               <Route path="simple-trash" element={<SimpleDiariesTrash />} />

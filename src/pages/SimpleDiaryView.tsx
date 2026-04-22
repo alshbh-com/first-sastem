@@ -21,9 +21,12 @@ type Diary = {
   reject_shipping: number;
   new_diary_value: number;
   new_diary_orders_count: number;
+  new_diary_pieces_count: number;
   arrived: number;
   descent_value: number;
+  descent_discount: number;
   descent_orders_count: number;
+  descent_pieces_count: number;
   notes: string;
 };
 
@@ -75,9 +78,12 @@ export default function SimpleDiaryView() {
           reject_shipping: form.reject_shipping,
           new_diary_value: form.new_diary_value,
           new_diary_orders_count: form.new_diary_orders_count,
+          new_diary_pieces_count: form.new_diary_pieces_count,
           arrived: form.arrived,
           descent_value: form.descent_value,
+          descent_discount: form.descent_discount,
           descent_orders_count: form.descent_orders_count,
+          descent_pieces_count: form.descent_pieces_count,
           notes: form.notes,
         } as any)
         .eq('id', diaryId!);
@@ -95,7 +101,7 @@ export default function SimpleDiaryView() {
   // Calculations - signed: positive = له, negative = لينا
   const customerDue = form.previous_him - (form.previous_us + form.return_value + form.reject_shipping);
   const netDiary = (customerDue + form.new_diary_value) - form.arrived;
-  const netWithDescent = netDiary + form.descent_value;
+  const netWithDescent = netDiary + (form.descent_value + form.descent_discount);
 
   const set = (k: keyof Diary, v: any) => setForm((p) => (p ? { ...p, [k]: v } : p));
 
@@ -185,7 +191,7 @@ export default function SimpleDiaryView() {
             {numberInput('قيمة المرتجع', 'return_value')}
             {numberInput('رفض شحن', 'reject_shipping')}
           </div>
-          <div>{result('مستحق للعميل', customerDue)}</div>
+          <div>{result('المستحق', customerDue)}</div>
         </CardContent>
       </Card>
 
@@ -193,10 +199,13 @@ export default function SimpleDiaryView() {
       <Card>
         <CardContent className="p-4 space-y-4">
           <h2 className="font-bold text-foreground">اليومية الجديدة</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {numberInput('قيمتها', 'new_diary_value')}
             {numberInput('الواصل', 'arrived')}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             {numberInput('عدد الأوردرات', 'new_diary_orders_count')}
+            {numberInput('عدد القطع', 'new_diary_pieces_count')}
           </div>
           <div>{result('صافي اليومية', netDiary)}</div>
         </CardContent>
@@ -206,9 +215,13 @@ export default function SimpleDiaryView() {
       <Card>
         <CardContent className="p-4 space-y-4">
           <h2 className="font-bold text-foreground">النزول</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             {numberInput('قيمة النزول', 'descent_value')}
+            {numberInput('خصم', 'descent_discount')}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             {numberInput('عدد الأوردرات', 'descent_orders_count')}
+            {numberInput('عدد القطع', 'descent_pieces_count')}
           </div>
           <div>{result('الصافي بالنزول', netWithDescent)}</div>
         </CardContent>

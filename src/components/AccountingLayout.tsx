@@ -13,8 +13,8 @@ import { NavLink } from '@/components/NavLink';
 import AccountingPasswordGate from '@/components/AccountingPasswordGate';
 
 const navItems = [
-  { title: 'المكاتب - اليوميات', url: '/accounting-system', icon: Building2, end: true },
-  { title: 'مكاتب (يوميات بسيطة)', url: '/accounting-system/simple-offices', icon: Briefcase },
+  { title: 'مكاتب (يوميات بسيطة)', url: '/accounting-system', icon: Briefcase, end: true },
+  { title: 'المكاتب - اليوميات', url: '/accounting-system/diaries', icon: Building2 },
   { title: 'الحسابات', url: '/accounting-system/dashboard', icon: Calculator },
   { title: 'تقفيلة المكاتب', url: '/accounting-system/office-settlement', icon: ClipboardList },
   { title: 'سلة محذوفات (بسيطة)', url: '/accounting-system/simple-trash', icon: Trash2 },

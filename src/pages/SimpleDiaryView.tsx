@@ -78,9 +78,12 @@ export default function SimpleDiaryView() {
           reject_shipping: form.reject_shipping,
           new_diary_value: form.new_diary_value,
           new_diary_orders_count: form.new_diary_orders_count,
+          new_diary_pieces_count: form.new_diary_pieces_count,
           arrived: form.arrived,
           descent_value: form.descent_value,
+          descent_discount: form.descent_discount,
           descent_orders_count: form.descent_orders_count,
+          descent_pieces_count: form.descent_pieces_count,
           notes: form.notes,
         } as any)
         .eq('id', diaryId!);
@@ -98,7 +101,7 @@ export default function SimpleDiaryView() {
   // Calculations - signed: positive = له, negative = لينا
   const customerDue = form.previous_him - (form.previous_us + form.return_value + form.reject_shipping);
   const netDiary = (customerDue + form.new_diary_value) - form.arrived;
-  const netWithDescent = netDiary + form.descent_value;
+  const netWithDescent = netDiary + (form.descent_value + form.descent_discount);
 
   const set = (k: keyof Diary, v: any) => setForm((p) => (p ? { ...p, [k]: v } : p));
 

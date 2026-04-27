@@ -25,7 +25,6 @@ export default function PendingCollections() {
   const load = async () => {
     setLoading(true);
 
-    // Get courier role users
     const { data: roles } = await supabase
       .from('user_roles')
       .select('user_id')
@@ -43,7 +42,7 @@ export default function PendingCollections() {
       .select('id, full_name')
       .in('id', courierIds);
 
-    // Active orders per courier (not closed) — need status to compute collected amount
+    // Active orders per courier
     const { data: orders } = await supabase
       .from('orders')
       .select('courier_id, price, delivery_price, partial_amount, shipping_paid, status_id, courier_name_snapshot')
@@ -51,7 +50,6 @@ export default function PendingCollections() {
       .eq('is_pending_approval', false)
       .not('courier_id', 'is', null);
 
-    // Status definitions to know which orders count as collected
     const { data: statuses } = await supabase.from('order_statuses').select('id, name');
     const statusByName: Record<string, string> = {};
     (statuses || []).forEach((s: any) => { statusByName[s.name] = s.id; });
@@ -70,52 +68,62 @@ export default function PendingCollections() {
       return 0;
     };
 
-    // Amounts the courier already handed over to the office
-    const { data: collections } = await supabase
-      .from('courier_collections')
-      .select('courier_id, amount');
+    // Bonuses per courier (regular = "مستحق للمندوب", office_commission = "مستحق للمكتب")
+    const { data: bonuses } = await supabase
+      .from('courier_bonuses')
+      .select('courier_id, amount, reason');
 
-    const handedOverByCourier: Record<string, number> = {};
-    (collections || []).forEach((c: any) => {
-      handedOverByCourier[c.courier_id] = (handedOverByCourier[c.courier_id] || 0) + Number(c.amount || 0);
+    const officeCommissionByCourier: Record<string, number> = {};
+    const regularBonusByCourier: Record<string, number> = {};
+    (bonuses || []).forEach((b: any) => {
+      const amt = Number(b.amount || 0);
+      if (typeof b.reason === 'string' && b.reason.startsWith('__office_commission__')) {
+        officeCommissionByCourier[b.courier_id] = (officeCommissionByCourier[b.courier_id] || 0) + amt;
+      } else {
+        regularBonusByCourier[b.courier_id] = (regularBonusByCourier[b.courier_id] || 0) + amt;
+      }
     });
 
     const profileMap: Record<string, string> = {};
     (profiles || []).forEach((p) => { profileMap[p.id] = p.full_name; });
 
-    const agg: Record<string, { orders_count: number; total_due: number; name: string }> = {};
+    const agg: Record<string, { orders_count: number; total_collection: number; name: string }> = {};
     (orders || []).forEach((o: any) => {
       if (!o.courier_id) return;
       if (!agg[o.courier_id]) {
         agg[o.courier_id] = {
           orders_count: 0,
-          total_due: 0,
+          total_collection: 0,
           name: profileMap[o.courier_id] || o.courier_name_snapshot || 'مندوب محذوف',
         };
       }
       agg[o.courier_id].orders_count += 1;
-      agg[o.courier_id].total_due += getCollectedAmount(o);
+      agg[o.courier_id].total_collection += getCollectedAmount(o);
     });
 
-    // Also include couriers who have handed over money but no active orders
-    Object.keys(handedOverByCourier).forEach((cid) => {
+    // Include couriers with bonuses but no active orders
+    [...Object.keys(officeCommissionByCourier), ...Object.keys(regularBonusByCourier)].forEach((cid) => {
       if (!agg[cid] && profileMap[cid]) {
-        agg[cid] = { orders_count: 0, total_due: 0, name: profileMap[cid] };
+        agg[cid] = { orders_count: 0, total_collection: 0, name: profileMap[cid] };
       }
     });
 
     const result: Row[] = Object.entries(agg)
       .map(([courier_id, v]) => {
-        const handedOver = handedOverByCourier[courier_id] || 0;
-        const pending = v.total_due - handedOver;
+        // نفس معادلة "صافي المستحق" في تحصيلات المناديب:
+        // صافي المستحق = إجمالي التحصيل + مستحق المكتب - مستحق المندوب (العمولات)
+        // ملاحظة: حاسبة العمولة (commissionTotal) لا تُحفظ في DB، فلا تُحتسب هنا.
+        const totalCollection = v.total_collection;
+        const officeCommission = officeCommissionByCourier[courier_id] || 0;
+        const regularBonus = regularBonusByCourier[courier_id] || 0;
+        const netDue = totalCollection + officeCommission - regularBonus;
         return {
           courier_id,
           courier_name: v.name,
           orders_count: v.orders_count,
-          pending_amount: pending,
+          pending_amount: netDue,
         };
       })
-      // فقط المناديب اللي عليهم اوردرات أو عليهم تحصيل
       .filter((r) => r.orders_count > 0 || Math.abs(r.pending_amount) > 0.01)
       .sort((a, b) => b.pending_amount - a.pending_amount);
 
@@ -133,7 +141,7 @@ export default function PendingCollections() {
         </Badge>
       </div>
       <p className="text-sm text-muted-foreground">
-        المناديب اللي معاهم أوردرات أو عليهم تحصيل
+        صافي المستحق على كل مندوب (نفس معادلة تحصيلات المناديب)
       </p>
 
       <Card className="bg-card border-border">
@@ -144,7 +152,7 @@ export default function PendingCollections() {
                 <TableRow className="border-border">
                   <TableHead className="text-right">المندوب</TableHead>
                   <TableHead className="text-right">عدد الأوردرات</TableHead>
-                  <TableHead className="text-right">المبلغ المعلق</TableHead>
+                  <TableHead className="text-right">صافي المستحق</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

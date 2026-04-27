@@ -86,6 +86,78 @@ export type Database = {
         }
         Relationships: []
       }
+      branch_simple_diaries: {
+        Row: {
+          arrived: number
+          branch_user_id: string
+          created_at: string
+          deleted_at: string | null
+          descent_discount: number
+          descent_orders_count: number
+          descent_pieces_count: number
+          descent_value: number
+          diary_date: string
+          id: string
+          new_diary_orders_count: number
+          new_diary_pieces_count: number
+          new_diary_value: number
+          notes: string | null
+          previous_him: number
+          previous_us: number
+          reject_shipping: number
+          return_count: number
+          return_pieces_count: number
+          return_value: number
+          updated_at: string
+        }
+        Insert: {
+          arrived?: number
+          branch_user_id: string
+          created_at?: string
+          deleted_at?: string | null
+          descent_discount?: number
+          descent_orders_count?: number
+          descent_pieces_count?: number
+          descent_value?: number
+          diary_date?: string
+          id?: string
+          new_diary_orders_count?: number
+          new_diary_pieces_count?: number
+          new_diary_value?: number
+          notes?: string | null
+          previous_him?: number
+          previous_us?: number
+          reject_shipping?: number
+          return_count?: number
+          return_pieces_count?: number
+          return_value?: number
+          updated_at?: string
+        }
+        Update: {
+          arrived?: number
+          branch_user_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          descent_discount?: number
+          descent_orders_count?: number
+          descent_pieces_count?: number
+          descent_value?: number
+          diary_date?: string
+          id?: string
+          new_diary_orders_count?: number
+          new_diary_pieces_count?: number
+          new_diary_value?: number
+          notes?: string | null
+          previous_him?: number
+          previous_us?: number
+          reject_shipping?: number
+          return_count?: number
+          return_pieces_count?: number
+          return_value?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cash_flow_entries: {
         Row: {
           amount: number
@@ -1034,6 +1106,7 @@ export type Database = {
           previous_us: number
           reject_shipping: number
           return_count: number
+          return_pieces_count: number
           return_value: number
           updated_at: string
         }
@@ -1060,6 +1133,7 @@ export type Database = {
           previous_us?: number
           reject_shipping?: number
           return_count?: number
+          return_pieces_count?: number
           return_value?: number
           updated_at?: string
         }
@@ -1086,6 +1160,7 @@ export type Database = {
           previous_us?: number
           reject_shipping?: number
           return_count?: number
+          return_pieces_count?: number
           return_value?: number
           updated_at?: string
         }
@@ -1209,6 +1284,7 @@ export type Database = {
           confirmation_status: string | null
           confirmation_token: string | null
           courier_id: string | null
+          courier_name_snapshot: string | null
           created_at: string
           created_by: string | null
           customer_code: string | null
@@ -1223,6 +1299,7 @@ export type Database = {
           is_settled: boolean
           notes: string | null
           office_id: string | null
+          office_name_snapshot: string | null
           partial_amount: number | null
           price: number
           priority: string
@@ -1247,6 +1324,7 @@ export type Database = {
           confirmation_status?: string | null
           confirmation_token?: string | null
           courier_id?: string | null
+          courier_name_snapshot?: string | null
           created_at?: string
           created_by?: string | null
           customer_code?: string | null
@@ -1261,6 +1339,7 @@ export type Database = {
           is_settled?: boolean
           notes?: string | null
           office_id?: string | null
+          office_name_snapshot?: string | null
           partial_amount?: number | null
           price?: number
           priority?: string
@@ -1285,6 +1364,7 @@ export type Database = {
           confirmation_status?: string | null
           confirmation_token?: string | null
           courier_id?: string | null
+          courier_name_snapshot?: string | null
           created_at?: string
           created_by?: string | null
           customer_code?: string | null
@@ -1299,6 +1379,7 @@ export type Database = {
           is_settled?: boolean
           notes?: string | null
           office_id?: string | null
+          office_name_snapshot?: string | null
           partial_amount?: number | null
           price?: number
           priority?: string

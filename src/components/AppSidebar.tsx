@@ -4,7 +4,7 @@ import {
   PackageSearch, Search, Printer, DollarSign, MapPin, Users, BarChart3,
   TrendingUp, Calendar, UserCheck, MessageSquare, Locate, FileSpreadsheet,
   CircleDot, Calculator, Contact, ClipboardList, Trash2, FileBarChart, Navigation2, Palette,
-  MessageCircle, ShieldCheck, Rocket
+  MessageCircle, ShieldCheck, Rocket, Hourglass
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,6 +21,7 @@ const mainItems = [
   { title: 'تأكيد الأوردرات', url: '/order-approval', icon: ShieldCheck },
   { title: 'الأوردرات', url: '/orders', icon: Package },
   { title: 'جميع الأوردرات', url: '/unassigned-orders', icon: PackageSearch },
+  { title: 'معلق', url: '/pending-collections', icon: Hourglass },
   { title: 'الأوردرات القديمة', url: '/closed-orders', icon: Archive },
   { title: 'بحث شامل', url: '/search', icon: Search },
 ];

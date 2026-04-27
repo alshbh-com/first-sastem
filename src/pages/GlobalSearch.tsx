@@ -111,7 +111,7 @@ export default function GlobalSearch() {
                       <TableCell>{Number(order.price)} ج.م</TableCell>
                       <TableCell>{Number(order.delivery_price)} ج.م</TableCell>
                       <TableCell className="font-bold">{Number(order.price) + Number(order.delivery_price)} ج.م</TableCell>
-                      <TableCell>{order.offices?.name || '-'}</TableCell>
+                      <TableCell>{order.offices?.name || order.office_name_snapshot || '-'}</TableCell>
                       <TableCell>
                         <Badge style={{ backgroundColor: order.order_statuses?.color || undefined }} className="text-xs">
                           {order.order_statuses?.name || '-'}

@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { Search, UserPlus, Lock, Trash2, UserMinus, Pencil, CheckCircle, MessageCircle } from 'lucide-react';
+import { Search, UserPlus, Lock, Trash2, UserMinus, Pencil, CheckCircle, MessageCircle, CircleDot } from 'lucide-react';
 import { toast } from 'sonner';
 import AddOrderDialog from '@/components/AddOrderDialog';
 import { useAuth } from '@/contexts/AuthContext';
@@ -50,6 +50,7 @@ export default function Orders() {
   const [orders, setOrders] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [filterOffice, setFilterOffice] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
   const [offices, setOffices] = useState<any[]>([]);
   const [couriers, setCouriers] = useState<any[]>([]);
   const [courierMap, setCourierMap] = useState<Record<string, string>>({});
@@ -93,7 +94,9 @@ export default function Orders() {
       o.customer_phone?.includes(search) || o.barcode?.includes(search) || o.customer_code?.includes(search) ||
       o.address?.includes(search);
     const matchOffice = filterOffice === 'all' || o.office_id === filterOffice;
-    return matchSearch && matchOffice;
+    const matchStatus = filterStatus === 'all'
+      || (filterStatus === 'none' ? !o.status_id : o.status_id === filterStatus);
+    return matchSearch && matchOffice && matchStatus;
   });
 
   const toggleSelect = (id: string) => {
@@ -183,6 +186,26 @@ export default function Orders() {
             {offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="w-32 sm:w-40 bg-secondary border-border">
+            <div className="flex items-center gap-1">
+              <CircleDot className="h-4 w-4" />
+              <SelectValue placeholder="الحالة" />
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">كل الحالات</SelectItem>
+            <SelectItem value="none">بدون حالة</SelectItem>
+            {statuses.map(s => (
+              <SelectItem key={s.id} value={s.id}>
+                <div className="flex items-center gap-2">
+                  <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: s.color || '#6b7280' }} />
+                  {s.name}
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {selected.size > 0 && (
@@ -254,9 +277,9 @@ export default function Orders() {
                       <TableCell className="text-sm">{Number(order.price)} ج.م</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{Number(order.delivery_price)} ج.م</TableCell>
                       <TableCell className="font-bold text-sm">{Number(order.price) + Number(order.delivery_price)} ج.م</TableCell>
-                      <TableCell className="hidden md:table-cell text-sm">{order.offices?.name || '-'}</TableCell>
+                      <TableCell className="hidden md:table-cell text-sm">{order.offices?.name || order.office_name_snapshot || '-'}</TableCell>
                       <TableCell className={`text-sm ${hasCourier ? 'font-medium' : 'text-muted-foreground'}`}>
-                        {hasCourier ? (courierMap[order.courier_id] || 'مندوب') : 'غير معين'}
+                        {hasCourier ? (courierMap[order.courier_id] || order.courier_name_snapshot || 'مندوب محذوف') : 'غير معين'}
                       </TableCell>
                       <TableCell>
                         <Badge style={{ backgroundColor: order.order_statuses?.color || undefined }} className="text-xs">

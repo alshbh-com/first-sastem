@@ -134,7 +134,7 @@ export default function ClosedOrders() {
                     <TableCell className="text-sm truncate max-w-[120px]">{order.address || '-'}</TableCell>
                     <TableCell className="hidden sm:table-cell text-sm">{order.product_name}</TableCell>
                     <TableCell className="font-bold text-sm">{Number(order.price) + Number(order.delivery_price)} ج.م</TableCell>
-                    <TableCell className="hidden md:table-cell text-sm">{order.offices?.name || '-'}</TableCell>
+                    <TableCell className="hidden md:table-cell text-sm">{order.offices?.name || order.office_name_snapshot || '-'}</TableCell>
                     <TableCell>
                       <Badge style={{ backgroundColor: order.order_statuses?.color || undefined }} className="text-xs">
                         {order.order_statuses?.name || '-'}

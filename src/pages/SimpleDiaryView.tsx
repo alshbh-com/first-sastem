@@ -17,6 +17,7 @@ type Diary = {
   previous_him: number;
   previous_us: number;
   return_count: number;
+  return_pieces_count: number;
   return_value: number;
   reject_shipping: number;
   new_diary_value: number;
@@ -74,6 +75,7 @@ export default function SimpleDiaryView() {
           previous_him: form.previous_him,
           previous_us: form.previous_us,
           return_count: form.return_count,
+          return_pieces_count: form.return_pieces_count,
           return_value: form.return_value,
           reject_shipping: form.reject_shipping,
           new_diary_value: form.new_diary_value,
@@ -186,10 +188,15 @@ export default function SimpleDiaryView() {
       <Card>
         <CardContent className="p-4 space-y-4">
           <h2 className="font-bold text-foreground">المرتجع والرفض</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {numberInput('عدد المرتجع', 'return_count')}
-            {numberInput('قيمة المرتجع', 'return_value')}
-            {numberInput('رفض شحن', 'reject_shipping')}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3">
+              {numberInput('عدد المرتجع', 'return_count')}
+              {numberInput('عدد القطع', 'return_pieces_count')}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {numberInput('قيمة المرتجع', 'return_value')}
+              {numberInput('رفض شحن', 'reject_shipping')}
+            </div>
           </div>
           <div>{result('المستحق', customerDue)}</div>
         </CardContent>

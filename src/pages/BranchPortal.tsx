@@ -5,12 +5,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { LogOut, Plus, Loader2, Clock, CheckCircle, XCircle, Trash2 } from 'lucide-react';
+import { LogOut, Plus, Loader2, Clock, CheckCircle, XCircle, Trash2, Package, Calendar } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import BranchSimpleDiary from '@/components/BranchSimpleDiary';
 import { toast } from 'sonner';
 
 export default function BranchPortal() {
@@ -73,69 +75,82 @@ export default function BranchPortal() {
           </div>
         </div>
 
-        <Card className="bg-card border-border">
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-border">
-                    <TableHead className="text-right">الباركود</TableHead>
-                    <TableHead className="text-right">العميل</TableHead>
-                    <TableHead className="text-right">الهاتف</TableHead>
-                    <TableHead className="text-right">المنتج</TableHead>
-                    <TableHead className="text-right">السعر</TableHead>
-                    <TableHead className="text-right">المكتب</TableHead>
-                    <TableHead className="text-right">الحالة</TableHead>
-                    <TableHead className="text-right">التاريخ</TableHead>
-                    <TableHead className="text-right">إجراء</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading ? (
-                    <TableRow><TableCell colSpan={9} className="text-center py-8"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></TableCell></TableRow>
-                  ) : orders.length === 0 ? (
-                    <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
-                  ) : orders.map(o => (
-                    <TableRow key={o.id} className="border-border relative">
-                      <TableCell className="font-mono font-bold text-sm">{o.barcode || '-'}</TableCell>
-                      <TableCell className="font-medium text-sm">{o.customer_name}</TableCell>
-                      <TableCell dir="ltr" className="text-sm">{o.customer_phone}</TableCell>
-                      <TableCell className="text-sm">{o.product_name}</TableCell>
-                      <TableCell className="text-sm font-bold">{o.price} ج.م</TableCell>
-                      <TableCell className="text-sm">{o.governorate || '-'}</TableCell>
-                      <TableCell>
-                        {o.is_pending_approval ? (
-                          <Badge variant="outline" className="text-xs border-amber-500 text-amber-500">
-                            <Clock className="h-3 w-3 ml-1" />
-                            في انتظار الموافقة
-                          </Badge>
-                        ) : (
-                          <Badge className="text-xs bg-emerald-600 text-white">
-                            <CheckCircle className="h-3 w-3 ml-1" />
-                            تمت الموافقة
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {new Date(o.created_at).toLocaleDateString('ar-EG')}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10"
-                          onClick={() => handleDelete(o.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+        <Tabs defaultValue="orders" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="orders" className="gap-1"><Package className="h-4 w-4" />تأكيد الأوردرات</TabsTrigger>
+            <TabsTrigger value="diary" className="gap-1"><Calendar className="h-4 w-4" />يوميات بسيطة</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="orders" className="mt-3">
+            <Card className="bg-card border-border">
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-border">
+                        <TableHead className="text-right">الباركود</TableHead>
+                        <TableHead className="text-right">العميل</TableHead>
+                        <TableHead className="text-right">الهاتف</TableHead>
+                        <TableHead className="text-right">المنتج</TableHead>
+                        <TableHead className="text-right">السعر</TableHead>
+                        <TableHead className="text-right">المكتب</TableHead>
+                        <TableHead className="text-right">الحالة</TableHead>
+                        <TableHead className="text-right">التاريخ</TableHead>
+                        <TableHead className="text-right">إجراء</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {loading ? (
+                        <TableRow><TableCell colSpan={9} className="text-center py-8"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></TableCell></TableRow>
+                      ) : orders.length === 0 ? (
+                        <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
+                      ) : orders.map(o => (
+                        <TableRow key={o.id} className="border-border relative">
+                          <TableCell className="font-mono font-bold text-sm">{o.barcode || '-'}</TableCell>
+                          <TableCell className="font-medium text-sm">{o.customer_name}</TableCell>
+                          <TableCell dir="ltr" className="text-sm">{o.customer_phone}</TableCell>
+                          <TableCell className="text-sm">{o.product_name}</TableCell>
+                          <TableCell className="text-sm font-bold">{o.price} ج.م</TableCell>
+                          <TableCell className="text-sm">{o.governorate || '-'}</TableCell>
+                          <TableCell>
+                            {o.is_pending_approval ? (
+                              <Badge variant="outline" className="text-xs border-amber-500 text-amber-500">
+                                <Clock className="h-3 w-3 ml-1" />
+                                في انتظار الموافقة
+                              </Badge>
+                            ) : (
+                              <Badge className="text-xs bg-emerald-600 text-white">
+                                <CheckCircle className="h-3 w-3 ml-1" />
+                                تمت الموافقة
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {new Date(o.created_at).toLocaleDateString('ar-EG')}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10"
+                              onClick={() => handleDelete(o.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="diary" className="mt-3">
+            {user?.id && <BranchSimpleDiary userId={user.id} />}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

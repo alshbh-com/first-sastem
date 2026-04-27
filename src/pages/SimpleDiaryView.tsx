@@ -17,6 +17,7 @@ type Diary = {
   previous_him: number;
   previous_us: number;
   return_count: number;
+  return_pieces_count: number;
   return_value: number;
   reject_shipping: number;
   new_diary_value: number;
@@ -74,6 +75,7 @@ export default function SimpleDiaryView() {
           previous_him: form.previous_him,
           previous_us: form.previous_us,
           return_count: form.return_count,
+          return_pieces_count: form.return_pieces_count,
           return_value: form.return_value,
           reject_shipping: form.reject_shipping,
           new_diary_value: form.new_diary_value,

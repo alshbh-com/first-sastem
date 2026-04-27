@@ -108,15 +108,43 @@ export default function PendingCollections() {
       }
     });
 
+    // Load saved commission settings per courier
+    const courierIdsAll = Object.keys(agg);
+    const settingsKeys = courierIdsAll.map((cid) => `courier_commission_${cid}`);
+    const commissionByCourier: Record<string, number> = {};
+    if (settingsKeys.length > 0) {
+      const { data: settings } = await supabase
+        .from('app_settings')
+        .select('key, value')
+        .in('key', settingsKeys);
+      const settingsMap: Record<string, { rate: number; statuses: string[] }> = {};
+      (settings || []).forEach((s: any) => {
+        try {
+          const parsed = JSON.parse(s.value);
+          const cid = s.key.replace('courier_commission_', '');
+          settingsMap[cid] = { rate: Number(parsed.rate) || 0, statuses: Array.isArray(parsed.statuses) ? parsed.statuses : [] };
+        } catch {}
+      });
+      // Compute commission per courier from active orders
+      (orders || []).forEach((o: any) => {
+        const cid = o.courier_id;
+        const cfg = settingsMap[cid];
+        if (!cfg || cfg.rate <= 0 || cfg.statuses.length === 0) return;
+        if (cfg.statuses.includes(o.status_id)) {
+          commissionByCourier[cid] = (commissionByCourier[cid] || 0) + cfg.rate;
+        }
+      });
+    }
+
     const result: Row[] = Object.entries(agg)
       .map(([courier_id, v]) => {
         // نفس معادلة "صافي المستحق" في تحصيلات المناديب:
-        // صافي المستحق = إجمالي التحصيل + مستحق المكتب - مستحق المندوب (العمولات)
-        // ملاحظة: حاسبة العمولة (commissionTotal) لا تُحفظ في DB، فلا تُحتسب هنا.
+        // صافي المستحق = إجمالي التحصيل + مستحق المكتب - عمولة المندوب (الحاسبة المحفوظة) - مستحق المندوب (المكافآت)
         const totalCollection = v.total_collection;
         const officeCommission = officeCommissionByCourier[courier_id] || 0;
         const regularBonus = regularBonusByCourier[courier_id] || 0;
-        const netDue = totalCollection + officeCommission - regularBonus;
+        const commissionTotal = commissionByCourier[courier_id] || 0;
+        const netDue = totalCollection + officeCommission - commissionTotal - regularBonus;
         return {
           courier_id,
           courier_name: v.name,

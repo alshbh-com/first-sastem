@@ -93,9 +93,7 @@ export default function Orders() {
       o.customer_phone?.includes(search) || o.barcode?.includes(search) || o.customer_code?.includes(search) ||
       o.address?.includes(search);
     const matchOffice = filterOffice === 'all' || o.office_id === filterOffice;
-    const matchStatus = filterStatus === 'all'
-      || (filterStatus === 'none' ? !o.status_id : o.status_id === filterStatus);
-    return matchSearch && matchOffice && matchStatus;
+    return matchSearch && matchOffice;
   });
 
   const toggleSelect = (id: string) => {

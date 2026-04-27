@@ -115,6 +115,15 @@ export default function OrderApproval() {
 
   return (
     <div className="space-y-4" dir="rtl">
+      <Tabs defaultValue="approval" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="approval">تأكيد الأوردرات</TabsTrigger>
+          <TabsTrigger value="diary">يومية بسيطة</TabsTrigger>
+        </TabsList>
+        <TabsContent value="diary">
+          {user && <BranchSimpleDiary userId={user.id} />}
+        </TabsContent>
+        <TabsContent value="approval" className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h1 className="text-xl sm:text-2xl font-bold">تأكيد الأوردرات</h1>

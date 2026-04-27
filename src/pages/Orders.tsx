@@ -50,6 +50,7 @@ export default function Orders() {
   const [orders, setOrders] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [filterOffice, setFilterOffice] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
   const [offices, setOffices] = useState<any[]>([]);
   const [couriers, setCouriers] = useState<any[]>([]);
   const [courierMap, setCourierMap] = useState<Record<string, string>>({});
@@ -93,7 +94,9 @@ export default function Orders() {
       o.customer_phone?.includes(search) || o.barcode?.includes(search) || o.customer_code?.includes(search) ||
       o.address?.includes(search);
     const matchOffice = filterOffice === 'all' || o.office_id === filterOffice;
-    return matchSearch && matchOffice;
+    const matchStatus = filterStatus === 'all'
+      || (filterStatus === 'none' ? !o.status_id : o.status_id === filterStatus);
+    return matchSearch && matchOffice && matchStatus;
   });
 
   const toggleSelect = (id: string) => {
@@ -181,6 +184,26 @@ export default function Orders() {
           <SelectContent>
             <SelectItem value="all">كل المكاتب</SelectItem>
             {offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="w-32 sm:w-40 bg-secondary border-border">
+            <div className="flex items-center gap-1">
+              <CircleDot className="h-4 w-4" />
+              <SelectValue placeholder="الحالة" />
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">كل الحالات</SelectItem>
+            <SelectItem value="none">بدون حالة</SelectItem>
+            {statuses.map(s => (
+              <SelectItem key={s.id} value={s.id}>
+                <div className="flex items-center gap-2">
+                  <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: s.color || '#6b7280' }} />
+                  {s.name}
+                </div>
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>

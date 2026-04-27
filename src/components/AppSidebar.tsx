@@ -39,7 +39,7 @@ const managementItems = [
 
 const accountingItems = [
   { title: 'تحصيلات المندوبين', url: '/courier-collections', icon: Wallet },
-  { title: 'حسابات المكاتب', url: '/office-accounts', icon: Building },
+  { title: 'سيستم الحسابات', url: '/accounting-system', icon: Calculator },
   { title: 'السلفات والخصومات', url: '/advances', icon: DollarSign },
 ];
 
@@ -63,7 +63,6 @@ const toolsItems = [
   { title: 'سجل الحركات', url: '/logs', icon: ScrollText },
   { title: 'سلة المحذوفات', url: '/trash', icon: Trash2 },
   { title: 'الإعدادات', url: '/settings', icon: Settings },
-  { title: 'سيستم الحسابات', url: '/accounting-system', icon: Calculator },
   { title: 'الثيمات', url: '/themes', icon: Palette },
   { title: 'السيستم الجديد', url: '/new-system', icon: Rocket },
 ];

@@ -53,6 +53,11 @@ export default function UnassignedOrders() {
       o.courier_id === filterCourier;
     
     if (!matchCourier) return false;
+
+    const matchStatus = filterStatus === 'all'
+      || (filterStatus === 'none' ? !o.status_id : o.status_id === filterStatus);
+    if (!matchStatus) return false;
+
     if (!search) return true;
     
     const term = search.toLowerCase();

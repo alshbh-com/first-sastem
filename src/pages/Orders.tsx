@@ -50,7 +50,6 @@ export default function Orders() {
   const [orders, setOrders] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [filterOffice, setFilterOffice] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
   const [offices, setOffices] = useState<any[]>([]);
   const [couriers, setCouriers] = useState<any[]>([]);
   const [courierMap, setCourierMap] = useState<Record<string, string>>({});

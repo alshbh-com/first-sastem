@@ -190,7 +190,7 @@ export default function UnassignedOrders() {
                     <TableCell className="hidden sm:table-cell text-sm">{order.product_name}</TableCell>
                     <TableCell className="text-sm text-center">{order.quantity || 1}</TableCell>
                     <TableCell className="text-sm font-bold">{Number(order.price) + Number(order.delivery_price)} ج.م</TableCell>
-                    <TableCell className="hidden md:table-cell text-sm">{order.offices?.name || '-'}</TableCell>
+                    <TableCell className="hidden md:table-cell text-sm">{order.offices?.name || order.office_name_snapshot || '-'}</TableCell>
                     <TableCell className="text-sm">{courierName(order.courier_id)}</TableCell>
                     <TableCell>
                       <Badge style={{ backgroundColor: order.order_statuses?.color || undefined }} className="text-xs">

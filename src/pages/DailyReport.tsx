@@ -50,7 +50,7 @@ export default function DailyReport() {
       const st = getStatus(o.status_id);
       return `<tr>
         <td>${i + 1}</td><td>${o.barcode || '-'}</td><td>${o.customer_name}</td>
-        <td>${o.offices?.name || '-'}</td><td>${o.address || '-'}</td><td>${st?.name || '-'}</td>
+        <td>${o.offices?.name || o.office_name_snapshot || '-'}</td><td>${o.address || '-'}</td><td>${st?.name || '-'}</td>
         <td>${Number(o.delivery_price)} ج.م</td>
       </tr>`;
     }).join('');
@@ -128,7 +128,7 @@ export default function DailyReport() {
                       <TableCell>{i + 1}</TableCell>
                       <TableCell className="font-mono text-xs">{o.barcode || '-'}</TableCell>
                       <TableCell className="text-sm">{o.customer_name}</TableCell>
-                      <TableCell className="hidden sm:table-cell text-sm">{o.offices?.name || '-'}</TableCell>
+                      <TableCell className="hidden sm:table-cell text-sm">{o.offices?.name || o.office_name_snapshot || '-'}</TableCell>
                       <TableCell className="text-sm truncate max-w-[120px]">{o.address || '-'}</TableCell>
                       <TableCell className="text-center">
                         {st ? <Badge style={{ backgroundColor: st.color + '30', color: st.color }} className="text-xs">{st.name}</Badge> : '-'}

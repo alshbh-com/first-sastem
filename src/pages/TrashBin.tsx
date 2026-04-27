@@ -166,7 +166,7 @@ export default function TrashBin() {
                         <TableCell><Checkbox checked={selectedOrders.has(o.id)} onCheckedChange={() => toggleSelectOrder(o.id)} /></TableCell>
                         <TableCell className="font-mono text-xs">{o.barcode || '-'}</TableCell>
                         <TableCell className="text-sm">{o.customer_name}</TableCell>
-                        <TableCell className="text-sm">{o.offices?.name || '-'}</TableCell>
+                        <TableCell className="text-sm">{o.offices?.name || o.office_name_snapshot || '-'}</TableCell>
                         <TableCell className="font-bold text-sm">{o.price} ج.م</TableCell>
                         <TableCell>
                           <Badge style={{ backgroundColor: o.order_statuses?.color }} className="text-xs">

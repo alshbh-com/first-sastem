@@ -88,7 +88,7 @@ export default function OrderNotes() {
                       <TableCell className="font-mono text-xs">{order?.barcode || order?.tracking_id || '-'}</TableCell>
                       <TableCell className="text-sm">{order?.customer_name || '-'}</TableCell>
                       <TableCell className="font-mono text-xs">{order?.customer_code || '-'}</TableCell>
-                      <TableCell className="text-sm">{order?.offices?.name || '-'}</TableCell>
+                      <TableCell className="text-sm">{order?.offices?.name || order?.office_name_snapshot || '-'}</TableCell>
                       <TableCell className="text-sm max-w-[300px]">
                         <div className={isExpanded ? 'whitespace-pre-wrap break-words' : ''}>
                           {isExpanded || !isLong ? n.note : n.note.slice(0, 60) + '...'}

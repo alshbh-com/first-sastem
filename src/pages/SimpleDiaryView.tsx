@@ -188,10 +188,15 @@ export default function SimpleDiaryView() {
       <Card>
         <CardContent className="p-4 space-y-4">
           <h2 className="font-bold text-foreground">المرتجع والرفض</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {numberInput('عدد المرتجع', 'return_count')}
-            {numberInput('قيمة المرتجع', 'return_value')}
-            {numberInput('رفض شحن', 'reject_shipping')}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3">
+              {numberInput('عدد المرتجع', 'return_count')}
+              {numberInput('عدد القطع', 'return_pieces_count')}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {numberInput('قيمة المرتجع', 'return_value')}
+              {numberInput('رفض شحن', 'reject_shipping')}
+            </div>
           </div>
           <div>{result('المستحق', customerDue)}</div>
         </CardContent>

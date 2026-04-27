@@ -277,9 +277,9 @@ export default function Orders() {
                       <TableCell className="text-sm">{Number(order.price)} ج.م</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{Number(order.delivery_price)} ج.م</TableCell>
                       <TableCell className="font-bold text-sm">{Number(order.price) + Number(order.delivery_price)} ج.م</TableCell>
-                      <TableCell className="hidden md:table-cell text-sm">{order.offices?.name || '-'}</TableCell>
+                      <TableCell className="hidden md:table-cell text-sm">{order.offices?.name || order.office_name_snapshot || '-'}</TableCell>
                       <TableCell className={`text-sm ${hasCourier ? 'font-medium' : 'text-muted-foreground'}`}>
-                        {hasCourier ? (courierMap[order.courier_id] || 'مندوب') : 'غير معين'}
+                        {hasCourier ? (courierMap[order.courier_id] || order.courier_name_snapshot || 'مندوب محذوف') : 'غير معين'}
                       </TableCell>
                       <TableCell>
                         <Badge style={{ backgroundColor: order.order_statuses?.color || undefined }} className="text-xs">

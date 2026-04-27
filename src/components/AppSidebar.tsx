@@ -4,7 +4,7 @@ import {
   PackageSearch, Search, Printer, DollarSign, MapPin, Users, BarChart3,
   TrendingUp, Calendar, UserCheck, MessageSquare, Locate, FileSpreadsheet,
   CircleDot, Calculator, Contact, ClipboardList, Trash2, FileBarChart, Navigation2, Palette,
-  MessageCircle, ShieldCheck, Rocket, Hourglass
+  MessageCircle, ShieldCheck, Rocket, Hourglass, UserPlus2
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';

@@ -20,6 +20,7 @@ export default function UnassignedOrders() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [assignCourier, setAssignCourier] = useState('');
   const [filterCourier, setFilterCourier] = useState('unassigned');
+  const [filterStatus, setFilterStatus] = useState('all');
   const [search, setSearch] = useState('');
 
   useEffect(() => {

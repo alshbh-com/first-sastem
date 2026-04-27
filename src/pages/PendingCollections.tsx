@@ -97,8 +97,8 @@ export default function PendingCollections() {
       agg[o.courier_id].total_due += getCollectedAmount(o);
     });
 
-    // Also include couriers who have collections but no active orders
-    Object.keys(collectedByCourier).forEach((cid) => {
+    // Also include couriers who have handed over money but no active orders
+    Object.keys(handedOverByCourier).forEach((cid) => {
       if (!agg[cid] && profileMap[cid]) {
         agg[cid] = { orders_count: 0, total_due: 0, name: profileMap[cid] };
       }
@@ -106,8 +106,8 @@ export default function PendingCollections() {
 
     const result: Row[] = Object.entries(agg)
       .map(([courier_id, v]) => {
-        const collected = collectedByCourier[courier_id] || 0;
-        const pending = v.total_due - collected;
+        const handedOver = handedOverByCourier[courier_id] || 0;
+        const pending = v.total_due - handedOver;
         return {
           courier_id,
           courier_name: v.name,

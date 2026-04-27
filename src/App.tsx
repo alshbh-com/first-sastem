@@ -56,6 +56,7 @@ import ExcelImport from "@/pages/ExcelImport";
 import BranchPortal from "@/pages/BranchPortal";
 import OrderApproval from "@/pages/OrderApproval";
 import NewSystem from "@/pages/NewSystem";
+import PendingCollections from "@/pages/PendingCollections";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -110,6 +111,7 @@ const App = () => (
               <Route path="/order-approval" element={<OrderApproval />} />
               <Route path="/orders" element={<Orders />} />
               <Route path="/unassigned-orders" element={<UnassignedOrders />} />
+              <Route path="/pending-collections" element={<PendingCollections />} />
               <Route path="/closed-orders" element={<ClosedOrders />} />
               <Route path="/search" element={<GlobalSearch />} />
               <Route path="/offices" element={<Offices />} />

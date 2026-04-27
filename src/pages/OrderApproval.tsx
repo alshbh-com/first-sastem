@@ -217,6 +217,8 @@ export default function OrderApproval() {
           </div>
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

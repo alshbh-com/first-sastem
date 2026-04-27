@@ -47,13 +47,46 @@ export default function CourierCollections() {
   }, []);
 
   useEffect(() => {
-    if (selectedCourier) loadCourierData();
-    else {
+    if (selectedCourier) {
+      loadCourierData();
+      loadCommissionSettings();
+    } else {
       setOrders([]);
       setBonuses([]);
       setSelectedOrders(new Set());
+      setCommissionPerOrder('');
+      setCommissionStatuses([]);
     }
   }, [selectedCourier]);
+
+  const loadCommissionSettings = async () => {
+    const key = `courier_commission_${selectedCourier}`;
+    const { data } = await supabase.from('app_settings').select('value').eq('key', key).maybeSingle();
+    if (data?.value) {
+      try {
+        const parsed = JSON.parse(data.value);
+        setCommissionPerOrder(parsed.rate?.toString() || '');
+        setCommissionStatuses(Array.isArray(parsed.statuses) ? parsed.statuses : []);
+      } catch {
+        setCommissionPerOrder('');
+        setCommissionStatuses([]);
+      }
+    } else {
+      setCommissionPerOrder('');
+      setCommissionStatuses([]);
+    }
+  };
+
+  // Auto-save commission settings per courier (debounced)
+  useEffect(() => {
+    if (!selectedCourier) return;
+    const t = setTimeout(async () => {
+      const key = `courier_commission_${selectedCourier}`;
+      const value = JSON.stringify({ rate: parseFloat(commissionPerOrder) || 0, statuses: commissionStatuses });
+      await supabase.from('app_settings').upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+    }, 600);
+    return () => clearTimeout(t);
+  }, [commissionPerOrder, commissionStatuses, selectedCourier]);
 
   const loadCourierData = async () => {
     const { data: orderData } = await supabase

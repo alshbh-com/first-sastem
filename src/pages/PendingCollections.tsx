@@ -43,22 +43,41 @@ export default function PendingCollections() {
       .select('id, full_name')
       .in('id', courierIds);
 
-    // Active orders per courier (not closed)
+    // Active orders per courier (not closed) — need status to compute collected amount
     const { data: orders } = await supabase
       .from('orders')
-      .select('courier_id, price, delivery_price, courier_name_snapshot')
+      .select('courier_id, price, delivery_price, partial_amount, shipping_paid, status_id, courier_name_snapshot')
       .eq('is_closed', false)
       .eq('is_pending_approval', false)
       .not('courier_id', 'is', null);
 
-    // Collections per courier
+    // Status definitions to know which orders count as collected
+    const { data: statuses } = await supabase.from('order_statuses').select('id, name');
+    const statusByName: Record<string, string> = {};
+    (statuses || []).forEach((s: any) => { statusByName[s.name] = s.id; });
+    const sDelivered = statusByName['تم التسليم'];
+    const sPartial = statusByName['تسليم جزئي'];
+    const sRejectShip = statusByName['رفض ودفع شحن'];
+    const sHalfShip = statusByName['استلم ودفع نص الشحن'];
+    const sExchange = statusByName['استبدال'];
+
+    const getCollectedAmount = (o: any): number => {
+      if (o.status_id === sDelivered) return Number(o.price || 0) + Number(o.delivery_price || 0);
+      if (o.status_id === sPartial) return Number(o.partial_amount || 0);
+      if (o.status_id === sRejectShip || o.status_id === sHalfShip || o.status_id === sExchange) {
+        return Number(o.shipping_paid || 0);
+      }
+      return 0;
+    };
+
+    // Amounts the courier already handed over to the office
     const { data: collections } = await supabase
       .from('courier_collections')
       .select('courier_id, amount');
 
-    const collectedByCourier: Record<string, number> = {};
+    const handedOverByCourier: Record<string, number> = {};
     (collections || []).forEach((c: any) => {
-      collectedByCourier[c.courier_id] = (collectedByCourier[c.courier_id] || 0) + Number(c.amount || 0);
+      handedOverByCourier[c.courier_id] = (handedOverByCourier[c.courier_id] || 0) + Number(c.amount || 0);
     });
 
     const profileMap: Record<string, string> = {};
@@ -67,7 +86,6 @@ export default function PendingCollections() {
     const agg: Record<string, { orders_count: number; total_due: number; name: string }> = {};
     (orders || []).forEach((o: any) => {
       if (!o.courier_id) return;
-      const total = Number(o.price || 0) + Number(o.delivery_price || 0);
       if (!agg[o.courier_id]) {
         agg[o.courier_id] = {
           orders_count: 0,
@@ -76,7 +94,7 @@ export default function PendingCollections() {
         };
       }
       agg[o.courier_id].orders_count += 1;
-      agg[o.courier_id].total_due += total;
+      agg[o.courier_id].total_due += getCollectedAmount(o);
     });
 
     // Also include couriers who have collections but no active orders

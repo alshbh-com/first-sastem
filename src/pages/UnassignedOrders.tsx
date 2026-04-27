@@ -146,6 +146,26 @@ export default function UnassignedOrders() {
             {couriers.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="w-32 sm:w-40 bg-secondary border-border">
+            <div className="flex items-center gap-1">
+              <CircleDot className="h-4 w-4" />
+              <SelectValue placeholder="الحالة" />
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">كل الحالات</SelectItem>
+            <SelectItem value="none">بدون حالة</SelectItem>
+            {statuses.map(s => (
+              <SelectItem key={s.id} value={s.id}>
+                <div className="flex items-center gap-2">
+                  <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: s.color || '#6b7280' }} />
+                  {s.name}
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {selected.size > 0 && (

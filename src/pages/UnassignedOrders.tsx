@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { UserPlus, UserMinus, Trash2, Lock, Search } from 'lucide-react';
+import { UserPlus, UserMinus, Trash2, Lock, Search, CircleDot } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activityLogger';
@@ -20,6 +20,7 @@ export default function UnassignedOrders() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [assignCourier, setAssignCourier] = useState('');
   const [filterCourier, setFilterCourier] = useState('unassigned');
+  const [filterStatus, setFilterStatus] = useState('all');
   const [search, setSearch] = useState('');
 
   useEffect(() => {
@@ -52,6 +53,11 @@ export default function UnassignedOrders() {
       o.courier_id === filterCourier;
     
     if (!matchCourier) return false;
+
+    const matchStatus = filterStatus === 'all'
+      || (filterStatus === 'none' ? !o.status_id : o.status_id === filterStatus);
+    if (!matchStatus) return false;
+
     if (!search) return true;
     
     const term = search.toLowerCase();
@@ -138,6 +144,26 @@ export default function UnassignedOrders() {
             <SelectItem value="all">كل الأوردرات</SelectItem>
             <SelectItem value="unassigned">غير معينة</SelectItem>
             {couriers.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="w-32 sm:w-40 bg-secondary border-border">
+            <div className="flex items-center gap-1">
+              <CircleDot className="h-4 w-4" />
+              <SelectValue placeholder="الحالة" />
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">كل الحالات</SelectItem>
+            <SelectItem value="none">بدون حالة</SelectItem>
+            {statuses.map(s => (
+              <SelectItem key={s.id} value={s.id}>
+                <div className="flex items-center gap-2">
+                  <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: s.color || '#6b7280' }} />
+                  {s.name}
+                </div>
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>

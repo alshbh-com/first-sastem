@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Loader2, Clock, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { logActivity } from '@/lib/activityLogger';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import BranchSimpleDiary from '@/components/BranchSimpleDiary';
 
 export default function OrderApproval() {
   const { user } = useAuth();
@@ -113,6 +115,15 @@ export default function OrderApproval() {
 
   return (
     <div className="space-y-4" dir="rtl">
+      <Tabs defaultValue="approval" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="approval">تأكيد الأوردرات</TabsTrigger>
+          <TabsTrigger value="diary">يومية بسيطة</TabsTrigger>
+        </TabsList>
+        <TabsContent value="diary">
+          {user && <BranchSimpleDiary userId={user.id} />}
+        </TabsContent>
+        <TabsContent value="approval" className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h1 className="text-xl sm:text-2xl font-bold">تأكيد الأوردرات</h1>
@@ -206,6 +217,8 @@ export default function OrderApproval() {
           </div>
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

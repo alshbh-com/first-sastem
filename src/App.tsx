@@ -16,6 +16,7 @@ import Offices from "@/pages/Offices";
 import DeliveryPrices from "@/pages/DeliveryPrices";
 import Products from "@/pages/Products";
 import Couriers from "@/pages/Couriers";
+import CourierApplications from "@/pages/CourierApplications";
 import CourierCollections from "@/pages/CourierCollections";
 import OfficeAccounts from "@/pages/OfficeAccounts";
 import Advances from "@/pages/Advances";

@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Loader2, Clock, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { logActivity } from '@/lib/activityLogger';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import BranchSimpleDiary from '@/components/BranchSimpleDiary';
 
 export default function OrderApproval() {
   const { user } = useAuth();

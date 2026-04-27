@@ -16,6 +16,7 @@ import Offices from "@/pages/Offices";
 import DeliveryPrices from "@/pages/DeliveryPrices";
 import Products from "@/pages/Products";
 import Couriers from "@/pages/Couriers";
+import CourierApplications from "@/pages/CourierApplications";
 import CourierCollections from "@/pages/CourierCollections";
 import OfficeAccounts from "@/pages/OfficeAccounts";
 import Advances from "@/pages/Advances";
@@ -118,6 +119,7 @@ const App = () => (
               <Route path="/delivery-prices" element={<DeliveryPrices />} />
               <Route path="/products" element={<Products />} />
               <Route path="/couriers" element={<Couriers />} />
+              <Route path="/courier-applications" element={<CourierApplications />} />
               <Route path="/users" element={<UsersPage />} />
               <Route path="/customers" element={<CustomersPage />} />
               <Route path="/courier-collections" element={<CourierCollections />} />

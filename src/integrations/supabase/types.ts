@@ -261,6 +261,51 @@ export type Database = {
           },
         ]
       }
+      courier_applications: {
+        Row: {
+          address: string
+          agreed_amount: number
+          coverage_areas: string
+          created_at: string
+          created_by: string | null
+          current_job: string
+          full_name: string
+          id: string
+          notes: string
+          phone: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string
+          agreed_amount?: number
+          coverage_areas?: string
+          created_at?: string
+          created_by?: string | null
+          current_job?: string
+          full_name: string
+          id?: string
+          notes?: string
+          phone?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          agreed_amount?: number
+          coverage_areas?: string
+          created_at?: string
+          created_by?: string | null
+          current_job?: string
+          full_name?: string
+          id?: string
+          notes?: string
+          phone?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       courier_bonuses: {
         Row: {
           amount: number

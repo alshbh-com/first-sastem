@@ -32,6 +32,7 @@ const managementItems = [
   { title: 'المنتجات', url: '/products', icon: Box },
   { title: 'العملاء', url: '/customers', icon: Contact },
   { title: 'المندوبين', url: '/couriers', icon: Truck },
+  { title: 'طلبات عمال', url: '/courier-applications', icon: UserPlus2 },
   { title: 'المستخدمين', url: '/users', icon: Users },
   { title: 'إدارة الحالات', url: '/status-management', icon: CircleDot },
 ];

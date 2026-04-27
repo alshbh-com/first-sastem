@@ -119,6 +119,7 @@ const App = () => (
               <Route path="/delivery-prices" element={<DeliveryPrices />} />
               <Route path="/products" element={<Products />} />
               <Route path="/couriers" element={<Couriers />} />
+              <Route path="/courier-applications" element={<CourierApplications />} />
               <Route path="/users" element={<UsersPage />} />
               <Route path="/customers" element={<CustomersPage />} />
               <Route path="/courier-collections" element={<CourierCollections />} />

@@ -14,6 +14,7 @@ import {
 type Diary = {
   id: string;
   branch_user_id: string;
+  title: string;
   diary_date: string;
   previous_him: number;
   previous_us: number;

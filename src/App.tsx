@@ -146,6 +146,7 @@ const App = () => (
               <Route path="/excel-import" element={<ExcelImport />} />
               <Route path="/chat" element={<InternalChat />} />
               <Route path="/new-system" element={<NewSystem />} />
+              <Route path="/branch-diaries" element={<BranchDiaries />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

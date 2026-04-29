@@ -170,6 +170,7 @@ function BranchDiaryEditor({ diary, onClose }: { diary: Diary; onClose: () => vo
     const { error } = await supabase
       .from('branch_simple_diaries' as any)
       .update({
+        title: form.title,
         diary_date: form.diary_date,
         previous_him: form.previous_him,
         previous_us: form.previous_us,

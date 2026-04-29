@@ -40,6 +40,7 @@ const managementItems = [
 const accountingItems = [
   { title: 'تحصيلات المندوبين', url: '/courier-collections', icon: Wallet },
   { title: 'سيستم الحسابات', url: '/accounting-system', icon: Calculator },
+  { title: 'يوميات الفروع', url: '/branch-diaries', icon: ClipboardList },
   { title: 'السلفات والخصومات', url: '/advances', icon: DollarSign },
 ];
 

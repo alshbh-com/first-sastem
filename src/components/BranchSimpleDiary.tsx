@@ -14,6 +14,7 @@ import {
 type Diary = {
   id: string;
   branch_user_id: string;
+  title: string;
   diary_date: string;
   previous_him: number;
   previous_us: number;
@@ -40,6 +41,7 @@ export default function BranchSimpleDiary({ userId }: Props) {
   const [diaries, setDiaries] = useState<any[]>([]);
   const [openDiary, setOpenDiary] = useState<Diary | null>(null);
   const [newDate, setNewDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [newTitle, setNewTitle] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -60,12 +62,13 @@ export default function BranchSimpleDiary({ userId }: Props) {
   const createDiary = async () => {
     const { data, error } = await supabase
       .from('branch_simple_diaries' as any)
-      .insert({ branch_user_id: userId, diary_date: newDate })
+      .insert({ branch_user_id: userId, diary_date: newDate, title: newTitle.trim() })
       .select()
       .single();
     if (error) { toast.error(error.message); return; }
     toast.success('تم إنشاء يومية جديدة');
     setCreateOpen(false);
+    setNewTitle('');
     setOpenDiary(data as any);
     load();
   };
@@ -107,6 +110,8 @@ export default function BranchSimpleDiary({ userId }: Props) {
           <DialogContent className="bg-card border-border">
             <DialogHeader><DialogTitle>إنشاء يومية جديدة</DialogTitle></DialogHeader>
             <div className="space-y-3">
+              <Label>اسم اليومية (اختياري)</Label>
+              <Input value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="مثال: يومية مكتب طنطا" />
               <Label>تاريخ اليومية</Label>
               <Input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} />
             </div>
@@ -131,7 +136,10 @@ export default function BranchSimpleDiary({ userId }: Props) {
                      onClick={() => setOpenDiary(d)}>
                   <div className="flex items-center gap-3">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">يومية {format(new Date(d.diary_date), 'dd/MM/yyyy')}</span>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{d.title || `يومية ${format(new Date(d.diary_date), 'dd/MM/yyyy')}`}</span>
+                      {d.title && <span className="text-xs text-muted-foreground">{format(new Date(d.diary_date), 'dd/MM/yyyy')}</span>}
+                    </div>
                   </div>
                   <Button
                     size="icon"
@@ -162,6 +170,7 @@ function BranchDiaryEditor({ diary, onClose }: { diary: Diary; onClose: () => vo
     const { error } = await supabase
       .from('branch_simple_diaries' as any)
       .update({
+        title: form.title,
         diary_date: form.diary_date,
         previous_him: form.previous_him,
         previous_us: form.previous_us,
@@ -228,16 +237,22 @@ function BranchDiaryEditor({ diary, onClose }: { diary: Diary; onClose: () => vo
           <Button variant="ghost" size="icon" onClick={onClose}>
             <ArrowRight className="h-5 w-5" />
           </Button>
-          <h2 className="font-bold">يومية {format(new Date(form.diary_date), 'dd/MM/yyyy')}</h2>
+          <h2 className="font-bold">{form.title || `يومية ${format(new Date(form.diary_date), 'dd/MM/yyyy')}`}</h2>
         </div>
         <Button onClick={save} disabled={saving} size="sm">
           <Save className="h-4 w-4 ml-1" />حفظ
         </Button>
       </div>
 
-      <Card><CardContent className="p-3">
-        <Label className="text-xs">تاريخ اليومية</Label>
-        <Input type="date" value={form.diary_date} onChange={(e) => set('diary_date', e.target.value)} className="w-48 mt-1" />
+      <Card><CardContent className="p-3 space-y-2">
+        <div>
+          <Label className="text-xs">اسم اليومية</Label>
+          <Input value={form.title || ''} onChange={(e) => set('title', e.target.value)} placeholder="مثال: يومية مكتب طنطا" className="mt-1" />
+        </div>
+        <div>
+          <Label className="text-xs">تاريخ اليومية</Label>
+          <Input type="date" value={form.diary_date} onChange={(e) => set('diary_date', e.target.value)} className="w-48 mt-1" />
+        </div>
       </CardContent></Card>
 
       <Card><CardContent className="p-3 space-y-3">

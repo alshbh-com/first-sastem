@@ -108,6 +108,7 @@ export type Database = {
           return_count: number
           return_pieces_count: number
           return_value: number
+          title: string
           updated_at: string
         }
         Insert: {
@@ -131,6 +132,7 @@ export type Database = {
           return_count?: number
           return_pieces_count?: number
           return_value?: number
+          title?: string
           updated_at?: string
         }
         Update: {
@@ -154,6 +156,7 @@ export type Database = {
           return_count?: number
           return_pieces_count?: number
           return_value?: number
+          title?: string
           updated_at?: string
         }
         Relationships: []

@@ -44,6 +44,7 @@ export const ALL_SECTIONS = [
   { key: 'office-report', label: 'تقرير المكاتب', url: '/office-report' },
   { key: 'settings', label: 'الإعدادات', url: '/settings' },
   { key: 'accounting-system', label: 'سيستم الحسابات', url: '/accounting-system' },
+  { key: 'branch-diaries', label: 'يوميات الفروع', url: '/branch-diaries' },
 ];
 
 export function urlToSectionKey(url: string): string {

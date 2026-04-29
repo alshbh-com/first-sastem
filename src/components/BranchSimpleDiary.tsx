@@ -41,6 +41,7 @@ export default function BranchSimpleDiary({ userId }: Props) {
   const [diaries, setDiaries] = useState<any[]>([]);
   const [openDiary, setOpenDiary] = useState<Diary | null>(null);
   const [newDate, setNewDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [newTitle, setNewTitle] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 

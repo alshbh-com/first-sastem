@@ -136,7 +136,10 @@ export default function BranchSimpleDiary({ userId }: Props) {
                      onClick={() => setOpenDiary(d)}>
                   <div className="flex items-center gap-3">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">يومية {format(new Date(d.diary_date), 'dd/MM/yyyy')}</span>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{d.title || `يومية ${format(new Date(d.diary_date), 'dd/MM/yyyy')}`}</span>
+                      {d.title && <span className="text-xs text-muted-foreground">{format(new Date(d.diary_date), 'dd/MM/yyyy')}</span>}
+                    </div>
                   </div>
                   <Button
                     size="icon"

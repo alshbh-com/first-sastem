@@ -237,16 +237,22 @@ function BranchDiaryEditor({ diary, onClose }: { diary: Diary; onClose: () => vo
           <Button variant="ghost" size="icon" onClick={onClose}>
             <ArrowRight className="h-5 w-5" />
           </Button>
-          <h2 className="font-bold">يومية {format(new Date(form.diary_date), 'dd/MM/yyyy')}</h2>
+          <h2 className="font-bold">{form.title || `يومية ${format(new Date(form.diary_date), 'dd/MM/yyyy')}`}</h2>
         </div>
         <Button onClick={save} disabled={saving} size="sm">
           <Save className="h-4 w-4 ml-1" />حفظ
         </Button>
       </div>
 
-      <Card><CardContent className="p-3">
-        <Label className="text-xs">تاريخ اليومية</Label>
-        <Input type="date" value={form.diary_date} onChange={(e) => set('diary_date', e.target.value)} className="w-48 mt-1" />
+      <Card><CardContent className="p-3 space-y-2">
+        <div>
+          <Label className="text-xs">اسم اليومية</Label>
+          <Input value={form.title || ''} onChange={(e) => set('title', e.target.value)} placeholder="مثال: يومية مكتب طنطا" className="mt-1" />
+        </div>
+        <div>
+          <Label className="text-xs">تاريخ اليومية</Label>
+          <Input type="date" value={form.diary_date} onChange={(e) => set('diary_date', e.target.value)} className="w-48 mt-1" />
+        </div>
       </CardContent></Card>
 
       <Card><CardContent className="p-3 space-y-3">

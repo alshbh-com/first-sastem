@@ -62,12 +62,13 @@ export default function BranchSimpleDiary({ userId }: Props) {
   const createDiary = async () => {
     const { data, error } = await supabase
       .from('branch_simple_diaries' as any)
-      .insert({ branch_user_id: userId, diary_date: newDate })
+      .insert({ branch_user_id: userId, diary_date: newDate, title: newTitle.trim() })
       .select()
       .single();
     if (error) { toast.error(error.message); return; }
     toast.success('تم إنشاء يومية جديدة');
     setCreateOpen(false);
+    setNewTitle('');
     setOpenDiary(data as any);
     load();
   };

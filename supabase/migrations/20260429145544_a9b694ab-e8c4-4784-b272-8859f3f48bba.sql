@@ -1,0 +1,1 @@
+ALTER TABLE public.branch_simple_diaries ADD COLUMN IF NOT EXISTS title text NOT NULL DEFAULT '';

@@ -110,6 +110,8 @@ export default function BranchSimpleDiary({ userId }: Props) {
           <DialogContent className="bg-card border-border">
             <DialogHeader><DialogTitle>إنشاء يومية جديدة</DialogTitle></DialogHeader>
             <div className="space-y-3">
+              <Label>اسم اليومية (اختياري)</Label>
+              <Input value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="مثال: يومية مكتب طنطا" />
               <Label>تاريخ اليومية</Label>
               <Input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} />
             </div>

@@ -58,6 +58,7 @@ import BranchPortal from "@/pages/BranchPortal";
 import OrderApproval from "@/pages/OrderApproval";
 import NewSystem from "@/pages/NewSystem";
 import PendingCollections from "@/pages/PendingCollections";
+import BranchDiaries from "@/pages/BranchDiaries";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();

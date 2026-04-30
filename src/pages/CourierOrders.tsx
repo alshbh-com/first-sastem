@@ -293,6 +293,7 @@ export default function CourierOrders() {
       amount,
     });
 
+    pushOrderToBottom(shippingDialog.orderId);
     toast.success(`تم تسجيل مبلغ الشحن: ${amount} ج.م`);
     setShippingDialog(null);
     setShippingAmount('');
@@ -328,6 +329,7 @@ export default function CourierOrders() {
       returned: orderPrice - received,
     });
 
+    pushOrderToBottom(partialDialog.orderId);
     toast.success(`تم تسجيل التحصيل الجزئي: ${received} ج.م`);
     setPartialDialog(null);
     load();

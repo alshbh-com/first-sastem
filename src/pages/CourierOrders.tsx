@@ -32,7 +32,12 @@ export default function CourierOrders() {
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [chatMsg, setChatMsg] = useState('');
   const [chatSending, setChatSending] = useState(false);
+  const [commissionRate, setCommissionRate] = useState(0);
+  const [commissionStatusIds, setCommissionStatusIds] = useState<string[]>([]);
+  const [bonuses, setBonuses] = useState<any[]>([]);
   const chatScrollRef = useRef<HTMLDivElement>(null);
+
+  const sortKey = user?.id ? `courier_orders_sort_${user.id}` : '';
 
   // GPS tracking - mandatory, auto-prompt
   useCourierLocation(user?.id);

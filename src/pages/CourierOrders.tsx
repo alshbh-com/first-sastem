@@ -121,6 +121,27 @@ export default function CourierOrders() {
     setChatSending(false);
   };
 
+  const applySavedSort = (list: any[]) => {
+    if (!sortKey) return list;
+    try {
+      const saved = JSON.parse(localStorage.getItem(sortKey) || '[]') as string[];
+      if (!saved.length) return list;
+      const idx: Record<string, number> = {};
+      saved.forEach((id, i) => { idx[id] = i; });
+      return [...list].sort((a, b) => {
+        const ai = idx[a.id] ?? Number.POSITIVE_INFINITY;
+        const bi = idx[b.id] ?? Number.POSITIVE_INFINITY;
+        if (ai !== bi) return ai - bi;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+    } catch { return list; }
+  };
+
+  const persistSort = (list: any[]) => {
+    if (!sortKey) return;
+    try { localStorage.setItem(sortKey, JSON.stringify(list.map(o => o.id))); } catch {}
+  };
+
   const load = async () => {
     const { data } = await supabase
       .from('orders')
@@ -128,7 +149,26 @@ export default function CourierOrders() {
       .eq('courier_id', user?.id || '')
       .eq('is_closed', false)
       .order('created_at', { ascending: false });
-    setOrders(data || []);
+    const sorted = applySavedSort(data || []);
+    setOrders(sorted);
+
+    // Load commission settings + bonuses for net-due calculation
+    if (user?.id) {
+      const [{ data: settings }, { data: bns }] = await Promise.all([
+        supabase.from('app_settings').select('value').eq('key', `courier_commission_${user.id}`).maybeSingle(),
+        supabase.from('courier_bonuses').select('amount, reason').eq('courier_id', user.id),
+      ]);
+      if (settings?.value) {
+        try {
+          const parsed = JSON.parse(settings.value);
+          setCommissionRate(Number(parsed.rate) || 0);
+          setCommissionStatusIds(Array.isArray(parsed.statuses) ? parsed.statuses : []);
+        } catch { setCommissionRate(0); setCommissionStatusIds([]); }
+      } else {
+        setCommissionRate(0); setCommissionStatusIds([]);
+      }
+      setBonuses(bns || []);
+    }
   };
 
   const syncCollectionForOrder = async (orderId: string, amount: number) => {

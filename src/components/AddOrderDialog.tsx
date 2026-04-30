@@ -298,9 +298,12 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>الحالة</Label>
-              <Select value={form.status_id} onValueChange={v => set('status_id', v)}>
+              <Select value={form.status_id || 'none'} onValueChange={v => set('status_id', v === 'none' ? '' : v)}>
                 <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder="اختر حالة" /></SelectTrigger>
-                <SelectContent>{statuses.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+                <SelectContent>
+                  <SelectItem value="none">بدون حالة</SelectItem>
+                  {statuses.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">

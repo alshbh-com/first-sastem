@@ -187,10 +187,8 @@ export function exportDiaryToExcel(diary: any, diaryOrders: any[], officeName: s
       '#': idx + 1, 'الاسم': order?.customer_name || '', 'ن': dOrder.n_column || '',
       'الكود': order?.barcode || order?.customer_code || '', 'السعر': row.price,
       'منفذ': row.executed || '', 'نزول': row.postponed || '', 'مرتجع': row.returned || '',
-      'تسليم جزئي': row.partial || '', 'بيك اب': row.pickup || '',
-      'فرق شحن': row.shippingDiff || '', 'عمولة التسليم': row.transferDelivery || '',
-      'رفض دون شحن': row.refuseNoShipping || '', 'غرامة مرتجع': row.returnPenalty || '',
-      'الحالة': row.status, 'حالة المرتجع': row.returnStatus,
+      'تسليم جزئي': row.partial || '',
+      'الحالة': row.status,
     };
   });
   const ws1 = XLSX.utils.json_to_sheet(financialRows);
@@ -203,8 +201,8 @@ export function exportDiaryToExcel(diary: any, diaryOrders: any[], officeName: s
     return {
       '#': idx + 1, 'الباركود': order?.barcode || '', 'الاسم': order?.customer_name || '',
       'العنوان': order?.address || '', 'القطع': order?.quantity || 1,
-      'الإجمالي': r.total, 'الشحن': r.shipping, 'بيك اب': r.pickup, 'الواصل': r.arrived || '',
-      'الحالة': dOrder.status_inside_diary, 'حالة المرتجع': r.returnStatus,
+      'الإجمالي': r.total, 'الشحن': r.shipping,
+      'الحالة': dOrder.status_inside_diary,
     };
   });
   const ws2 = XLSX.utils.json_to_sheet(orangeRowsData);

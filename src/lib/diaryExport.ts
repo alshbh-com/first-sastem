@@ -132,22 +132,21 @@ export function exportDiaryToPDF(
     <table>
       <thead><tr>
         <th>#</th><th>الباركود</th><th>الاسم</th><th>العنوان</th><th>القطع</th>
-        <th>الإجمالي</th><th>الشحن</th><th>بيك اب</th><th>الواصل</th>
-        <th>الحالة</th><th>حالة المرتجع</th>
+        <th>الإجمالي</th><th>الشحن</th>
+        <th>الحالة</th>
       </tr></thead>
       <tbody>${orangeRows}
         <tr class="total-row">
           <td colspan="5">الإجمالي</td>
           <td>${orangeTotals.total}</td><td>${orangeTotals.shipping}</td>
-          <td>${orangeTotals.pickup}</td><td>${orangeTotals.arrived}</td>
-          <td colspan="2"></td>
+          <td></td>
         </tr>
       </tbody>
     </table>
     <div class="summary">
       <div><strong>حساب المستحق للعميل:</strong></div>
       ${extraDue > 0 ? `<div>مستحق إضافي: ${extraDue}${extraDueReason ? ` (${extraDueReason})` : ''}</div>` : ''}
-      <div>المستحق للعميل = (${orangeTotals.total} + ${extraDue}) - (${orangeTotals.arrived} + ${orangeTotals.shipping} + ${orangeTotals.pickup}) = <strong>${orangeClientDue}</strong></div>
+      <div>المستحق للعميل = <strong>${orangeClientDue}</strong></div>
     </div>
   ` : '';
 

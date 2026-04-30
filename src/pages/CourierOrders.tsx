@@ -266,6 +266,7 @@ export default function CourierOrders() {
       await supabase.from('orders').update({ courier_id: null, status_id: null }).eq('id', orderId);
     }
 
+    pushOrderToBottom(orderId);
     toast.success('تم تحديث الحالة');
     load();
   };

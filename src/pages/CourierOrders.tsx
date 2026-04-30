@@ -357,6 +357,7 @@ export default function CourierOrders() {
     const [item] = newOrders.splice(index, 1);
     newOrders.splice(index + direction, 0, item);
     setOrders(newOrders);
+    persistSort(newOrders);
   };
 
   return (
@@ -395,26 +396,14 @@ export default function CourierOrders() {
           <CardContent className="p-3 space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">إجمالي الأوردرات: {orders.length}</span>
-              <span className="font-bold text-lg">{totalPrice} ج.م</span>
+              <span className="font-bold text-lg">{totalPrice.toLocaleString('en-US')} ج.م</span>
             </div>
-            {(() => {
-              const deliveredTotal = orders
-                .filter(o => o.order_statuses?.name === 'تم التسليم')
-                .reduce((sum, o) => sum + Number(o.price) + Number(o.delivery_price), 0);
-              const partialTotal = orders
-                .filter(o => o.order_statuses?.name === 'تسليم جزئي')
-                .reduce((sum, o) => sum + Number(o.partial_amount || 0), 0);
-              const rejectShipTotal = orders
-                .filter(o => ['رفض ودفع شحن', 'استلم ودفع نص الشحن', 'استبدال'].includes(o.order_statuses?.name))
-                .reduce((sum, o) => sum + Number(o.shipping_paid || 0), 0);
-              const totalCollection = deliveredTotal + partialTotal + rejectShipTotal;
-              return (
-                <div className="flex justify-between items-center border-t border-border pt-2">
-                  <span className="text-sm font-medium text-emerald-600">إجمالي التحصيل</span>
-                  <span className="font-bold text-lg text-emerald-600">{totalCollection} ج.م</span>
-                </div>
-              );
-            })()}
+            <div className="flex justify-between items-center border-t border-border pt-2">
+              <span className="text-sm font-medium text-primary">صافي المستحق</span>
+              <span className={`font-bold text-lg ${netDue >= 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                {netDue.toLocaleString('en-US')} ج.م
+              </span>
+            </div>
           </CardContent>
         </Card>
 

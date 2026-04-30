@@ -45,6 +45,7 @@ export const ALL_SECTIONS = [
   { key: 'settings', label: 'الإعدادات', url: '/settings' },
   { key: 'accounting-system', label: 'سيستم الحسابات', url: '/accounting-system' },
   { key: 'branch-diaries', label: 'يوميات الفروع', url: '/branch-diaries' },
+  { key: 'courier-applications', label: 'طلبات عمال', url: '/courier-applications' },
 ];
 
 export function urlToSectionKey(url: string): string {

@@ -80,11 +80,8 @@ export function exportDiaryToPDF(
       <td>${idx + 1}</td><td>${order?.customer_name || ''}</td><td>${dOrder.n_column || ''}</td>
       <td>${order?.barcode || order?.customer_code || ''}</td><td>${row.price}</td>
       <td>${row.executed || ''}</td><td>${row.postponed || ''}</td><td>${row.returned || ''}</td>
-      <td>${row.partial || ''}</td><td>${row.pickup || ''}</td>
-      <td>${row.shippingDiff || ''}</td><td>${row.transferDelivery || ''}</td>
-      <td>${row.refuseNoShipping || ''}</td><td>${row.returnPenalty || ''}</td>
+      <td>${row.partial || ''}</td>
       <td>${row.status}</td>
-      <td>${row.returnStatus}</td>
     </tr>`;
   }).join('');
 
@@ -94,8 +91,8 @@ export function exportDiaryToPDF(
     return `<tr>
       <td>${idx + 1}</td><td>${order?.barcode || ''}</td><td>${order?.customer_name || ''}</td>
       <td>${order?.address || ''}</td><td>${order?.quantity || 1}</td>
-      <td>${r.total}</td><td>${r.shipping}</td><td>${r.pickup}</td><td>${r.arrived || ''}</td>
-      <td>${dOrder.status_inside_diary}</td><td>${r.returnStatus}</td>
+      <td>${r.total}</td><td>${r.shipping}</td>
+      <td>${dOrder.status_inside_diary}</td>
     </tr>`;
   }).join('');
 
@@ -107,27 +104,24 @@ export function exportDiaryToPDF(
     <table>
       <thead><tr>
         <th>#</th><th>الاسم</th><th>ن</th><th>الكود</th><th>السعر</th>
-        <th>منفذ</th><th>نزول</th><th>مرتجع</th><th>تسليم جزئي</th><th>بيك اب</th>
-        <th>فرق شحن</th><th>عمولة التسليم</th><th>رفض دون شحن</th><th>غرامة مرتجع</th>
-        <th>الحالة</th><th>حالة المرتجع</th>
+        <th>منفذ</th><th>نزول</th><th>مرتجع</th><th>تسليم جزئي</th>
+        <th>الحالة</th>
       </tr></thead>
       <tbody>${financialRows}
         <tr class="total-row">
           <td colspan="4">الإجمالي</td>
           <td>${totals.price}</td><td>${manualArrivedTotal}</td><td>${totals.postponed}</td>
-          <td>${totals.returned}</td><td>${totals.partial}</td><td>${totals.pickup}</td>
-          <td>${totals.shippingDiff}</td><td>${totals.transferDelivery}</td>
-          <td>${totals.refuseNoShipping}</td><td>${totals.returnPenalty}</td>
-          <td colspan="2"></td>
+          <td>${totals.returned}</td><td>${totals.partial}</td>
+          <td></td>
         </tr>
       </tbody>
     </table>
     <div class="summary">
       <div><strong>الملخص المالي:</strong></div>
       <div>الواصل نقدي: ${totalCash} | الرصيد: ${balanceNum} | مستحق سابق: ${previousDueNum}</div>
-      <div>فرق اليومية = ${totals.price} - ${totalCash} = <strong>${diaryDiff}</strong></div>
-      <div>المستحق = (${diaryDiff} + ${previousDueNum}) - (${balanceNum} + ${manualArrivedTotal} + ${totals.returned} + ${totals.postponed} + ${totals.pickup} + ${totals.shippingDiff} + ${totals.transferDelivery} + ${totals.refuseNoShipping} + ${totals.returnPenalty}) = <strong>${finalDue}</strong></div>
-      ${showPostponedDue ? `<div>المستحق بالنزول (المؤجل) = ${finalDue} + ${totals.postponed} = <strong>${dueWithPostponed}</strong></div>` : ''}
+      <div>فرق اليومية = <strong>${diaryDiff}</strong></div>
+      <div>المستحق = <strong>${finalDue}</strong></div>
+      ${showPostponedDue ? `<div>المستحق بالنزول (المؤجل) = <strong>${dueWithPostponed}</strong></div>` : ''}
     </div>
   ` : '';
 

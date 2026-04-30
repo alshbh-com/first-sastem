@@ -34,10 +34,10 @@ export default function BranchDiaries() {
   useEffect(() => { load(); }, []);
 
   const removeDiary = async (id: string) => {
-    if (!confirm('هل تريد حذف هذه اليومية؟')) return;
+    if (!confirm('هل تريد حذف هذه اليومية نهائياً؟')) return;
     const { error } = await supabase
       .from('branch_simple_diaries' as any)
-      .update({ deleted_at: new Date().toISOString() })
+      .delete()
       .eq('id', id);
     if (error) { toast.error(error.message); return; }
     await logActivity('حذف يومية فرع', { diary_id: id });

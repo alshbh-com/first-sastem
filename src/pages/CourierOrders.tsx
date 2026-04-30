@@ -190,6 +190,51 @@ export default function CourierOrders() {
   const partialDeliveryStatus = statuses.find(s => s.name === 'تسليم جزئي');
   const receivedHalfShipStatus = statuses.find(s => s.name === 'استلم ودفع نص الشحن');
   const exchangeStatus = statuses.find(s => s.name === 'استبدال');
+  const deliveredStatus = statuses.find(s => s.name === 'تم التسليم');
+
+  // عند تغيير حالة أي أوردر: ينزل آخر القائمة وباقي الترتيب يفضل زي ما هو
+  const pushOrderToBottom = (orderId: string) => {
+    if (!sortKey) return;
+    try {
+      const current = JSON.parse(localStorage.getItem(sortKey) || '[]') as string[];
+      // ابدأ من الترتيب الحالي للعرض كمصدر أساسي
+      const base = orders.map(o => o.id);
+      const merged: string[] = [];
+      const seen = new Set<string>();
+      // نحافظ على ترتيب القائمة المحفوظة لو موجود، وإلا الحالي
+      const order = current.length ? current : base;
+      for (const id of order) {
+        if (id !== orderId && !seen.has(id)) { merged.push(id); seen.add(id); }
+      }
+      // أضف أي IDs جديدة من قائمة الشاشة الحالية (أوردرات جديدة)
+      for (const id of base) {
+        if (id !== orderId && !seen.has(id)) { merged.push(id); seen.add(id); }
+      }
+      merged.push(orderId);
+      localStorage.setItem(sortKey, JSON.stringify(merged));
+    } catch {}
+  };
+
+  // حساب صافي المستحق (نفس معادلة قسم تحصيلات المناديب)
+  const getCollectedAmount = (o: any) => {
+    const sName = o.order_statuses?.name;
+    if (sName === 'تم التسليم') return Number(o.price) + Number(o.delivery_price);
+    if (sName === 'تسليم جزئي') return Number(o.partial_amount || 0);
+    if (sName === 'رفض ودفع شحن' || sName === 'استلم ودفع نص الشحن' || sName === 'استبدال') {
+      return Number(o.shipping_paid || 0);
+    }
+    return 0;
+  };
+  const totalCollection = orders.reduce((s, o) => s + getCollectedAmount(o), 0);
+  const officeCommissionTotal = bonuses
+    .filter(b => typeof b.reason === 'string' && b.reason.startsWith('__office_commission__'))
+    .reduce((s, b) => s + Number(b.amount || 0), 0);
+  const regularBonusTotal = bonuses
+    .filter(b => !(typeof b.reason === 'string' && b.reason.startsWith('__office_commission__')))
+    .reduce((s, b) => s + Number(b.amount || 0), 0);
+  const eligibleCommissionOrders = orders.filter(o => commissionStatusIds.includes(o.status_id));
+  const commissionTotal = eligibleCommissionOrders.length * commissionRate;
+  const netDue = totalCollection + officeCommissionTotal - commissionTotal - regularBonusTotal;
 
   const updateStatus = async (orderId: string, statusId: string) => {
     if (

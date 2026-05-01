@@ -255,8 +255,8 @@ export default function OfficeSettlement() {
       </tbody>
     </table>
     <div class="summary">
-      <div>البيك اب = ${pickupUnits} × ${pickupRateNum} = <strong>${pickupTotal}</strong></div>
-      <div>المستحق = ${totalAmount} - (${totalShipping} + ${totalArrived} + ${pickupTotal}) = <strong>${due}</strong></div>
+      <div>البيك اب: <strong>${pickupTotal}</strong></div>
+      <div>المستحق: <strong>${due}</strong></div>
     </div>
     </body></html>`);
     w.document.close();

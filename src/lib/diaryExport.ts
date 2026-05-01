@@ -110,19 +110,12 @@ export function exportDiaryToPDF(
       <tbody>${financialRows}
         <tr class="total-row">
           <td colspan="4">الإجمالي</td>
-          <td>${totals.price}</td><td>${manualArrivedTotal}</td><td>${totals.postponed}</td>
+          <td>${totals.price}</td><td>${totals.executed}</td><td>${totals.postponed}</td>
           <td>${totals.returned}</td><td>${totals.partial}</td>
           <td></td>
         </tr>
       </tbody>
     </table>
-    <div class="summary">
-      <div><strong>الملخص المالي:</strong></div>
-      <div>الواصل نقدي: ${totalCash} | الرصيد: ${balanceNum} | مستحق سابق: ${previousDueNum}</div>
-      <div>فرق اليومية = <strong>${diaryDiff}</strong></div>
-      <div>المستحق = <strong>${finalDue}</strong></div>
-      ${showPostponedDue ? `<div>المستحق بالنزول (المؤجل) = <strong>${dueWithPostponed}</strong></div>` : ''}
-    </div>
   ` : '';
 
   const orangeSection = printOrange ? `
@@ -143,12 +136,10 @@ export function exportDiaryToPDF(
         </tr>
       </tbody>
     </table>
-    <div class="summary">
-      <div><strong>حساب المستحق للعميل:</strong></div>
-      ${extraDue > 0 ? `<div>مستحق إضافي: ${extraDue}${extraDueReason ? ` (${extraDueReason})` : ''}</div>` : ''}
-      <div>المستحق للعميل = <strong>${orangeClientDue}</strong></div>
-    </div>
   ` : '';
+
+  void manualArrivedTotal; void diaryDiff; void finalDue; void dueWithPostponed; void showPostponedDue;
+  void orangeClientDue; void extraDue; void extraDueReason; void totalCash; void balanceNum; void previousDueNum;
 
   w.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8">
 <title>${officeName} - يومية ${diary.diary_number}</title>

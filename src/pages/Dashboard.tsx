@@ -77,6 +77,8 @@ export default function Dashboard() {
   useEffect(() => {
     loadStats();
     loadChatContacts();
+    // Auto-cleanup closed orders older than 65 days
+    supabase.rpc('cleanup_old_closed_orders' as any).then(() => {});
   }, []);
 
   // Chat realtime

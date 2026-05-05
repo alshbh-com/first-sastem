@@ -18,7 +18,9 @@ import Products from "@/pages/Products";
 import Couriers from "@/pages/Couriers";
 import CourierApplications from "@/pages/CourierApplications";
 import CourierCollections from "@/pages/CourierCollections";
-import OfficeAccounts from "@/pages/OfficeAccounts";
+import TasksPage from "@/pages/TasksPage";
+import PostponedOrders from "@/pages/PostponedOrders";
+import OrdersReminder from "@/pages/OrdersReminder";
 import Advances from "@/pages/Advances";
 import PrintSticker from "@/pages/PrintSticker";
 import ActivityLogs from "@/pages/ActivityLogs";
@@ -125,7 +127,11 @@ const App = () => (
               <Route path="/customers" element={<CustomersPage />} />
               <Route path="/courier-collections" element={<CourierCollections />} />
               <Route path="/collections" element={<Navigate to="/courier-collections" replace />} />
-              <Route path="/office-accounts" element={<OfficeAccounts />} />
+              <Route path="/office-accounts" element={<Navigate to="/" replace />} />
+              <Route path="/unassigned-orders" element={<Navigate to="/orders" replace />} />
+              <Route path="/tasks" element={<TasksPage />} />
+              <Route path="/postponed-orders" element={<PostponedOrders />} />
+              <Route path="/orders-reminder" element={<OrdersReminder />} />
               <Route path="/advances" element={<Advances />} />
               <Route path="/print" element={<PrintSticker />} />
               <Route path="/logs" element={<ActivityLogs />} />

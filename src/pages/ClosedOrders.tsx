@@ -89,7 +89,8 @@ export default function ClosedOrders() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl sm:text-2xl font-bold">الأوردرات القديمة (المقفلة)</h1>
+      <h1 className="text-xl sm:text-2xl font-bold">الأوردرات المتقفلة</h1>
+      <p className="text-xs text-muted-foreground">يتم حذف الأوردر تلقائياً بعد 65 يوم من التقفيل</p>
       <div className="flex flex-wrap gap-2 items-center">
         <div className="relative flex-1 min-w-[180px] max-w-xs">
           <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

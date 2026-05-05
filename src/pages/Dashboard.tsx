@@ -18,9 +18,13 @@ import {
 
 const sections = [
   { title: 'الأوردرات', url: '/orders', icon: Package, color: 'hsl(217,91%,60%)' },
-  { title: 'جميع الأوردرات', url: '/unassigned-orders', icon: PackageSearch, color: 'hsl(38,92%,50%)' },
-  { title: 'الأوردرات القديمة', url: '/closed-orders', icon: Archive, color: 'hsl(215,20%,60%)' },
+  { title: 'معلق', url: '/pending-collections', icon: Clock, color: 'hsl(38,92%,50%)' },
+  { title: 'فرع', url: '/order-approval', icon: CheckCircle2, color: 'hsl(142,76%,36%)' },
+  { title: 'الأوردرات المتقفلة', url: '/closed-orders', icon: Archive, color: 'hsl(215,20%,60%)' },
   { title: 'بحث شامل', url: '/search', icon: Search, color: 'hsl(217,91%,60%)' },
+  { title: 'تذكير الأوردرات القديمة', url: '/orders-reminder', icon: Clock, color: 'hsl(38,92%,50%)' },
+  { title: 'قائمة المهام', url: '/tasks', icon: CheckCircle2, color: 'hsl(142,76%,36%)' },
+  { title: 'الأوردرات المؤجلة', url: '/postponed-orders', icon: Clock, color: 'hsl(270,60%,60%)' },
   { title: 'المكاتب', url: '/offices', icon: Building2, color: 'hsl(142,76%,36%)' },
   { title: 'أسعار التوصيل', url: '/delivery-prices', icon: MapPin, color: 'hsl(38,92%,50%)' },
   { title: 'المنتجات', url: '/products', icon: Box, color: 'hsl(0,72%,51%)' },
@@ -29,7 +33,6 @@ const sections = [
   { title: 'المستخدمين', url: '/users', icon: Users, color: 'hsl(200,70%,50%)' },
   { title: 'إدارة الحالات', url: '/status-management', icon: CircleDot, color: 'hsl(270,60%,60%)' },
   { title: 'تحصيلات المندوبين', url: '/courier-collections', icon: Wallet, color: 'hsl(217,91%,60%)' },
-  { title: 'حسابات المكاتب', url: '/office-accounts', icon: Building, color: 'hsl(142,76%,36%)' },
   { title: 'السلفات والخصومات', url: '/advances', icon: DollarSign, color: 'hsl(0,72%,51%)' },
   { title: 'التقرير اليومي', url: '/daily-report', icon: Calendar, color: 'hsl(142,76%,36%)' },
   { title: 'التقارير المالية', url: '/financial-reports', icon: BarChart3, color: 'hsl(217,91%,60%)' },

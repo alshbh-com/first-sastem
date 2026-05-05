@@ -128,6 +128,9 @@ export default function OfficeReport() {
   };
 
   const totalPrice = filteredOrders.reduce((sum, o) => sum + (Number(o.price) || 0), 0);
+  const selectedTotal = filteredOrders
+    .filter(o => selectedOrders.has(o.id))
+    .reduce((sum, o) => sum + (Number(o.price) || 0) + (Number(o.delivery_price) || 0), 0);
 
   const statusCounts: Record<string, number> = {};
   filteredOrders.forEach(o => {
@@ -213,9 +216,12 @@ export default function OfficeReport() {
           </div>
 
           {selectedOrders.size > 0 && (
-            <div className="flex items-center gap-3 p-2 bg-destructive/10 rounded-lg border border-destructive/30">
+            <div className="flex flex-wrap items-center gap-3 p-3 bg-primary/10 rounded-lg border border-primary/30">
               <span className="text-sm font-medium">تم تحديد {selectedOrders.size} أوردر</span>
-              <Button size="sm" variant="destructive" onClick={hideSelectedOrders} className="gap-1">
+              <span className="text-sm">
+                مجموع المحدد: <span className="font-bold text-primary text-base">{selectedTotal.toLocaleString('en-US')} ج.م</span>
+              </span>
+              <Button size="sm" variant="destructive" onClick={hideSelectedOrders} className="gap-1 mr-auto">
                 <Trash2 className="h-3.5 w-3.5" />
                 إخفاء من التقرير
               </Button>

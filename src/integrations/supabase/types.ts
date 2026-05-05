@@ -1293,6 +1293,45 @@ export type Database = {
           },
         ]
       }
+      order_schedules: {
+        Row: {
+          any_time: boolean
+          created_at: string
+          id: string
+          notes: string
+          order_id: string
+          scheduled_date: string | null
+          time_from: string | null
+          time_to: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          any_time?: boolean
+          created_at?: string
+          id?: string
+          notes?: string
+          order_id: string
+          scheduled_date?: string | null
+          time_from?: string | null
+          time_to?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          any_time?: boolean
+          created_at?: string
+          id?: string
+          notes?: string
+          order_id?: string
+          scheduled_date?: string | null
+          time_from?: string | null
+          time_to?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       order_statuses: {
         Row: {
           color: string | null
@@ -1612,6 +1651,39 @@ export type Database = {
           },
         ]
       }
+      tasks: {
+        Row: {
+          created_at: string
+          due_date: string | null
+          id: string
+          is_done: boolean
+          notes: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          is_done?: boolean
+          notes?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          is_done?: boolean
+          notes?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_permissions: {
         Row: {
           id: string
@@ -1734,6 +1806,7 @@ export type Database = {
     }
     Functions: {
       cleanup_old_activity_logs: { Args: never; Returns: undefined }
+      cleanup_old_closed_orders: { Args: never; Returns: undefined }
       cleanup_old_diaries: { Args: never; Returns: undefined }
       has_role: {
         Args: {

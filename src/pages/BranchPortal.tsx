@@ -190,8 +190,12 @@ function AddBranchOrderDialog({ branchName, userId, onOrderAdded }: { branchName
       toast.error('العنوان إجباري');
       return;
     }
-    if (!(parseFloat(form.price) > 0)) {
-      toast.error('السعر إجباري');
+    if (form.price === '' || Number(form.price) < 0) {
+      toast.error('السعر إجباري (يقبل صفر)');
+      return;
+    }
+    if (form.delivery_price === '' || Number(form.delivery_price) < 0) {
+      toast.error('سعر التوصيل إجباري (يقبل صفر)');
       return;
     }
 

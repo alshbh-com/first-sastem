@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { Search, UserPlus, Lock, Trash2, UserMinus, Pencil, CheckCircle, MessageCircle, CircleDot } from 'lucide-react';
+import { Search, UserPlus, Lock, Trash2, UserMinus, Pencil, CheckCircle, MessageCircle, CircleDot, Truck } from 'lucide-react';
 import { toast } from 'sonner';
 import AddOrderDialog from '@/components/AddOrderDialog';
 import { useAuth } from '@/contexts/AuthContext';
@@ -51,6 +51,7 @@ export default function Orders() {
   const [search, setSearch] = useState('');
   const [filterOffice, setFilterOffice] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterCourier, setFilterCourier] = useState('all');
   const [offices, setOffices] = useState<any[]>([]);
   const [couriers, setCouriers] = useState<any[]>([]);
   const [courierMap, setCourierMap] = useState<Record<string, string>>({});
@@ -96,7 +97,9 @@ export default function Orders() {
     const matchOffice = filterOffice === 'all' || o.office_id === filterOffice;
     const matchStatus = filterStatus === 'all'
       || (filterStatus === 'none' ? !o.status_id : o.status_id === filterStatus);
-    return matchSearch && matchOffice && matchStatus;
+    const matchCourier = filterCourier === 'all'
+      || (filterCourier === 'unassigned' ? !o.courier_id : o.courier_id === filterCourier);
+    return matchSearch && matchOffice && matchStatus && matchCourier;
   });
 
   const toggleSelect = (id: string) => {
@@ -204,6 +207,19 @@ export default function Orders() {
                 </div>
               </SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+        <Select value={filterCourier} onValueChange={setFilterCourier}>
+          <SelectTrigger className="w-32 sm:w-40 bg-secondary border-border">
+            <div className="flex items-center gap-1">
+              <Truck className="h-4 w-4" />
+              <SelectValue placeholder="المندوب" />
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">كل المناديب</SelectItem>
+            <SelectItem value="unassigned">غير معين</SelectItem>
+            {couriers.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>

@@ -1,10 +1,11 @@
 import {
   LayoutDashboard, Package, Building2, Box,
-  Truck, Wallet, CreditCard, ScrollText, Settings, LogOut, Archive, Building,
-  PackageSearch, Search, Printer, DollarSign, MapPin, Users, BarChart3,
+  Truck, Wallet, ScrollText, Settings, LogOut, Archive, Building,
+  Search, Printer, MapPin, Users, BarChart3,
   TrendingUp, Calendar, UserCheck, MessageSquare, Locate, FileSpreadsheet,
   CircleDot, Calculator, Contact, ClipboardList, Trash2, FileBarChart, Navigation2, Palette,
-  MessageCircle, ShieldCheck, Rocket, Hourglass, UserPlus2
+  MessageCircle, ShieldCheck, Rocket, Hourglass, UserPlus2,
+  ListTodo, AlarmClock, Clock4
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,12 +19,14 @@ import { Button } from '@/components/ui/button';
 
 const mainItems = [
   { title: 'لوحة التحكم', url: '/', icon: LayoutDashboard },
-  { title: 'تأكيد الأوردرات', url: '/order-approval', icon: ShieldCheck },
   { title: 'الأوردرات', url: '/orders', icon: Package },
-  { title: 'جميع الأوردرات', url: '/unassigned-orders', icon: PackageSearch },
   { title: 'معلق', url: '/pending-collections', icon: Hourglass },
-  { title: 'الأوردرات القديمة', url: '/closed-orders', icon: Archive },
+  { title: 'فرع', url: '/order-approval', icon: ShieldCheck },
+  { title: 'الأوردرات المتقفلة', url: '/closed-orders', icon: Archive },
   { title: 'بحث شامل', url: '/search', icon: Search },
+  { title: 'تذكير الأوردرات القديمة', url: '/orders-reminder', icon: Clock4 },
+  { title: 'قائمة المهام', url: '/tasks', icon: ListTodo },
+  { title: 'الأوردرات المؤجلة', url: '/postponed-orders', icon: AlarmClock },
 ];
 
 const managementItems = [
@@ -41,7 +44,7 @@ const accountingItems = [
   { title: 'تحصيلات المندوبين', url: '/courier-collections', icon: Wallet },
   { title: 'سيستم الحسابات', url: '/accounting-system', icon: Calculator },
   { title: 'يوميات الفروع', url: '/branch-diaries', icon: ClipboardList },
-  { title: 'السلفات والخصومات', url: '/advances', icon: DollarSign },
+  { title: 'السلفات والخصومات', url: '/advances', icon: Wallet },
 ];
 
 const reportsItems = [

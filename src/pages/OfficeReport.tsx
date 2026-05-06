@@ -195,21 +195,6 @@ export default function OfficeReport() {
         <>
           <div className="flex flex-wrap gap-2">
             <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">إجمالي</p><p className="text-lg font-bold">{filteredOrders.length}</p></CardContent></Card>
-            {statuses.map(s => {
-              const count = statusCounts[s.name] || 0;
-              if (count === 0 && orderStatusFilter !== 'all') return null;
-              return (
-                <Card key={s.id} className="bg-card border-border">
-                  <CardContent className="p-3 text-center">
-                    <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
-                      <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: s.color || '#6b7280' }} />
-                      {s.name}
-                    </p>
-                    <p className="text-lg font-bold" style={{ color: s.color || undefined }}>{count}</p>
-                  </CardContent>
-                </Card>
-              );
-            })}
             <Card className="bg-card border-border"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">إجمالي الأسعار</p><p className="text-lg font-bold text-primary">{totalPrice.toLocaleString('en-US')} ج.م</p></CardContent></Card>
             <Card className="bg-card border-border border-green-500/50"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">المقفل ✅</p><p className="text-lg font-bold text-green-500">{closedCount}</p><p className="text-[10px] text-muted-foreground">{closedPrice.toLocaleString('en-US')} ج.م</p></CardContent></Card>
             <Card className="bg-card border-border border-yellow-500/50"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">المعلق ⏳</p><p className="text-lg font-bold text-yellow-500">{pendingCount}</p><p className="text-[10px] text-muted-foreground">{pendingPrice.toLocaleString('en-US')} ج.م</p></CardContent></Card>

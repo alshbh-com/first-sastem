@@ -99,6 +99,7 @@ export default function OrdersReminder() {
                       <TableCell className="text-sm">{o.customer_name}</TableCell>
                       <TableCell dir="ltr" className="text-sm">{o.customer_phone}</TableCell>
                       <TableCell className="text-sm">{o.offices?.name || o.office_name_snapshot || '-'}</TableCell>
+                      <TableCell className="text-sm">{o.courier_name_snapshot || '-'}</TableCell>
                       <TableCell><Badge style={{ backgroundColor: o.order_statuses?.color }} className="text-xs">{o.order_statuses?.name || 'بدون حالة'}</Badge></TableCell>
                       <TableCell className="font-bold text-sm">{Number(o.price) + Number(o.delivery_price)}</TableCell>
                     </TableRow>

@@ -128,7 +128,7 @@ const App = () => (
               <Route path="/courier-collections" element={<CourierCollections />} />
               <Route path="/collections" element={<Navigate to="/courier-collections" replace />} />
               <Route path="/office-accounts" element={<Navigate to="/" replace />} />
-              <Route path="/unassigned-orders" element={<Navigate to="/orders" replace />} />
+              
               <Route path="/tasks" element={<TasksPage />} />
               <Route path="/postponed-orders" element={<PostponedOrders />} />
               <Route path="/orders-reminder" element={<OrdersReminder />} />

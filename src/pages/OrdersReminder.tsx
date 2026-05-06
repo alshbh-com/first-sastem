@@ -79,6 +79,7 @@ export default function OrdersReminder() {
                   <TableHead className="text-right">العميل</TableHead>
                   <TableHead className="text-right">الهاتف</TableHead>
                   <TableHead className="text-right">المكتب</TableHead>
+                  <TableHead className="text-right">المندوب</TableHead>
                   <TableHead className="text-right">الحالة</TableHead>
                   <TableHead className="text-right">الإجمالي</TableHead>
                 </TableRow>

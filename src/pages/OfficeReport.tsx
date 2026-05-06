@@ -130,7 +130,7 @@ export default function OfficeReport() {
   const totalPrice = filteredOrders.reduce((sum, o) => sum + (Number(o.price) || 0), 0);
   const selectedTotal = filteredOrders
     .filter(o => selectedOrders.has(o.id))
-    .reduce((sum, o) => sum + (Number(o.price) || 0) + (Number(o.delivery_price) || 0), 0);
+    .reduce((sum, o) => sum + (Number(o.price) || 0), 0);
 
   const statusCounts: Record<string, number> = {};
   filteredOrders.forEach(o => {

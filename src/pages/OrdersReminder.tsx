@@ -79,15 +79,16 @@ export default function OrdersReminder() {
                   <TableHead className="text-right">العميل</TableHead>
                   <TableHead className="text-right">الهاتف</TableHead>
                   <TableHead className="text-right">المكتب</TableHead>
+                  <TableHead className="text-right">المندوب</TableHead>
                   <TableHead className="text-right">الحالة</TableHead>
                   <TableHead className="text-right">الإجمالي</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
                 ) : orders.length === 0 ? (
-                  <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">مفيش أوردرات قديمة 👍</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">مفيش أوردرات قديمة 👍</TableCell></TableRow>
                 ) : orders.map(o => {
                   const ageDays = Math.floor((Date.now() - new Date(o.created_at).getTime()) / (1000 * 60 * 60 * 24));
                   return (
@@ -98,6 +99,7 @@ export default function OrdersReminder() {
                       <TableCell className="text-sm">{o.customer_name}</TableCell>
                       <TableCell dir="ltr" className="text-sm">{o.customer_phone}</TableCell>
                       <TableCell className="text-sm">{o.offices?.name || o.office_name_snapshot || '-'}</TableCell>
+                      <TableCell className="text-sm">{o.courier_name_snapshot || '-'}</TableCell>
                       <TableCell><Badge style={{ backgroundColor: o.order_statuses?.color }} className="text-xs">{o.order_statuses?.name || 'بدون حالة'}</Badge></TableCell>
                       <TableCell className="font-bold text-sm">{Number(o.price) + Number(o.delivery_price)}</TableCell>
                     </TableRow>

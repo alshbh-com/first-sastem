@@ -256,10 +256,10 @@ export default function CourierCollections() {
       {selectedCourier && (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">إجمالي التحصيل</p><p className="text-lg font-bold text-emerald-500">{totalCollection} ج.م</p></CardContent></Card>
-            <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">مستحق للمكتب</p><p className="text-lg font-bold text-amber-500">{totalOfficeCommission} ج.م</p></CardContent></Card>
-            <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">مستحق للمندوب</p><p className="text-lg font-bold text-destructive">{commissionTotal} ج.م</p></CardContent></Card>
-            <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">صافي المستحق</p><p className="text-lg font-bold text-primary">{netDue} ج.م</p></CardContent></Card>
+            <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">إجمالي التحصيل</p><p className="text-lg font-bold text-muted-foreground">{totalCollection} ج.م</p></CardContent></Card>
+            <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">مستحق للمكتب</p><p className="text-lg font-bold text-muted-foreground">{totalOfficeCommission} ج.م</p></CardContent></Card>
+            <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">مستحق للمندوب</p><p className="text-lg font-bold text-muted-foreground">{commissionTotal} ج.م</p></CardContent></Card>
+            <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">صافي المستحق</p><p className={`text-lg font-bold ${Number(netDue) >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>{Math.abs(Number(netDue)).toLocaleString('en-US')} ج.م</p><p className={`text-xs font-bold mt-1 ${Number(netDue) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{Number(netDue) >= 0 ? 'عليه' : 'له'}</p></CardContent></Card>
           </div>
 
           <Card className="bg-card border-border">

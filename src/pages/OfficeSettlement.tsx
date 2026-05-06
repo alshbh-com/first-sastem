@@ -286,7 +286,7 @@ export default function OfficeSettlement() {
     text += `\n━━━━━━━━━━━━━━━━━━\n`;
     text += `📊 *الإجمالي* (${pickupUnits} أوردر)\n`;
     text += `💰 المبلغ: ${totalAmount} | الشحن: ${totalShipping} | الواصل: ${totalArrived}\n`;
-    text += `📦 البيك اب: ${pickupUnits} × ${pickupRateNum} = ${pickupTotal}\n`;
+    text += `📦 البيك اب: ${pickupTotal}\n`;
     text += `✅ المستحق: ${due}\n`;
     window.open(`https://web.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
   };

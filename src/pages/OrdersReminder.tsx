@@ -37,7 +37,7 @@ export default function OrdersReminder() {
     const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
     const { data } = await supabase
       .from('orders')
-      .select('*, order_statuses(name, color), offices(name), profiles!orders_courier_id_fkey(full_name)')
+      .select('*, order_statuses(name, color), offices(name)')
       .eq('is_closed', false)
       .eq('is_pending_approval', false)
       .lte('created_at', cutoff)

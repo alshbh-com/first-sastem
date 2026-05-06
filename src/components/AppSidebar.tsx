@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 const mainItems = [
   { title: 'لوحة التحكم', url: '/', icon: LayoutDashboard },
   { title: 'الأوردرات', url: '/orders', icon: Package },
+  { title: 'جميع الأوردرات', url: '/unassigned-orders', icon: Package },
   { title: 'معلق', url: '/pending-collections', icon: Hourglass },
   { title: 'فرع', url: '/order-approval', icon: ShieldCheck },
   { title: 'الأوردرات المتقفلة', url: '/closed-orders', icon: Archive },

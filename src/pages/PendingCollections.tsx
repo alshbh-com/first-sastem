@@ -207,9 +207,14 @@ export default function PendingCollections() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <span className={`font-bold ${r.pending_amount > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                        {r.pending_amount.toLocaleString('en-US')} ج.م
-                      </span>
+                      <div className="flex flex-col">
+                        <span className={`font-bold ${r.pending_amount >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
+                          {Math.abs(r.pending_amount).toLocaleString('en-US')} ج.م
+                        </span>
+                        <span className={`text-xs font-bold ${r.pending_amount >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {r.pending_amount >= 0 ? 'عليه' : 'له'}
+                        </span>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

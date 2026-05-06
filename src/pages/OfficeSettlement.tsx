@@ -286,7 +286,7 @@ export default function OfficeSettlement() {
     text += `\n━━━━━━━━━━━━━━━━━━\n`;
     text += `📊 *الإجمالي* (${pickupUnits} أوردر)\n`;
     text += `💰 المبلغ: ${totalAmount} | الشحن: ${totalShipping} | الواصل: ${totalArrived}\n`;
-    text += `📦 البيك اب: ${pickupUnits} × ${pickupRateNum} = ${pickupTotal}\n`;
+    text += `📦 البيك اب: ${pickupTotal}\n`;
     text += `✅ المستحق: ${due}\n`;
     window.open(`https://web.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
   };
@@ -422,8 +422,8 @@ export default function OfficeSettlement() {
               <p className="text-sm text-muted-foreground">رقم البيك اب</p>
               <Input type="number" value={pickupRate} onChange={e => setPickupRate(e.target.value)} className="bg-secondary border-border" placeholder="0" disabled={isLocked} />
             </div>
-            <div className="text-sm font-medium">البيك اب = {pickupUnits} × {pickupRateNum} = <span className="font-bold">{pickupTotal}</span></div>
-            <div className="text-sm font-medium">المستحق = {totalAmount} - ({totalShipping} + {totalArrived} + {pickupTotal}) = <span className="font-bold text-primary text-lg">{due}</span></div>
+            <div className="text-sm font-medium">البيك اب: <span className="font-bold">{pickupTotal}</span></div>
+            <div className="text-sm font-medium">المستحق: <span className="font-bold text-primary text-lg">{due}</span></div>
           </div>
         </CardContent>
       </Card>

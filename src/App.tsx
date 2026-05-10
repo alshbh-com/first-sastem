@@ -21,6 +21,7 @@ import CourierCollections from "@/pages/CourierCollections";
 import TasksPage from "@/pages/TasksPage";
 import PostponedOrders from "@/pages/PostponedOrders";
 import OrdersReminder from "@/pages/OrdersReminder";
+import StatusChangedToday from "@/pages/StatusChangedToday";
 import Advances from "@/pages/Advances";
 import PrintSticker from "@/pages/PrintSticker";
 import ActivityLogs from "@/pages/ActivityLogs";
@@ -132,6 +133,7 @@ const App = () => (
               <Route path="/tasks" element={<TasksPage />} />
               <Route path="/postponed-orders" element={<PostponedOrders />} />
               <Route path="/orders-reminder" element={<OrdersReminder />} />
+              <Route path="/status-changed-today" element={<StatusChangedToday />} />
               <Route path="/advances" element={<Advances />} />
               <Route path="/print" element={<PrintSticker />} />
               <Route path="/logs" element={<ActivityLogs />} />

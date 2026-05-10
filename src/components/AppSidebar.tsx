@@ -5,7 +5,7 @@ import {
   TrendingUp, Calendar, UserCheck, MessageSquare, Locate, FileSpreadsheet,
   CircleDot, Calculator, Contact, ClipboardList, Trash2, FileBarChart, Navigation2, Palette,
   MessageCircle, ShieldCheck, Rocket, Hourglass, UserPlus2,
-  ListTodo, AlarmClock, Clock4
+  ListTodo, AlarmClock, Clock4, Activity
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,6 +26,7 @@ const mainItems = [
   { title: 'الأوردرات المتقفلة', url: '/closed-orders', icon: Archive },
   { title: 'بحث شامل', url: '/search', icon: Search },
   { title: 'تذكير الأوردرات القديمة', url: '/orders-reminder', icon: Clock4 },
+  { title: 'تغييرات الحالة اليوم', url: '/status-changed-today', icon: Activity },
   { title: 'قائمة المهام', url: '/tasks', icon: ListTodo },
   { title: 'الأوردرات المؤجلة', url: '/postponed-orders', icon: AlarmClock },
 ];

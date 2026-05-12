@@ -228,12 +228,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isCourier = roles.includes('courier');
   const isOffice = roles.includes('office');
   const isBranch = roles.includes('branch');
+  const isModerator = roles.includes('moderator');
   const isOwnerOrAdmin = isOwner || isAdmin;
 
   return (
     <AuthContext.Provider value={{
       session, user, roles, loading,
-      isOwner, isAdmin, isCourier, isOffice, isBranch, isOwnerOrAdmin,
+      isOwner, isAdmin, isCourier, isOffice, isBranch, isModerator, isOwnerOrAdmin,
       login, logout,
     }}>
       {children}

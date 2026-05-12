@@ -14,6 +14,7 @@ interface AuthState {
   isCourier: boolean;
   isOffice: boolean;
   isBranch: boolean;
+  isModerator: boolean;
   isOwnerOrAdmin: boolean;
   login: (password: string) => Promise<{ error?: string }>;
   logout: () => Promise<void>;

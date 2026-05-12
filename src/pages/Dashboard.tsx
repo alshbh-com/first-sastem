@@ -23,6 +23,7 @@ const sections = [
   { title: 'الأوردرات المتقفلة', url: '/closed-orders', icon: Archive, color: 'hsl(215,20%,60%)' },
   { title: 'بحث شامل', url: '/search', icon: Search, color: 'hsl(217,91%,60%)' },
   { title: 'تذكير الأوردرات القديمة', url: '/orders-reminder', icon: Clock, color: 'hsl(38,92%,50%)' },
+  { title: 'تغييرات الحالة اليوم', url: '/status-changed-today', icon: TrendingUp, color: 'hsl(200,70%,50%)' },
   { title: 'قائمة المهام', url: '/tasks', icon: CheckCircle2, color: 'hsl(142,76%,36%)' },
   { title: 'الأوردرات المؤجلة', url: '/postponed-orders', icon: Clock, color: 'hsl(270,60%,60%)' },
   { title: 'المكاتب', url: '/offices', icon: Building2, color: 'hsl(142,76%,36%)' },

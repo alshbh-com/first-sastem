@@ -183,6 +183,7 @@ export default function UsersPage() {
     if (role === 'courier') return 'مندوب';
     if (role === 'office') return 'مكتب';
     if (role === 'branch') return 'فرع';
+    if (role === 'moderator') return 'مودريتور';
     return role;
   };
 
@@ -192,6 +193,7 @@ export default function UsersPage() {
     if (role === 'courier') return 'hsl(38, 92%, 50%)';
     if (role === 'office') return 'hsl(200, 80%, 50%)';
     if (role === 'branch') return 'hsl(270, 70%, 55%)';
+    if (role === 'moderator') return 'hsl(180, 70%, 40%)';
     return undefined;
   };
 
@@ -236,6 +238,7 @@ export default function UsersPage() {
                       <SelectItem value="courier">مندوب (Courier)</SelectItem>
                       <SelectItem value="office">مكتب (Office)</SelectItem>
                       <SelectItem value="branch">فرع (Branch)</SelectItem>
+                      <SelectItem value="moderator">مودريتور (Moderator)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

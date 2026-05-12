@@ -2,7 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import { supabase } from '@/integrations/supabase/client';
 import type { Session, User } from '@supabase/supabase-js';
 
-type AppRole = 'owner' | 'admin' | 'courier' | 'office' | 'branch';
+type AppRole = 'owner' | 'admin' | 'courier' | 'office' | 'branch' | 'moderator';
 
 interface AuthState {
   session: Session | null;
@@ -14,6 +14,7 @@ interface AuthState {
   isCourier: boolean;
   isOffice: boolean;
   isBranch: boolean;
+  isModerator: boolean;
   isOwnerOrAdmin: boolean;
   login: (password: string) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
@@ -227,12 +228,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isCourier = roles.includes('courier');
   const isOffice = roles.includes('office');
   const isBranch = roles.includes('branch');
+  const isModerator = roles.includes('moderator');
   const isOwnerOrAdmin = isOwner || isAdmin;
 
   return (
     <AuthContext.Provider value={{
       session, user, roles, loading,
-      isOwner, isAdmin, isCourier, isOffice, isBranch, isOwnerOrAdmin,
+      isOwner, isAdmin, isCourier, isOffice, isBranch, isModerator, isOwnerOrAdmin,
       login, logout,
     }}>
       {children}

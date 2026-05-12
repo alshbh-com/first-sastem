@@ -8,7 +8,7 @@ interface Props {
 }
 
 export default function ProtectedRoute({ children, requiredRole }: Props) {
-  const { session, loading, isOwner, isAdmin, isOwnerOrAdmin, isCourier, isOffice, isBranch } = useAuth();
+  const { session, loading, isOwner, isAdmin, isOwnerOrAdmin, isCourier, isOffice, isBranch, isModerator } = useAuth();
 
   if (loading) {
     return (
@@ -30,10 +30,11 @@ export default function ProtectedRoute({ children, requiredRole }: Props) {
     return <Navigate to="/" replace />;
   }
 
-  if (requiredRole === 'owner_or_admin' && !isOwnerOrAdmin) {
+  if (requiredRole === 'owner_or_admin' && !isOwnerOrAdmin && !isModerator) {
     if (isBranch) return <Navigate to="/branch-portal" replace />;
     if (isOffice) return <Navigate to="/office-portal" replace />;
-    return <Navigate to="/courier-orders" replace />;
+    if (isCourier) return <Navigate to="/courier-orders" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return <>{children}</>;

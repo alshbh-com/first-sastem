@@ -75,7 +75,7 @@ export function usePermissions() {
   const [permissions, setPermissions] = useState<SectionPermission[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const isModerator = roles?.includes('moderator');
+  const isModerator = (roles as string[])?.includes('moderator');
 
   useEffect(() => {
     if (!user) { setPermissions([]); setLoading(false); return; }

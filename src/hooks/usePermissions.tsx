@@ -18,6 +18,9 @@ export const ALL_SECTIONS = [
   { key: 'closed-orders', label: 'الأوردرات المتقفلة', url: '/closed-orders' },
   { key: 'search', label: 'بحث شامل', url: '/search' },
   { key: 'orders-reminder', label: 'تذكير الأوردرات القديمة', url: '/orders-reminder' },
+  { key: 'status-changed-today', label: 'تغييرات الحالة اليوم', url: '/status-changed-today' },
+  { key: 'courier-tracking', label: 'تتبع المناديب', url: '/courier-tracking' },
+  { key: 'chat', label: 'التواصل الداخلي', url: '/chat' },
   { key: 'tasks', label: 'قائمة المهام', url: '/tasks' },
   { key: 'postponed-orders', label: 'الأوردرات المؤجلة', url: '/postponed-orders' },
   { key: 'offices', label: 'المكاتب', url: '/offices' },
@@ -56,10 +59,23 @@ export function urlToSectionKey(url: string): string {
   return url.replace(/^\//, '');
 }
 
+// Sections a moderator can see by default (edit). All others default to hidden.
+export const MODERATOR_DEFAULT_SECTIONS = [
+  'order-approval',
+  'delivery-prices',
+  'tasks',
+  'courier-applications',
+  'courier-tracking',
+  'tracking',
+  'chat',
+];
+
 export function usePermissions() {
-  const { user, isOwner, isOwnerOrAdmin } = useAuth();
+  const { user, isOwner, roles } = useAuth();
   const [permissions, setPermissions] = useState<SectionPermission[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const isModerator = (roles as string[])?.includes('moderator');
 
   useEffect(() => {
     if (!user) { setPermissions([]); setLoading(false); return; }
@@ -79,8 +95,12 @@ export function usePermissions() {
   const getPermission = (sectionKey: string): PermissionLevel => {
     if (isOwner) return 'edit'; // Owner always has full access
     const found = permissions.find(p => p.section === sectionKey);
-    if (!found) return 'edit'; // Default: full access if no restriction set
-    return found.permission as PermissionLevel;
+    if (found) return found.permission as PermissionLevel;
+    // Moderator default: hidden, except allowed sections (edit)
+    if (isModerator) {
+      return MODERATOR_DEFAULT_SECTIONS.includes(sectionKey) ? 'edit' : 'hidden';
+    }
+    return 'edit'; // Default: full access
   };
 
   const canView = (sectionKey: string): boolean => {

@@ -1651,6 +1651,33 @@ export type Database = {
           },
         ]
       }
+      status_change_notes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string
+          order_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string
+          order_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string
+          order_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           created_at: string
@@ -1823,7 +1850,13 @@ export type Database = {
       nextval_barcode: { Args: never; Returns: number }
     }
     Enums: {
-      app_role: "owner" | "admin" | "courier" | "office" | "branch"
+      app_role:
+        | "owner"
+        | "admin"
+        | "courier"
+        | "office"
+        | "branch"
+        | "moderator"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1951,7 +1984,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["owner", "admin", "courier", "office", "branch"],
+      app_role: ["owner", "admin", "courier", "office", "branch", "moderator"],
     },
   },
 } as const

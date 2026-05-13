@@ -198,7 +198,7 @@ export default function DailyClosing() {
                       <TableHead className="text-right">الاسم</TableHead>
                       <TableHead className="text-right">السعر</TableHead>
                       <TableHead className="text-right">الحالة</TableHead>
-                      <TableHead className="text-right min-w-[200px]">ملاحظة</TableHead>
+                      <TableHead className="text-right min-w-[220px]">ملاحظة الأوردر</TableHead>
                       {canEdit && <TableHead className="text-right">إجراءات</TableHead>}
                     </TableRow>
                   </TableHeader>

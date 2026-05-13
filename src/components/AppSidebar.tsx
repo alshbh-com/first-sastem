@@ -90,10 +90,8 @@ export function AppSidebar() {
     <Sidebar side="right" collapsible="icon">
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm">
-            F
-          </div>
-          <span className="text-lg font-bold text-sidebar-foreground group-data-[collapsible=icon]:hidden">
+          <img src="/logo.png" alt="FIRST" className="h-9 w-9 shrink-0 object-contain" onError={(e) => ((e.currentTarget.style.display = 'none'))} />
+          <span className="font-display text-lg font-bold text-sidebar-foreground neon-text group-data-[collapsible=icon]:hidden">
             FIRST
           </span>
         </div>

@@ -73,6 +73,13 @@ function LoginRedirect() {
   return <Login />;
 }
 
+function HomeRedirect() {
+  const { isModerator, isOwnerOrAdmin, loading } = useAuth();
+  if (loading) return null;
+  if (isModerator && !isOwnerOrAdmin) return <Navigate to="/order-approval" replace />;
+  return <Dashboard />;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>

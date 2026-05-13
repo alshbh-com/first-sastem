@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Lock, MessageCircle } from 'lucide-react';
-import logo from '@/assets/logo.png';
+
 
 export default function Login() {
   const [password, setPassword] = useState('');

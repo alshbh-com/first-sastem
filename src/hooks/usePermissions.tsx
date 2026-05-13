@@ -70,6 +70,14 @@ export const MODERATOR_DEFAULT_SECTIONS = [
   'chat',
 ];
 
+export function getDefaultPermissionForRole(role: string | undefined, sectionKey: string): PermissionLevel {
+  if (role === 'moderator') {
+    return MODERATOR_DEFAULT_SECTIONS.includes(sectionKey) ? 'edit' : 'hidden';
+  }
+
+  return 'edit';
+}
+
 export function usePermissions() {
   const { user, isOwner, roles } = useAuth();
   const [permissions, setPermissions] = useState<SectionPermission[]>([]);
@@ -96,11 +104,7 @@ export function usePermissions() {
     if (isOwner) return 'edit'; // Owner always has full access
     const found = permissions.find(p => p.section === sectionKey);
     if (found) return found.permission as PermissionLevel;
-    // Moderator default: hidden, except allowed sections (edit)
-    if (isModerator) {
-      return MODERATOR_DEFAULT_SECTIONS.includes(sectionKey) ? 'edit' : 'hidden';
-    }
-    return 'edit'; // Default: full access
+    return getDefaultPermissionForRole(isModerator ? 'moderator' : undefined, sectionKey);
   };
 
   const canView = (sectionKey: string): boolean => {

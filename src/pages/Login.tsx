@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Lock, MessageCircle } from 'lucide-react';
-import logo from '@/assets/logo.png';
+
 
 export default function Login() {
   const [password, setPassword] = useState('');
@@ -45,8 +45,10 @@ export default function Login() {
             {/* Logo */}
             <div className="flex flex-col items-center space-y-3">
               <div className="relative">
-                <div className="absolute inset-0 bg-[var(--gradient-neon)] blur-2xl opacity-70 animate-neon-pulse rounded-full" />
-                <img src={logo} alt="FIRST" width={96} height={96} className="relative h-24 w-24 object-contain animate-flicker" />
+                <div className="absolute inset-0 bg-[var(--gradient-neon)] blur-2xl opacity-70 animate-neon-pulse rounded-2xl" />
+                <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl bg-primary text-primary-foreground font-display text-4xl font-bold shadow-[var(--shadow-glow)]">
+                  F
+                </div>
               </div>
               <div className="text-center space-y-1">
                 <h1 className="font-display text-3xl font-bold text-foreground neon-text">FIRST</h1>
@@ -88,21 +90,19 @@ export default function Login() {
               </Button>
             </form>
 
-            {/* WhatsApp button - full width */}
-            <div className="space-y-3 pt-2">
-              <div className="flex items-center gap-3">
-                <div className="h-px flex-1 bg-[hsl(var(--neon-violet)/0.4)]" />
-                <span className="font-display text-[9px] tracking-[0.3em] text-muted-foreground">SUPPORT</span>
-                <div className="h-px flex-1 bg-[hsl(var(--neon-violet)/0.4)]" />
-              </div>
+            {/* WhatsApp + credit - full width */}
+            <div className="space-y-2 pt-2">
               <Button
                 type="button"
                 onClick={openWhatsApp}
                 variant="outline"
-                className="w-full h-12 font-display tracking-[0.18em] bg-[hsl(142_76%_36%/0.15)] border-[hsl(142_76%_50%/0.5)] text-[hsl(142_76%_70%)] hover:bg-[hsl(142_76%_40%/0.25)] hover:text-[hsl(142_76%_80%)] shadow-[0_0_18px_hsl(142_76%_45%/0.35)]"
+                className="w-full h-auto py-3 flex-col gap-1 bg-[hsl(142_76%_36%/0.15)] border-[hsl(142_76%_50%/0.5)] text-[hsl(142_76%_75%)] hover:bg-[hsl(142_76%_40%/0.25)] hover:text-[hsl(142_76%_85%)] shadow-[0_0_18px_hsl(142_76%_45%/0.35)]"
               >
-                <MessageCircle className="h-5 w-5" />
-                تواصل عبر واتساب
+                <span className="flex items-center gap-2 text-sm">
+                  <MessageCircle className="h-4 w-4" />
+                  صنع من شركة دوبامين (الشبح سابقاً)
+                </span>
+                <span className="font-mono text-base tracking-widest" dir="ltr">01061067966</span>
               </Button>
             </div>
           </div>

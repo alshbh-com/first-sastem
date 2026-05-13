@@ -51,6 +51,7 @@ export const ALL_SECTIONS = [
   { key: 'accounting-system', label: 'سيستم الحسابات', url: '/accounting-system' },
   { key: 'branch-diaries', label: 'يوميات الفروع', url: '/branch-diaries' },
   { key: 'courier-applications', label: 'طلبات عمال', url: '/courier-applications' },
+  { key: 'daily-closing', label: 'تقفيلة يومية', url: '/daily-closing' },
 ];
 
 export function urlToSectionKey(url: string): string {
@@ -68,6 +69,7 @@ export const MODERATOR_DEFAULT_SECTIONS = [
   'courier-tracking',
   'tracking',
   'chat',
+  'status-changed-today',
 ];
 
 export function getDefaultPermissionForRole(role: string | undefined, sectionKey: string): PermissionLevel {

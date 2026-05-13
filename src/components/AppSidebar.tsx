@@ -5,7 +5,7 @@ import {
   TrendingUp, Calendar, UserCheck, MessageSquare, Locate, FileSpreadsheet,
   CircleDot, Calculator, Contact, ClipboardList, Trash2, FileBarChart, Navigation2, Palette,
   MessageCircle, ShieldCheck, Rocket, Hourglass, UserPlus2,
-  ListTodo, AlarmClock, Clock4, Activity
+  ListTodo, AlarmClock, Clock4, Activity, CalendarCheck
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -45,6 +45,7 @@ const managementItems = [
 const accountingItems = [
   { title: 'تحصيلات المندوبين', url: '/courier-collections', icon: Wallet },
   { title: 'سيستم الحسابات', url: '/accounting-system', icon: Calculator },
+  { title: 'تقفيلة يومية', url: '/daily-closing', icon: CalendarCheck },
   { title: 'يوميات الفروع', url: '/branch-diaries', icon: ClipboardList },
   { title: 'السلفات والخصومات', url: '/advances', icon: Wallet },
 ];

@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { MODERATOR_DEFAULT_SECTIONS, usePermissions } from "@/hooks/usePermissions";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AppLayout from "@/components/AppLayout";
 import Login from "@/pages/Login";
@@ -75,8 +76,13 @@ function LoginRedirect() {
 
 function HomeRedirect() {
   const { isModerator, isOwnerOrAdmin, loading } = useAuth();
-  if (loading) return null;
-  if (isModerator && !isOwnerOrAdmin) return <Navigate to="/order-approval" replace />;
+  const { canView, loading: permissionsLoading } = usePermissions();
+  if (loading || permissionsLoading) return null;
+  if (isModerator && !isOwnerOrAdmin) {
+    const firstAllowedSection = MODERATOR_DEFAULT_SECTIONS.find(canView);
+    if (firstAllowedSection) return <Navigate to={`/${firstAllowedSection}`} replace />;
+    return <div className="flex min-h-screen items-center justify-center bg-background text-foreground">لا توجد صلاحيات متاحة لهذا المستخدم</div>;
+  }
   return <Dashboard />;
 }
 

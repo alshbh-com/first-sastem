@@ -11,7 +11,7 @@ import { UserPlus, Trash2, Key, Shield, Eye, EyeOff } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { ALL_SECTIONS, getDefaultPermissionForRole, PermissionLevel } from '@/hooks/usePermissions';
+import { ALL_SECTIONS, getDefaultPermissionForRole, getPermissionSectionsForRole, PermissionLevel } from '@/hooks/usePermissions';
 
 export default function UsersPage() {
   const { isOwner } = useAuth();
@@ -340,7 +340,7 @@ export default function UsersPage() {
         <DialogContent className="bg-card border-border max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader><DialogTitle>صلاحيات - {permUser?.full_name}</DialogTitle></DialogHeader>
           <div className="space-y-2">
-            {ALL_SECTIONS.map(section => (
+            {getPermissionSectionsForRole(permUser?.role).map(section => (
               <div key={section.key} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                 <span className="text-sm font-medium">{section.label}</span>
                 <Select

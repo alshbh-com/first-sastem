@@ -112,7 +112,7 @@ const App = () => (
             <Route element={
               <ProtectedRoute requiredRole="owner_or_admin"><AppLayout /></ProtectedRoute>
             }>
-              <Route path="/" element={<Dashboard />} />
+              <Route path="/" element={<HomeRedirect />} />
               <Route path="/order-approval" element={<OrderApproval />} />
               <Route path="/orders" element={<Orders />} />
               <Route path="/unassigned-orders" element={<UnassignedOrders />} />

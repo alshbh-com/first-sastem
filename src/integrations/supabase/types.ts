@@ -581,6 +581,71 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_closing_diaries: {
+        Row: {
+          created_at: string
+          diary_date: string
+          id: string
+          notes: string
+          office_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          diary_date?: string
+          id?: string
+          notes?: string
+          office_id: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          diary_date?: string
+          id?: string
+          notes?: string
+          office_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      daily_closing_entries: {
+        Row: {
+          copied_from_diary_id: string | null
+          created_at: string
+          diary_id: string
+          id: string
+          note: string
+          order_id: string
+        }
+        Insert: {
+          copied_from_diary_id?: string | null
+          created_at?: string
+          diary_id: string
+          id?: string
+          note?: string
+          order_id: string
+        }
+        Update: {
+          copied_from_diary_id?: string | null
+          created_at?: string
+          diary_id?: string
+          id?: string
+          note?: string
+          order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_closing_entries_diary_id_fkey"
+            columns: ["diary_id"]
+            isOneToOne: false
+            referencedRelation: "daily_closing_diaries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       delivery_prices: {
         Row: {
           created_at: string

@@ -74,6 +74,8 @@ function LoginRedirect() {
   return <Login />;
 }
 
+const FALLBACK_SECTIONS = ['orders', 'order-approval', 'pending-collections', 'closed-orders', 'search', 'tasks', 'offices', 'delivery-prices', 'chat', 'tracking', 'courier-tracking', 'settings'];
+
 function HomeRedirect() {
   const { isModerator, isOwnerOrAdmin, loading } = useAuth();
   const { canView, loading: permissionsLoading } = usePermissions();
@@ -81,6 +83,11 @@ function HomeRedirect() {
   if (isModerator && !isOwnerOrAdmin) {
     const firstAllowedSection = MODERATOR_DEFAULT_SECTIONS.find(canView);
     if (firstAllowedSection) return <Navigate to={`/${firstAllowedSection}`} replace />;
+    return <div className="flex min-h-screen items-center justify-center bg-background text-foreground">لا توجد صلاحيات متاحة لهذا المستخدم</div>;
+  }
+  if (!canView('dashboard')) {
+    const firstAllowed = FALLBACK_SECTIONS.find(canView);
+    if (firstAllowed) return <Navigate to={`/${firstAllowed}`} replace />;
     return <div className="flex min-h-screen items-center justify-center bg-background text-foreground">لا توجد صلاحيات متاحة لهذا المستخدم</div>;
   }
   return <Dashboard />;

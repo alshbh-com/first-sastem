@@ -1,12 +1,12 @@
 import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePermissions, urlToSectionKey } from '@/hooks/usePermissions';
+import { MODERATOR_DEFAULT_SECTIONS, usePermissions, urlToSectionKey } from '@/hooks/usePermissions';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
 
 export default function AppLayout() {
-  const { isCourier, isOwnerOrAdmin, isOffice } = useAuth();
-  const { canView, canEdit } = usePermissions();
+  const { isCourier, isOwnerOrAdmin, isOffice, isModerator } = useAuth();
+  const { canView, canEdit, loading } = usePermissions();
   const location = useLocation();
 
   if (isOffice && !isOwnerOrAdmin) {
@@ -18,7 +18,11 @@ export default function AppLayout() {
 
   // Check if current section is hidden
   const sectionKey = urlToSectionKey(location.pathname);
+  if (loading) return null;
   if (!canView(sectionKey)) {
+    if (isModerator && !isOwnerOrAdmin) {
+      return <Navigate to={`/${MODERATOR_DEFAULT_SECTIONS[0]}`} replace />;
+    }
     return <Navigate to="/" replace />;
   }
 

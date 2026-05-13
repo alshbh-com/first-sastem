@@ -81,7 +81,8 @@ export default function StatusChangedToday() {
               <TableHeader>
                 <TableRow className="border-border">
                   <TableHead className="text-right">وقت التغيير</TableHead>
-                  <TableHead className="text-right">الباركود</TableHead>
+                  <TableHead className="text-right">الكود</TableHead>
+                  <TableHead className="text-right">المنتج</TableHead>
                   <TableHead className="text-right">العميل</TableHead>
                   <TableHead className="text-right">الهاتف</TableHead>
                   <TableHead className="text-right">المكتب</TableHead>
@@ -93,15 +94,16 @@ export default function StatusChangedToday() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
                 ) : orders.length === 0 ? (
-                  <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">مفيش أوردرات اتغيرت حالتها النهاردة</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">مفيش أوردرات اتغيرت حالتها النهاردة</TableCell></TableRow>
                 ) : orders.map(o => (
                   <TableRow key={o.id} className="border-border">
                     <TableCell className="text-xs text-muted-foreground">
                       {new Date(o.updated_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                     </TableCell>
-                    <TableCell className="font-mono text-xs">{o.barcode || '-'}</TableCell>
+                    <TableCell className="font-mono text-xs">{o.customer_code || '-'}</TableCell>
+                    <TableCell className="text-sm">{o.product_name || '-'}</TableCell>
                     <TableCell className="text-sm">{o.customer_name}</TableCell>
                     <TableCell dir="ltr" className="text-sm">{o.customer_phone}</TableCell>
                     <TableCell className="text-sm">{o.offices?.name || o.office_name_snapshot || '-'}</TableCell>

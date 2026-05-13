@@ -73,6 +73,17 @@ export default function DailyClosing() {
 
   useEffect(() => { if (diaryId) loadDiary(diaryId); }, [diaryId]);
 
+  // Realtime: refresh entries when any order's status changes or new entry added
+  useEffect(() => {
+    if (!diaryId) return;
+    const channel = supabase
+      .channel(`dcd-${diaryId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_closing_entries', filter: `diary_id=eq.${diaryId}` }, () => loadDiary(diaryId))
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, () => loadDiary(diaryId))
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [diaryId]);
+
   const updateNote = async (entryId: string, value: string) => {
     setEntries(prev => prev.map(e => e.id === entryId ? { ...e, note: value } : e));
   };
@@ -187,7 +198,7 @@ export default function DailyClosing() {
                       <TableHead className="text-right">الاسم</TableHead>
                       <TableHead className="text-right">السعر</TableHead>
                       <TableHead className="text-right">الحالة</TableHead>
-                      <TableHead className="text-right min-w-[200px]">ملاحظة</TableHead>
+                      <TableHead className="text-right min-w-[220px]">ملاحظة الأوردر</TableHead>
                       {canEdit && <TableHead className="text-right">إجراءات</TableHead>}
                     </TableRow>
                   </TableHeader>

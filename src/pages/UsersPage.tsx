@@ -11,7 +11,7 @@ import { UserPlus, Trash2, Key, Shield, Eye, EyeOff } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { ALL_SECTIONS, PermissionLevel } from '@/hooks/usePermissions';
+import { ALL_SECTIONS, getDefaultPermissionForRole, PermissionLevel } from '@/hooks/usePermissions';
 
 export default function UsersPage() {
   const { isOwner } = useAuth();
@@ -144,7 +144,7 @@ export default function UsersPage() {
       .select('section, permission')
       .eq('user_id', u.id);
     const perms: Record<string, PermissionLevel> = {};
-    ALL_SECTIONS.forEach(s => { perms[s.key] = 'edit'; }); // default edit
+    ALL_SECTIONS.forEach(s => { perms[s.key] = getDefaultPermissionForRole(u.role, s.key); });
     (data || []).forEach((p: any) => { perms[p.section] = p.permission; });
     setPermData(perms);
   };
@@ -156,9 +156,9 @@ export default function UsersPage() {
       // Delete existing permissions
       await supabase.from('user_permissions').delete().eq('user_id', permUser.id);
       
-      // Insert only non-default (non-edit) permissions
+      // Insert only permissions that differ from the role default
       const toInsert = Object.entries(permData)
-        .filter(([_, perm]) => perm !== 'edit')
+        .filter(([section, perm]) => perm !== getDefaultPermissionForRole(permUser.role, section))
         .map(([section, permission]) => ({
           user_id: permUser.id,
           section,

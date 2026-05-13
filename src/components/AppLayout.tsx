@@ -22,12 +22,15 @@ export default function AppLayout() {
   if (!canView(sectionKey)) {
     if (isModerator && !isOwnerOrAdmin) {
       const firstAllowedSection = MODERATOR_DEFAULT_SECTIONS.find(canView);
-      if (firstAllowedSection) {
+      if (firstAllowedSection && firstAllowedSection !== sectionKey) {
         return <Navigate to={`/${firstAllowedSection}`} replace />;
       }
       return <div className="flex min-h-screen items-center justify-center bg-background text-foreground">لا توجد صلاحيات متاحة لهذا المستخدم</div>;
     }
-    return <Navigate to="/" replace />;
+    if (sectionKey !== 'dashboard') {
+      return <Navigate to="/" replace />;
+    }
+    // dashboard itself is hidden — let HomeRedirect handle the fallback to avoid loop
   }
 
   return (

@@ -64,10 +64,20 @@ export default function DailyClosing() {
     setDiary(d);
     const { data: ents } = await supabase
       .from('daily_closing_entries' as any)
-      .select('id, note, order_id, created_at, orders:order_id(id, customer_code, customer_name, product_name, price, status_id, is_closed)')
+      .select('id, note, order_id, created_at')
       .eq('diary_id', id)
       .order('created_at', { ascending: true });
-    setEntries((ents as any) || []);
+    const list = (ents as any[]) || [];
+    const orderIds = list.map(e => e.order_id).filter(Boolean);
+    let ordersMap: Record<string, any> = {};
+    if (orderIds.length) {
+      const { data: ords } = await supabase
+        .from('orders')
+        .select('id, customer_code, customer_name, product_name, price, status_id, is_closed')
+        .in('id', orderIds);
+      (ords || []).forEach((o: any) => { ordersMap[o.id] = o; });
+    }
+    setEntries(list.map(e => ({ ...e, orders: ordersMap[e.order_id] || null })));
     setLoading(false);
   };
 

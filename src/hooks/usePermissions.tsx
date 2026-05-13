@@ -78,6 +78,14 @@ export function getDefaultPermissionForRole(role: string | undefined, sectionKey
   return 'edit';
 }
 
+export function getPermissionSectionsForRole(role: string | undefined) {
+  if (role === 'moderator') {
+    return ALL_SECTIONS.filter(section => MODERATOR_DEFAULT_SECTIONS.includes(section.key));
+  }
+
+  return ALL_SECTIONS;
+}
+
 export function usePermissions() {
   const { user, isOwner, roles } = useAuth();
   const [permissions, setPermissions] = useState<SectionPermission[]>([]);
@@ -102,6 +110,7 @@ export function usePermissions() {
 
   const getPermission = (sectionKey: string): PermissionLevel => {
     if (isOwner) return 'edit'; // Owner always has full access
+    if (isModerator && !MODERATOR_DEFAULT_SECTIONS.includes(sectionKey)) return 'hidden';
     const found = permissions.find(p => p.section === sectionKey);
     if (found) return found.permission as PermissionLevel;
     return getDefaultPermissionForRole(isModerator ? 'moderator' : undefined, sectionKey);

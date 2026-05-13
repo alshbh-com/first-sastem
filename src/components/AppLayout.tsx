@@ -21,7 +21,11 @@ export default function AppLayout() {
   if (loading) return null;
   if (!canView(sectionKey)) {
     if (isModerator && !isOwnerOrAdmin) {
-      return <Navigate to={`/${MODERATOR_DEFAULT_SECTIONS[0]}`} replace />;
+      const firstAllowedSection = MODERATOR_DEFAULT_SECTIONS.find(canView);
+      if (firstAllowedSection) {
+        return <Navigate to={`/${firstAllowedSection}`} replace />;
+      }
+      return <div className="flex min-h-screen items-center justify-center bg-background text-foreground">لا توجد صلاحيات متاحة لهذا المستخدم</div>;
     }
     return <Navigate to="/" replace />;
   }

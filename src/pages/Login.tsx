@@ -45,8 +45,10 @@ export default function Login() {
             {/* Logo */}
             <div className="flex flex-col items-center space-y-3">
               <div className="relative">
-                <div className="absolute inset-0 bg-[var(--gradient-neon)] blur-2xl opacity-70 animate-neon-pulse rounded-full" />
-                <img src={logo} alt="FIRST" width={96} height={96} className="relative h-24 w-24 object-contain animate-flicker" />
+                <div className="absolute inset-0 bg-[var(--gradient-neon)] blur-2xl opacity-70 animate-neon-pulse rounded-2xl" />
+                <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl bg-primary text-primary-foreground font-display text-4xl font-bold shadow-[var(--shadow-glow)]">
+                  F
+                </div>
               </div>
               <div className="text-center space-y-1">
                 <h1 className="font-display text-3xl font-bold text-foreground neon-text">FIRST</h1>

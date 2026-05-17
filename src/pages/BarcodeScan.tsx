@@ -183,8 +183,8 @@ export default function BarcodeScan() {
 
   const printStickers = () => {
     if (orders.length === 0) return;
-    const ids = orders.map(o => o.id).join(',');
-    navigate(`/print?ids=${ids}`);
+    printBarcodeStickers(orders as any);
+    setSessionActions(prev => [...prev, { type: 'print', count: orders.length, at: new Date().toISOString() }]);
   };
 
   const exportCsv = () => {

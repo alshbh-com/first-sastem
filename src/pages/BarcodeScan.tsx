@@ -213,13 +213,18 @@ export default function BarcodeScan() {
           <p className="text-sm text-muted-foreground tracking-[0.3em] uppercase">// barcode scan · v1.0</p>
         </div>
         {!active ? (
-          <Button size="lg" className="h-14 px-8 text-lg" onClick={() => setActive(true)}>
+          <Button size="lg" className="h-14 px-8 text-lg" onClick={startSession}>
             <Play className="w-5 h-5 ml-2" /> ابدأ الاسكان
           </Button>
         ) : (
-          <Button size="lg" variant="destructive" onClick={() => setActive(false)}>
-            <X className="w-5 h-5 ml-2" /> إيقاف
-          </Button>
+          <div className="flex gap-2">
+            <Button size="lg" className="h-14 px-6" onClick={endSession}>
+              <CheckCircle2 className="w-5 h-5 ml-2" /> انتهيت
+            </Button>
+            <Button size="lg" variant="destructive" onClick={() => { setActive(false); setSessionId(null); }}>
+              <X className="w-5 h-5 ml-2" /> إلغاء
+            </Button>
+          </div>
         )}
       </div>
 

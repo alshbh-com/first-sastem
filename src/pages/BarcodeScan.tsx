@@ -125,6 +125,9 @@ export default function BarcodeScan() {
     }
     beep(true);
     setOrders(prev => [data as any, ...prev]);
+    if (sessionId) {
+      supabase.from('scan_session_items').insert({ session_id: sessionId, order_id: data.id, scanned_code: code });
+    }
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

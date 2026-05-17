@@ -61,6 +61,7 @@ const reportsItems = [
 ];
 
 const toolsItems = [
+  { title: 'قراءة الباركود', url: '/barcode-scan', icon: ScanLine },
   { title: 'رسائل واتساب', url: '/whatsapp-messages', icon: MessageCircle },
   { title: 'تتبع الشحنات', url: '/tracking', icon: Locate },
   { title: 'الطباعة', url: '/print', icon: Printer },

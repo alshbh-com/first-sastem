@@ -1716,6 +1716,68 @@ export type Database = {
           },
         ]
       }
+      scan_session_items: {
+        Row: {
+          created_at: string
+          id: string
+          order_id: string
+          scanned_code: string
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_id: string
+          scanned_code?: string
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_id?: string
+          scanned_code?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scan_session_items_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "scan_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scan_sessions: {
+        Row: {
+          actions: Json
+          ended_at: string | null
+          id: string
+          notes: string
+          orders_count: number
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          actions?: Json
+          ended_at?: string | null
+          id?: string
+          notes?: string
+          orders_count?: number
+          started_at?: string
+          user_id: string
+        }
+        Update: {
+          actions?: Json
+          ended_at?: string | null
+          id?: string
+          notes?: string
+          orders_count?: number
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       status_change_notes: {
         Row: {
           created_at: string

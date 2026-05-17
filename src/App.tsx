@@ -178,6 +178,7 @@ const App = () => (
               <Route path="/new-system" element={<NewSystem />} />
               <Route path="/branch-diaries" element={<BranchDiaries />} />
               <Route path="/daily-closing" element={<DailyClosing />} />
+              <Route path="/barcode-scan" element={<BarcodeScan />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

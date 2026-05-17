@@ -5,7 +5,7 @@ import {
   TrendingUp, Calendar, UserCheck, MessageSquare, Locate, FileSpreadsheet,
   CircleDot, Calculator, Contact, ClipboardList, Trash2, FileBarChart, Navigation2, Palette,
   MessageCircle, ShieldCheck, Rocket, Hourglass, UserPlus2,
-  ListTodo, AlarmClock, Clock4, Activity, CalendarCheck
+  ListTodo, AlarmClock, Clock4, Activity, CalendarCheck, ScanLine
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';

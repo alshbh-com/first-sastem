@@ -43,6 +43,7 @@ function beep(ok: boolean) {
 
 export default function BarcodeScan() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [active, setActive] = useState(false);
   const [value, setValue] = useState('');
   const [orders, setOrders] = useState<ScannedOrder[]>([]);
@@ -51,12 +52,37 @@ export default function BarcodeScan() {
   const [bulkStatus, setBulkStatus] = useState<string>('');
   const [bulkCourier, setBulkCourier] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionActions, setSessionActions] = useState<any[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     supabase.from('order_statuses').select('*').order('sort_order').then(({ data }) => setStatuses(data || []));
     supabase.from('profiles').select('id, full_name').then(({ data }) => setCouriers(data || []));
   }, []);
+
+  const startSession = async () => {
+    if (!user) return;
+    const { data, error } = await supabase.from('scan_sessions').insert({ user_id: user.id }).select().single();
+    if (error) { toast.error('فشل بدء الجلسة'); return; }
+    setSessionId(data.id);
+    setSessionActions([]);
+    setActive(true);
+  };
+
+  const endSession = async () => {
+    if (!sessionId) { setActive(false); return; }
+    await supabase.from('scan_sessions').update({
+      ended_at: new Date().toISOString(),
+      orders_count: orders.length,
+      actions: sessionActions as any,
+    }).eq('id', sessionId);
+    toast.success(`تم إنهاء الجلسة - ${orders.length} أوردر`);
+    setActive(false);
+    setSessionId(null);
+    setOrders([]);
+    setSessionActions([]);
+  };
 
   useEffect(() => {
     if (active) inputRef.current?.focus();

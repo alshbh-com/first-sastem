@@ -149,6 +149,7 @@ export default function BarcodeScan() {
     if (error) return toast.error('فشل تحديث الحالة');
     const st = statuses.find(s => s.id === bulkStatus);
     setOrders(prev => prev.map(o => ({ ...o, status_id: bulkStatus, order_statuses: { name: st?.name, color: st?.color } as any })));
+    setSessionActions(prev => [...prev, { type: 'status', status: st?.name, count: ids.length, at: new Date().toISOString() }]);
     await logActivity('barcode_bulk_status', { count: ids.length, status: st?.name });
     toast.success(`تم تحديث ${ids.length} أوردر إلى: ${st?.name}`);
   };

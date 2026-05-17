@@ -5,10 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ScanLine, Trash2, Printer, UserPlus, UserMinus, Lock, Play, X } from 'lucide-react';
+import { ScanLine, Trash2, Printer, UserPlus, UserMinus, Lock, Play, X, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { logActivity } from '@/lib/activityLogger';
+import { printStickers as printBarcodeStickers } from '@/components/BarcodeStickerPrint';
+import { useAuth } from '@/contexts/AuthContext';
 
 type ScannedOrder = {
   id: string;

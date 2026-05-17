@@ -64,6 +64,7 @@ import NewSystem from "@/pages/NewSystem";
 import PendingCollections from "@/pages/PendingCollections";
 import BranchDiaries from "@/pages/BranchDiaries";
 import DailyClosing from "@/pages/DailyClosing";
+import BarcodeScan from "@/pages/BarcodeScan";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -177,6 +178,7 @@ const App = () => (
               <Route path="/new-system" element={<NewSystem />} />
               <Route path="/branch-diaries" element={<BranchDiaries />} />
               <Route path="/daily-closing" element={<DailyClosing />} />
+              <Route path="/barcode-scan" element={<BarcodeScan />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

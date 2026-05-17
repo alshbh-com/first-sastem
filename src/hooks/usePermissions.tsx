@@ -52,6 +52,7 @@ export const ALL_SECTIONS = [
   { key: 'branch-diaries', label: 'يوميات الفروع', url: '/branch-diaries' },
   { key: 'courier-applications', label: 'طلبات عمال', url: '/courier-applications' },
   { key: 'daily-closing', label: 'تقفيلة يومية', url: '/daily-closing' },
+  { key: 'barcode-scan', label: 'قراءة الباركود', url: '/barcode-scan' },
 ];
 
 export function urlToSectionKey(url: string): string {

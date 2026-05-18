@@ -113,13 +113,14 @@ export default function PrintSticker() {
     const printWindow = window.open('', '_blank', 'width=400,height=600');
     if (!printWindow) return;
 
-    const stickers = selectedOrders.map(order => {
+    const stickers = selectedOrders.map((order, idx) => {
       const total = Number(order.price) + Number(order.delivery_price);
       const barcode = order.barcode || '';
       return `
         <div class="sticker">
           <div class="header">FIRST</div>
           <div class="date">${new Date(order.created_at).toLocaleDateString('ar-EG')}</div>
+          ${barcode ? `<svg id="bc-${idx}" class="barcode-svg"></svg>` : ''}
           <div class="barcode-num">${barcode}</div>
           <div class="row"><span>الكود: <b>${order.customer_code || '-'}</b></span></div>
           <div class="info">العميل: <b>${order.customer_name}</b></div>
@@ -132,7 +133,10 @@ export default function PrintSticker() {
         </div>`;
     }).join('');
 
+    const barcodeData = selectedOrders.map((o, i) => ({ idx: i, code: o.barcode || '' }));
+
     printWindow.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8">
+      <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
       <style>
         @page { size: 50mm 100mm; margin: 0; }
         body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; }
@@ -140,14 +144,24 @@ export default function PrintSticker() {
         .sticker:last-child { page-break-after: auto; }
         .header { text-align: center; font-size: 16px; font-weight: bold; margin-bottom: 1px; direction: ltr; }
         .date { text-align: center; font-size: 8px; margin-bottom: 3px; color: #333; }
-        .barcode-num { font-family: monospace; font-size: 17px; font-weight: bold; margin-bottom: 4px; text-align: center; }
+        .barcode-svg { display: block; margin: 0 auto 2px; width: 95%; height: 32px; }
+        .barcode-num { font-family: monospace; font-size: 11px; font-weight: bold; margin-bottom: 4px; text-align: center; }
         .info { margin: 2px 0; font-size: 10px; line-height: 1.4; text-align: right; word-wrap: break-word; overflow-wrap: break-word; }
         .row { display: flex; justify-content: space-between; margin: 2px 0; font-size: 10px; }
         .total { font-size: 15px; font-weight: bold; text-align: center; border: 1.5px solid #000; padding: 3px; margin-top: auto; }
-      </style></head><body>${stickers}</body></html>`);
+      </style></head><body>${stickers}
+      <script>
+        const data = ${JSON.stringify(barcodeData)};
+        function render(){
+          if(typeof JsBarcode === 'undefined'){ setTimeout(render, 100); return; }
+          data.forEach(d => { if(!d.code) return; try { JsBarcode('#bc-' + d.idx, d.code, { format: 'CODE128', displayValue: false, height: 40, margin: 0 }); } catch(e){} });
+          setTimeout(() => window.print(), 400);
+        }
+        window.addEventListener('load', render);
+      <\/script>
+      </body></html>`);
     printWindow.document.close();
     printWindow.focus();
-    printWindow.print();
   };
 
   const printInvoice = () => {

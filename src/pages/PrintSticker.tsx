@@ -176,6 +176,7 @@ export default function PrintSticker() {
         <div class="invoice-page">
           <div class="header">FIRST</div>
           <div class="date">${new Date().toLocaleDateString('ar-EG')} - فاتورة ${i + 1} من ${selectedOrders.length}</div>
+          ${barcode ? `<div class="bc-wrap"><svg id="inv-bc-${i}"></svg><div class="bc-num">${barcode}</div></div>` : ''}
           <table>
             <tr><th>الكود</th><td>${order.customer_code || '-'}</td></tr>
             <tr><th>الباركود</th><td style="font-family:monospace;direction:ltr">${barcode}</td></tr>
@@ -192,22 +193,37 @@ export default function PrintSticker() {
         </div>`;
     }).join('');
 
+    const invBarcodes = selectedOrders.map((o, i) => ({ idx: i, code: o.barcode || '' }));
+
     printWindow.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8">
+      <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
       <style>
         @page { size: A4; margin: 15mm; }
         body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; }
         .invoice-page { page-break-after: always; padding: 10mm 0; }
         .invoice-page:last-child { page-break-after: auto; }
         .header { text-align: center; font-size: 28px; font-weight: bold; margin-bottom: 10px; }
-        .date { text-align: center; margin-bottom: 20px; color: #666; font-size: 13px; }
+        .date { text-align: center; margin-bottom: 10px; color: #666; font-size: 13px; }
+        .bc-wrap { text-align: center; margin-bottom: 15px; }
+        .bc-wrap svg { height: 60px; max-width: 300px; }
+        .bc-num { font-family: monospace; font-size: 13px; font-weight: bold; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
         th, td { border: 1px solid #333; padding: 10px 14px; text-align: right; font-size: 14px; }
         th { background: #f0f0f0; font-weight: bold; width: 30%; }
         .total { font-size: 22px; font-weight: bold; text-align: center; border: 3px solid #000; padding: 12px; }
-      </style></head><body>${invoicesHtml}</body></html>`);
+      </style></head><body>${invoicesHtml}
+      <script>
+        const data = ${JSON.stringify(invBarcodes)};
+        function render(){
+          if(typeof JsBarcode === 'undefined'){ setTimeout(render, 100); return; }
+          data.forEach(d => { if(!d.code) return; try { JsBarcode('#inv-bc-' + d.idx, d.code, { format: 'CODE128', displayValue: false, height: 60, margin: 0 }); } catch(e){} });
+          setTimeout(() => window.print(), 400);
+        }
+        window.addEventListener('load', render);
+      <\/script>
+      </body></html>`);
     printWindow.document.close();
     printWindow.focus();
-    printWindow.print();
   };
 
   const clearFilters = () => {

@@ -175,11 +175,20 @@ export default function BarcodeScan() {
     toast.success(`تم تحديث ${ids.length} أوردر إلى: ${st?.name}`);
   };
 
-  const applyBulkCourier = async (clear = false) => {
-    if (orders.length === 0) return;
-    if (!clear && !bulkCourier) return;
+  const doApplyCourier = async (clear: boolean) => {
     const ids = orders.map(o => o.id);
-    const payload: any = { courier_id: clear ? null : bulkCourier };
+    const targetCourier = clear ? null : bulkCourier;
+    const targetName = clear ? null : courierName(bulkCourier);
+    // Capture previous assignments BEFORE update for detailed log
+    const prevSnapshot = orders.map(o => ({
+      order_id: o.id,
+      barcode: o.barcode,
+      customer_code: o.customer_code,
+      customer_name: o.customer_name,
+      prev_courier_id: o.courier_id || null,
+      prev_courier_name: courierName(o.courier_id),
+    }));
+    const payload: any = { courier_id: targetCourier };
     if (!clear) {
       const cs = statuses.find(s => s.name === 'قيد التوصيل');
       if (cs) payload.status_id = cs.id;
@@ -187,17 +196,30 @@ export default function BarcodeScan() {
     const { error } = await supabase.from('orders').update(payload).in('id', ids);
     if (error) return toast.error('فشل تعيين المندوب');
     setOrders(prev => prev.map(o => ({ ...o, ...payload })));
-    await logActivity(clear ? 'barcode_bulk_unassign' : 'barcode_bulk_assign', { count: ids.length });
-    toast.success(clear ? `تم إزالة التعيين عن ${ids.length} أوردر` : `تم تعيين ${ids.length} أوردر للمندوب`);
+    await logActivity(clear ? 'barcode_bulk_unassign' : 'barcode_bulk_assign', {
+      count: ids.length,
+      new_courier_id: targetCourier,
+      new_courier_name: targetName,
+      orders: prevSnapshot,
+    });
+    setSessionActions(prev => [...prev, { type: clear ? 'unassign' : 'assign', courier: targetName, count: ids.length, at: new Date().toISOString() }]);
+    toast.success(clear ? `تم إزالة التعيين عن ${ids.length} أوردر` : `تم تعيين ${ids.length} أوردر للمندوب: ${targetName}`);
+  };
+
+  const applyBulkCourier = (clear = false) => {
+    if (orders.length === 0) return;
+    if (!clear && !bulkCourier) return;
+    if (clear) setConfirmUnassign(true); else setConfirmAssign(true);
   };
 
   const closeAll = async () => {
     if (orders.length === 0) return;
     if (!confirm(`هل تريد تقفيل ${orders.length} أوردر؟`)) return;
     const ids = orders.map(o => o.id);
+    const snapshot = orders.map(o => ({ order_id: o.id, barcode: o.barcode, customer_name: o.customer_name }));
     const { error } = await supabase.from('orders').update({ is_closed: true }).in('id', ids);
     if (error) return toast.error('فشل تقفيل الأوردرات');
-    await logActivity('barcode_bulk_close', { count: ids.length });
+    await logActivity('barcode_bulk_close', { count: ids.length, orders: snapshot });
     toast.success(`تم تقفيل ${ids.length} أوردر`);
     setOrders([]);
   };

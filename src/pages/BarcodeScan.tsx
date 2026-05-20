@@ -331,13 +331,13 @@ export default function BarcodeScan() {
         <table className="w-full text-sm">
           <thead className="bg-muted">
             <tr>
+              <th className="p-2 text-right">الباركود</th>
               <th className="p-2 text-right">الكود</th>
               <th className="p-2 text-right">العميل</th>
-              <th className="p-2 text-right">المحافظة</th>
-              <th className="p-2 text-right">المنتج</th>
               <th className="p-2 text-right">السعر</th>
               <th className="p-2 text-right">الحالة</th>
               <th className="p-2 text-right">المكتب</th>
+              <th className="p-2 text-right">المندوب</th>
               <th className="p-2"></th>
             </tr>
           </thead>
@@ -347,21 +347,91 @@ export default function BarcodeScan() {
             )}
             {orders.map(o => (
               <tr key={o.id} className="border-t">
-                <td className="p-2 font-mono">{o.barcode || o.customer_code}</td>
+                <td className="p-2 font-mono">{o.barcode || '-'}</td>
+                <td className="p-2 font-mono">{o.customer_code || '-'}</td>
                 <td className="p-2">{o.customer_name}</td>
-                <td className="p-2">{o.governorate}</td>
-                <td className="p-2">{o.product_name}</td>
                 <td className="p-2 font-bold">{Number(o.price).toFixed(0)}</td>
                 <td className="p-2">
                   <Badge style={{ backgroundColor: o.order_statuses?.color || undefined }}>{o.order_statuses?.name || 'بدون'}</Badge>
                 </td>
                 <td className="p-2">{o.offices?.name || '-'}</td>
+                <td className="p-2">{courierName(o.courier_id)}</td>
                 <td className="p-2"><Button size="sm" variant="ghost" onClick={() => removeFromList(o.id)}><Trash2 className="w-4 h-4" /></Button></td>
               </tr>
             ))}
           </tbody>
         </table>
       </Card>
+
+      <Dialog open={confirmAssign} onOpenChange={setConfirmAssign}>
+        <DialogContent dir="rtl">
+          <DialogHeader><DialogTitle>تأكيد تعيين المندوب</DialogTitle></DialogHeader>
+          <p>سيتم تعيين <b>{orders.length}</b> أوردر للمندوب: <b>{courierName(bulkCourier)}</b></p>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setConfirmAssign(false)}>إلغاء</Button>
+            <Button onClick={async () => { setConfirmAssign(false); await doApplyCourier(false); }}>تأكيد التعيين</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={confirmUnassign} onOpenChange={setConfirmUnassign}>
+        <DialogContent dir="rtl">
+          <DialogHeader><DialogTitle>تأكيد إلغاء التعيين</DialogTitle></DialogHeader>
+          <p>سيتم إلغاء تعيين <b>{orders.length}</b> أوردر عن مناديبهم الحاليين.</p>
+          <div className="max-h-40 overflow-auto text-xs bg-muted rounded p-2 space-y-1">
+            {orders.map(o => (
+              <div key={o.id} className="flex justify-between"><span className="font-mono">{o.barcode || o.customer_code}</span><span className="text-muted-foreground">{courierName(o.courier_id)}</span></div>
+            ))}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setConfirmUnassign(false)}>تراجع</Button>
+            <Button variant="destructive" onClick={async () => { setConfirmUnassign(false); await doApplyCourier(true); }}>تأكيد الإلغاء</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
+        <DialogContent dir="rtl" className="max-w-3xl max-h-[85vh] overflow-auto">
+          <DialogHeader><DialogTitle>سجل حركات الباركود</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            {historyLogs.length === 0 && <p className="text-center text-muted-foreground py-6">لا توجد حركات</p>}
+            {historyLogs.map((log: any) => {
+              const d = log.details || {};
+              const label = log.action === 'barcode_bulk_assign' ? 'تعيين مندوب'
+                : log.action === 'barcode_bulk_unassign' ? 'إلغاء تعيين'
+                : log.action === 'barcode_bulk_status' ? 'تغيير الحالة'
+                : log.action === 'barcode_bulk_close' ? 'تقفيل أوردرات' : log.action;
+              return (
+                <Card key={log.id} className="p-3 space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <b>{label}</b>
+                    <span className="text-xs text-muted-foreground">{new Date(log.created_at).toLocaleString('en-GB')}</span>
+                  </div>
+                  <div className="text-xs">
+                    عدد: <b>{d.count || 0}</b>
+                    {d.new_courier_name && <> · المندوب الجديد: <b>{d.new_courier_name}</b></>}
+                    {d.status && <> · الحالة: <b>{d.status}</b></>}
+                  </div>
+                  {Array.isArray(d.orders) && d.orders.length > 0 && (
+                    <details className="text-xs">
+                      <summary className="cursor-pointer text-primary">عرض تفاصيل الأوردرات ({d.orders.length})</summary>
+                      <div className="mt-2 max-h-48 overflow-auto bg-muted rounded p-2 space-y-1">
+                        {d.orders.map((o: any, i: number) => (
+                          <div key={i} className="flex justify-between gap-2 border-b border-border/30 pb-1">
+                            <span className="font-mono">{o.barcode || o.customer_code || '-'}</span>
+                            <span>{o.customer_name}</span>
+                            {o.prev_courier_name && <span className="text-muted-foreground">السابق: {o.prev_courier_name}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

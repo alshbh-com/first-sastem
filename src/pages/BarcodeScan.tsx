@@ -55,12 +55,32 @@ export default function BarcodeScan() {
   const [loading, setLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionActions, setSessionActions] = useState<any[]>([]);
+  const [confirmAssign, setConfirmAssign] = useState(false);
+  const [confirmUnassign, setConfirmUnassign] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyLogs, setHistoryLogs] = useState<any[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     supabase.from('order_statuses').select('*').order('sort_order').then(({ data }) => setStatuses(data || []));
-    supabase.from('profiles').select('id, full_name').then(({ data }) => setCouriers(data || []));
+    (async () => {
+      const { data: roles } = await supabase.from('user_roles').select('user_id').eq('role', 'courier');
+      const ids = (roles || []).map((r: any) => r.user_id);
+      if (ids.length === 0) { setCouriers([]); return; }
+      const { data } = await supabase.from('profiles').select('id, full_name').in('id', ids).order('full_name');
+      setCouriers(data || []);
+    })();
   }, []);
+
+  const courierName = (id?: string | null) => id ? (couriers.find(c => c.id === id)?.full_name || '-') : '-';
+
+  const loadHistory = async () => {
+    const { data } = await supabase.from('activity_logs')
+      .select('*').like('action', 'barcode_%')
+      .order('created_at', { ascending: false }).limit(200);
+    setHistoryLogs(data || []);
+    setHistoryOpen(true);
+  };
 
   const startSession = async () => {
     if (!user) return;

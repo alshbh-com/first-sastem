@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ScanLine, Trash2, Printer, UserPlus, UserMinus, Lock, Play, X, CheckCircle2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { ScanLine, Trash2, Printer, UserPlus, UserMinus, Lock, Play, X, CheckCircle2, History } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { logActivity } from '@/lib/activityLogger';
@@ -54,12 +55,32 @@ export default function BarcodeScan() {
   const [loading, setLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionActions, setSessionActions] = useState<any[]>([]);
+  const [confirmAssign, setConfirmAssign] = useState(false);
+  const [confirmUnassign, setConfirmUnassign] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyLogs, setHistoryLogs] = useState<any[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     supabase.from('order_statuses').select('*').order('sort_order').then(({ data }) => setStatuses(data || []));
-    supabase.from('profiles').select('id, full_name').then(({ data }) => setCouriers(data || []));
+    (async () => {
+      const { data: roles } = await supabase.from('user_roles').select('user_id').eq('role', 'courier');
+      const ids = (roles || []).map((r: any) => r.user_id);
+      if (ids.length === 0) { setCouriers([]); return; }
+      const { data } = await supabase.from('profiles').select('id, full_name').in('id', ids).order('full_name');
+      setCouriers(data || []);
+    })();
   }, []);
+
+  const courierName = (id?: string | null) => id ? (couriers.find(c => c.id === id)?.full_name || '-') : '-';
+
+  const loadHistory = async () => {
+    const { data } = await supabase.from('activity_logs')
+      .select('*').like('action', 'barcode_%')
+      .order('created_at', { ascending: false }).limit(200);
+    setHistoryLogs(data || []);
+    setHistoryOpen(true);
+  };
 
   const startSession = async () => {
     if (!user) return;
@@ -154,11 +175,20 @@ export default function BarcodeScan() {
     toast.success(`تم تحديث ${ids.length} أوردر إلى: ${st?.name}`);
   };
 
-  const applyBulkCourier = async (clear = false) => {
-    if (orders.length === 0) return;
-    if (!clear && !bulkCourier) return;
+  const doApplyCourier = async (clear: boolean) => {
     const ids = orders.map(o => o.id);
-    const payload: any = { courier_id: clear ? null : bulkCourier };
+    const targetCourier = clear ? null : bulkCourier;
+    const targetName = clear ? null : courierName(bulkCourier);
+    // Capture previous assignments BEFORE update for detailed log
+    const prevSnapshot = orders.map(o => ({
+      order_id: o.id,
+      barcode: o.barcode,
+      customer_code: o.customer_code,
+      customer_name: o.customer_name,
+      prev_courier_id: o.courier_id || null,
+      prev_courier_name: courierName(o.courier_id),
+    }));
+    const payload: any = { courier_id: targetCourier };
     if (!clear) {
       const cs = statuses.find(s => s.name === 'قيد التوصيل');
       if (cs) payload.status_id = cs.id;
@@ -166,17 +196,30 @@ export default function BarcodeScan() {
     const { error } = await supabase.from('orders').update(payload).in('id', ids);
     if (error) return toast.error('فشل تعيين المندوب');
     setOrders(prev => prev.map(o => ({ ...o, ...payload })));
-    await logActivity(clear ? 'barcode_bulk_unassign' : 'barcode_bulk_assign', { count: ids.length });
-    toast.success(clear ? `تم إزالة التعيين عن ${ids.length} أوردر` : `تم تعيين ${ids.length} أوردر للمندوب`);
+    await logActivity(clear ? 'barcode_bulk_unassign' : 'barcode_bulk_assign', {
+      count: ids.length,
+      new_courier_id: targetCourier,
+      new_courier_name: targetName,
+      orders: prevSnapshot,
+    });
+    setSessionActions(prev => [...prev, { type: clear ? 'unassign' : 'assign', courier: targetName, count: ids.length, at: new Date().toISOString() }]);
+    toast.success(clear ? `تم إزالة التعيين عن ${ids.length} أوردر` : `تم تعيين ${ids.length} أوردر للمندوب: ${targetName}`);
+  };
+
+  const applyBulkCourier = (clear = false) => {
+    if (orders.length === 0) return;
+    if (!clear && !bulkCourier) return;
+    if (clear) setConfirmUnassign(true); else setConfirmAssign(true);
   };
 
   const closeAll = async () => {
     if (orders.length === 0) return;
     if (!confirm(`هل تريد تقفيل ${orders.length} أوردر؟`)) return;
     const ids = orders.map(o => o.id);
+    const snapshot = orders.map(o => ({ order_id: o.id, barcode: o.barcode, customer_name: o.customer_name }));
     const { error } = await supabase.from('orders').update({ is_closed: true }).in('id', ids);
     if (error) return toast.error('فشل تقفيل الأوردرات');
-    await logActivity('barcode_bulk_close', { count: ids.length });
+    await logActivity('barcode_bulk_close', { count: ids.length, orders: snapshot });
     toast.success(`تم تقفيل ${ids.length} أوردر`);
     setOrders([]);
   };
@@ -213,9 +256,14 @@ export default function BarcodeScan() {
           <p className="text-sm text-muted-foreground tracking-[0.3em] uppercase">// barcode scan · v1.0</p>
         </div>
         {!active ? (
-          <Button size="lg" className="h-14 px-8 text-lg" onClick={startSession}>
-            <Play className="w-5 h-5 ml-2" /> ابدأ الاسكان
-          </Button>
+          <div className="flex gap-2">
+            <Button size="lg" className="h-14 px-8 text-lg" onClick={startSession}>
+              <Play className="w-5 h-5 ml-2" /> ابدأ الاسكان
+            </Button>
+            <Button size="lg" variant="outline" className="h-14" onClick={loadHistory}>
+              <History className="w-5 h-5 ml-2" /> سجل الحركات
+            </Button>
+          </div>
         ) : (
           <div className="flex gap-2">
             <Button size="lg" className="h-14 px-6" onClick={endSession}>
@@ -283,13 +331,13 @@ export default function BarcodeScan() {
         <table className="w-full text-sm">
           <thead className="bg-muted">
             <tr>
+              <th className="p-2 text-right">الباركود</th>
               <th className="p-2 text-right">الكود</th>
               <th className="p-2 text-right">العميل</th>
-              <th className="p-2 text-right">المحافظة</th>
-              <th className="p-2 text-right">المنتج</th>
               <th className="p-2 text-right">السعر</th>
               <th className="p-2 text-right">الحالة</th>
               <th className="p-2 text-right">المكتب</th>
+              <th className="p-2 text-right">المندوب</th>
               <th className="p-2"></th>
             </tr>
           </thead>
@@ -299,21 +347,91 @@ export default function BarcodeScan() {
             )}
             {orders.map(o => (
               <tr key={o.id} className="border-t">
-                <td className="p-2 font-mono">{o.barcode || o.customer_code}</td>
+                <td className="p-2 font-mono">{o.barcode || '-'}</td>
+                <td className="p-2 font-mono">{o.customer_code || '-'}</td>
                 <td className="p-2">{o.customer_name}</td>
-                <td className="p-2">{o.governorate}</td>
-                <td className="p-2">{o.product_name}</td>
                 <td className="p-2 font-bold">{Number(o.price).toFixed(0)}</td>
                 <td className="p-2">
                   <Badge style={{ backgroundColor: o.order_statuses?.color || undefined }}>{o.order_statuses?.name || 'بدون'}</Badge>
                 </td>
                 <td className="p-2">{o.offices?.name || '-'}</td>
+                <td className="p-2">{courierName(o.courier_id)}</td>
                 <td className="p-2"><Button size="sm" variant="ghost" onClick={() => removeFromList(o.id)}><Trash2 className="w-4 h-4" /></Button></td>
               </tr>
             ))}
           </tbody>
         </table>
       </Card>
+
+      <Dialog open={confirmAssign} onOpenChange={setConfirmAssign}>
+        <DialogContent dir="rtl">
+          <DialogHeader><DialogTitle>تأكيد تعيين المندوب</DialogTitle></DialogHeader>
+          <p>سيتم تعيين <b>{orders.length}</b> أوردر للمندوب: <b>{courierName(bulkCourier)}</b></p>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setConfirmAssign(false)}>إلغاء</Button>
+            <Button onClick={async () => { setConfirmAssign(false); await doApplyCourier(false); }}>تأكيد التعيين</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={confirmUnassign} onOpenChange={setConfirmUnassign}>
+        <DialogContent dir="rtl">
+          <DialogHeader><DialogTitle>تأكيد إلغاء التعيين</DialogTitle></DialogHeader>
+          <p>سيتم إلغاء تعيين <b>{orders.length}</b> أوردر عن مناديبهم الحاليين.</p>
+          <div className="max-h-40 overflow-auto text-xs bg-muted rounded p-2 space-y-1">
+            {orders.map(o => (
+              <div key={o.id} className="flex justify-between"><span className="font-mono">{o.barcode || o.customer_code}</span><span className="text-muted-foreground">{courierName(o.courier_id)}</span></div>
+            ))}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setConfirmUnassign(false)}>تراجع</Button>
+            <Button variant="destructive" onClick={async () => { setConfirmUnassign(false); await doApplyCourier(true); }}>تأكيد الإلغاء</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
+        <DialogContent dir="rtl" className="max-w-3xl max-h-[85vh] overflow-auto">
+          <DialogHeader><DialogTitle>سجل حركات الباركود</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            {historyLogs.length === 0 && <p className="text-center text-muted-foreground py-6">لا توجد حركات</p>}
+            {historyLogs.map((log: any) => {
+              const d = log.details || {};
+              const label = log.action === 'barcode_bulk_assign' ? 'تعيين مندوب'
+                : log.action === 'barcode_bulk_unassign' ? 'إلغاء تعيين'
+                : log.action === 'barcode_bulk_status' ? 'تغيير الحالة'
+                : log.action === 'barcode_bulk_close' ? 'تقفيل أوردرات' : log.action;
+              return (
+                <Card key={log.id} className="p-3 space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <b>{label}</b>
+                    <span className="text-xs text-muted-foreground">{new Date(log.created_at).toLocaleString('en-GB')}</span>
+                  </div>
+                  <div className="text-xs">
+                    عدد: <b>{d.count || 0}</b>
+                    {d.new_courier_name && <> · المندوب الجديد: <b>{d.new_courier_name}</b></>}
+                    {d.status && <> · الحالة: <b>{d.status}</b></>}
+                  </div>
+                  {Array.isArray(d.orders) && d.orders.length > 0 && (
+                    <details className="text-xs">
+                      <summary className="cursor-pointer text-primary">عرض تفاصيل الأوردرات ({d.orders.length})</summary>
+                      <div className="mt-2 max-h-48 overflow-auto bg-muted rounded p-2 space-y-1">
+                        {d.orders.map((o: any, i: number) => (
+                          <div key={i} className="flex justify-between gap-2 border-b border-border/30 pb-1">
+                            <span className="font-mono">{o.barcode || o.customer_code || '-'}</span>
+                            <span>{o.customer_name}</span>
+                            {o.prev_courier_name && <span className="text-muted-foreground">السابق: {o.prev_courier_name}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

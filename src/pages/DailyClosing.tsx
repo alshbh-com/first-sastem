@@ -223,7 +223,10 @@ export default function DailyClosing() {
                       return (
                         <TableRow key={e.id} className="border-border">
                           <TableCell className="font-mono text-xs">{ord.customer_code || '-'}</TableCell>
-                          <TableCell className="text-sm">{ord.customer_name}</TableCell>
+                          <TableCell className="text-sm">
+                            {ord.customer_name}
+                            {ord.is_closed && <Badge variant="outline" className="mr-1 text-[10px] border-green-500 text-green-500">مقفل ✅</Badge>}
+                          </TableCell>
                           <TableCell className="font-bold text-sm">{Number(ord.price || 0)}</TableCell>
                           <TableCell>
                             {st ? <Badge style={{ backgroundColor: st.color }} className="text-xs">{st.name}</Badge> : <span className="text-xs text-muted-foreground">بدون</span>}

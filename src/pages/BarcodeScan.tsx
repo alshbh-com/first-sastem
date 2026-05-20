@@ -256,9 +256,14 @@ export default function BarcodeScan() {
           <p className="text-sm text-muted-foreground tracking-[0.3em] uppercase">// barcode scan · v1.0</p>
         </div>
         {!active ? (
-          <Button size="lg" className="h-14 px-8 text-lg" onClick={startSession}>
-            <Play className="w-5 h-5 ml-2" /> ابدأ الاسكان
-          </Button>
+          <div className="flex gap-2">
+            <Button size="lg" className="h-14 px-8 text-lg" onClick={startSession}>
+              <Play className="w-5 h-5 ml-2" /> ابدأ الاسكان
+            </Button>
+            <Button size="lg" variant="outline" className="h-14" onClick={loadHistory}>
+              <History className="w-5 h-5 ml-2" /> سجل الحركات
+            </Button>
+          </div>
         ) : (
           <div className="flex gap-2">
             <Button size="lg" className="h-14 px-6" onClick={endSession}>

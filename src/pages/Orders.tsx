@@ -138,6 +138,12 @@ export default function Orders() {
 
   const closeSelected = async () => {
     if (selected.size === 0) { toast.error('اختر أوردرات أولاً'); return; }
+    const chosen = orders.filter(o => selected.has(o.id));
+    const assigned = chosen.filter(o => o.courier_id);
+    if (assigned.length > 0) {
+      toast.error(`الأوردرات المعينة على مندوب (${assigned.length}) لا تُقفل من هنا — اقفلها من قسم تحصيلات المندوبين`);
+      return;
+    }
     if (!confirm(`هل تريد تقفيل ${selected.size} أوردر؟`)) return;
     const { error } = await supabase.from('orders').update({ is_closed: true }).in('id', Array.from(selected));
     if (error) { toast.error(error.message); return; }

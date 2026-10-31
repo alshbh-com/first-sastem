@@ -34,7 +34,7 @@ export default function CourierStats() {
 
   const deliveredStatusIds = statuses.filter(s => s.name === 'تم التسليم' || s.name === 'تسليم جزئي').map(s => s.id);
   const returnedStatusIds = statuses.filter(s => 
-    ['رفض ولم يدفع شحن', 'رفض ودفع شحن', 'تهرب', 'ملغي', 'لم يرد'].includes(s.name)
+    ['رفض ورفض', 'رفض ودفع شحن', 'تهرب', 'ملغي', 'مغلق / لم يرد'].includes(s.name)
   ).map(s => s.id);
 
   const courierData = couriers.map(c => {

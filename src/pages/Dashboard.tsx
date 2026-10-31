@@ -126,7 +126,7 @@ export default function Dashboard() {
     const all = allRes.data || [];
     const sts = statusRes.data || [];
     const deliveredIds = sts.filter(s => s.name === 'تم التسليم' || s.name === 'تسليم جزئي').map(s => s.id);
-    const returnedIds = sts.filter(s => ['مرتجع', 'رفض ودفع شحن', 'رفض ولم يدفع شحن', 'تهرب', 'ملغي', 'لم يرد'].includes(s.name)).map(s => s.id);
+    const returnedIds = sts.filter(s => ['مرتجع', 'رفض ودفع شحن', 'رفض ورفض', 'تهرب', 'ملغي', 'مغلق / لم يرد'].includes(s.name)).map(s => s.id);
     const rejectPaidShipId = sts.find(s => s.name === 'رفض ودفع شحن')?.id;
     const halfShipId = sts.find(s => s.name === 'استلم ودفع نص الشحن')?.id;
     const todayOrders = all.filter(o => o.created_at.startsWith(today));

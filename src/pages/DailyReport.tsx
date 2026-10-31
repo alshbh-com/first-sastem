@@ -28,7 +28,7 @@ export default function DailyReport() {
   const getStatus = (id: string) => statuses.find(s => s.id === id);
 
   const deliveredStatusIds = statuses.filter(s => s.name === 'تم التسليم' || s.name === 'تسليم جزئي').map(s => s.id);
-  const returnedStatusIds = statuses.filter(s => ['مرتجع', 'رفض ودفع شحن', 'رفض ولم يدفع شحن', 'تهرب', 'ملغي', 'لم يرد'].includes(s.name)).map(s => s.id);
+  const returnedStatusIds = statuses.filter(s => ['مرتجع', 'رفض ودفع شحن', 'رفض ورفض', 'تهرب', 'ملغي', 'مغلق / لم يرد'].includes(s.name)).map(s => s.id);
   const rejectPaidShipId = statuses.find(s => s.name === 'رفض ودفع شحن')?.id;
   const halfShipId = statuses.find(s => s.name === 'استلم ودفع نص الشحن')?.id;
 

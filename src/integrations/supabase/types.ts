@@ -1962,6 +1962,11 @@ export type Database = {
       cleanup_old_activity_logs: { Args: never; Returns: undefined }
       cleanup_old_closed_orders: { Args: never; Returns: undefined }
       cleanup_old_diaries: { Args: never; Returns: undefined }
+      cleanup_reject_reject_orders: { Args: never; Returns: number }
+      delete_reject_reject_order: {
+        Args: { p_order_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

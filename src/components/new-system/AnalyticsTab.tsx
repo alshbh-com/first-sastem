@@ -390,9 +390,9 @@ function CourierDailyPerformance() {
 
     const deliveredIds = statuses.filter(s => s.name === 'تم التسليم' || s.name === 'تسليم جزئي').map(s => s.id);
     const rejectPaidId = statuses.find(s => s.name === 'رفض ودفع شحن')?.id;
-    const rejectNoPaidId = statuses.find(s => s.name === 'رفض ولم يدفع شحن')?.id;
+    const rejectNoPaidId = statuses.find(s => s.name === 'رفض ورفض')?.id;
     const canceledId = statuses.find(s => s.name === 'ملغي')?.id;
-    const noAnswerId = statuses.find(s => s.name === 'لم يرد')?.id;
+    const noAnswerId = statuses.find(s => s.name === 'مغلق / لم يرد')?.id;
     const evadeId = statuses.find(s => s.name === 'تهرب')?.id;
 
     const courierData = courierIds.map(cId => {
@@ -449,7 +449,7 @@ function CourierDailyPerformance() {
                   <TableHead className="text-center text-[10px]">رفض+شحن</TableHead>
                   <TableHead className="text-center text-[10px]">رفض بدون</TableHead>
                   <TableHead className="text-center text-[10px]">ملغي</TableHead>
-                  <TableHead className="text-center text-[10px]">لم يرد</TableHead>
+                  <TableHead className="text-center text-[10px]">مغلق / لم يرد</TableHead>
                   <TableHead className="text-center text-[10px]">تهرب</TableHead>
                   <TableHead className="text-center text-[10px]">معلق</TableHead>
                   <TableHead className="text-right text-[10px]">التحصيل</TableHead>

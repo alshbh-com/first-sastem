@@ -174,7 +174,7 @@ export default function AccountingDashboard() {
 
   // Layer 1 - Main business
   const deliveredStatuses = ['تم التسليم', 'تسليم جزئي'];
-  const returnStatuses = ['مرتجع', 'رفض ولم يدفع شحن', 'رفض دون شحن'];
+  const returnStatuses = ['مرتجع', 'رفض ورفض', 'رفض دون شحن'];
 
   const layer1Delivered = mainOrders.filter((o: any) => deliveredStatuses.includes(o.order_statuses?.name));
   const layer1Returns = mainOrders.filter((o: any) => returnStatuses.includes(o.order_statuses?.name));

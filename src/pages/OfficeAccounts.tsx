@@ -89,7 +89,7 @@ export default function OfficeAccounts() {
     const postponedStatus = statuses.find(s => s.name === 'مؤجل');
     const partialStatus = statuses.find(s => s.name === 'تسليم جزئي');
     const returnStatusIds = statuses
-      .filter(s => ['رفض ولم يدفع شحن', 'رفض ودفع شحن', 'تهرب', 'ملغي', 'لم يرد', 'لايرد'].includes(s.name))
+      .filter(s => ['رفض ورفض', 'رفض ودفع شحن', 'تهرب', 'ملغي', 'مغلق / لم يرد', 'مغلق / لم يرد'].includes(s.name))
       .map(s => s.id);
 
     const { data: allPayments } = await supabase.from('office_payments').select('*');

@@ -80,7 +80,7 @@ export default function CourierTracking() {
   const deliveredStatusIds = useMemo(() =>
     statuses.filter(s => s.name === 'تم التسليم' || s.name === 'تسليم جزئي').map(s => s.id), [statuses]);
   const returnedStatusIds = useMemo(() =>
-    statuses.filter(s => ['رفض ولم يدفع شحن', 'رفض ودفع شحن', 'تهرب', 'ملغي', 'لم يرد'].includes(s.name)).map(s => s.id), [statuses]);
+    statuses.filter(s => ['رفض ورفض', 'رفض ودفع شحن', 'تهرب', 'ملغي', 'مغلق / لم يرد'].includes(s.name)).map(s => s.id), [statuses]);
 
   const courierData: CourierInfo[] = useMemo(() => {
     return couriers.map(c => {

@@ -27,6 +27,7 @@ const mainItems = [
   { title: 'بحث شامل', url: '/search', icon: Search },
   { title: 'تذكير الأوردرات القديمة', url: '/orders-reminder', icon: Clock4 },
   { title: 'تغييرات الحالة اليوم', url: '/status-changed-today', icon: Activity },
+  { title: 'رفض ورفض', url: '/reject-reject', icon: CircleDot },
   { title: 'قائمة المهام', url: '/tasks', icon: ListTodo },
   { title: 'الأوردرات المؤجلة', url: '/postponed-orders', icon: AlarmClock },
 ];

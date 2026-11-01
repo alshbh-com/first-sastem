@@ -23,6 +23,7 @@ import TasksPage from "@/pages/TasksPage";
 import PostponedOrders from "@/pages/PostponedOrders";
 import OrdersReminder from "@/pages/OrdersReminder";
 import StatusChangedToday from "@/pages/StatusChangedToday";
+import RejectReject from "@/pages/RejectReject";
 import Advances from "@/pages/Advances";
 import PrintSticker from "@/pages/PrintSticker";
 import ActivityLogs from "@/pages/ActivityLogs";
@@ -156,6 +157,7 @@ const App = () => (
               <Route path="/postponed-orders" element={<PostponedOrders />} />
               <Route path="/orders-reminder" element={<OrdersReminder />} />
               <Route path="/status-changed-today" element={<StatusChangedToday />} />
+              <Route path="/reject-reject" element={<RejectReject />} />
               <Route path="/advances" element={<Advances />} />
               <Route path="/print" element={<PrintSticker />} />
               <Route path="/logs" element={<ActivityLogs />} />

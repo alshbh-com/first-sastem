@@ -19,6 +19,7 @@ export const ALL_SECTIONS = [
   { key: 'search', label: 'بحث شامل', url: '/search' },
   { key: 'orders-reminder', label: 'تذكير الأوردرات القديمة', url: '/orders-reminder' },
   { key: 'status-changed-today', label: 'تغييرات الحالة اليوم', url: '/status-changed-today' },
+  { key: 'reject-reject', label: 'رفض ورفض', url: '/reject-reject' },
   { key: 'courier-tracking', label: 'تتبع المناديب', url: '/courier-tracking' },
   { key: 'chat', label: 'التواصل الداخلي', url: '/chat' },
   { key: 'tasks', label: 'قائمة المهام', url: '/tasks' },

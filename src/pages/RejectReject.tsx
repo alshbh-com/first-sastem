@@ -40,7 +40,7 @@ export default function RejectReject() {
 
       const { data, error } = await supabase
         .from('orders')
-        .select('*, order_statuses(name, color)')
+        .select('*, order_statuses(name, color), offices(name)')
         .eq('status_id', statusId)
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -147,9 +147,10 @@ export default function RejectReject() {
               <TableHeader>
                 <TableRow className="border-border">
                   <TableHead className="text-right">الباركود</TableHead>
+                  <TableHead className="text-right">المكتب</TableHead>
+                  <TableHead className="text-right">كود العميل</TableHead>
                   <TableHead className="text-right">العميل</TableHead>
                   <TableHead className="text-right">الهاتف</TableHead>
-                  <TableHead className="text-right">المنتج</TableHead>
                   <TableHead className="text-right">السعر</TableHead>
                   <TableHead className="text-right">الشحن</TableHead>
                   <TableHead className="text-right">التاريخ</TableHead>

@@ -40,7 +40,7 @@ export default function RejectReject() {
 
       const { data, error } = await supabase
         .from('orders')
-        .select('*, order_statuses(name, color)')
+        .select('*, order_statuses(name, color), offices(name)')
         .eq('status_id', statusId)
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -147,9 +147,10 @@ export default function RejectReject() {
               <TableHeader>
                 <TableRow className="border-border">
                   <TableHead className="text-right">الباركود</TableHead>
+                  <TableHead className="text-right">المكتب</TableHead>
+                  <TableHead className="text-right">كود العميل</TableHead>
                   <TableHead className="text-right">العميل</TableHead>
                   <TableHead className="text-right">الهاتف</TableHead>
-                  <TableHead className="text-right">المنتج</TableHead>
                   <TableHead className="text-right">السعر</TableHead>
                   <TableHead className="text-right">الشحن</TableHead>
                   <TableHead className="text-right">التاريخ</TableHead>
@@ -158,15 +159,16 @@ export default function RejectReject() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={8} className="text-center py-8"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="text-center py-8"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></TableCell></TableRow>
                 ) : orders.length === 0 ? (
-                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">لا توجد أوردرات بحالة «رفض ورفض»</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">لا توجد أوردرات بحالة «رفض ورفض»</TableCell></TableRow>
                 ) : orders.map(o => (
                   <TableRow key={o.id} className="border-border">
                     <TableCell className="font-mono font-bold text-sm">{o.barcode || o.tracking_id || '-'}</TableCell>
+                    <TableCell className="text-sm">{o.offices?.name || o.office_name_snapshot || '-'}</TableCell>
+                    <TableCell className="font-mono text-xs">{o.customer_code || '-'}</TableCell>
                     <TableCell className="font-medium text-sm">{o.customer_name}</TableCell>
                     <TableCell dir="ltr" className="text-sm">{o.customer_phone}</TableCell>
-                    <TableCell className="text-sm">{o.product_name}</TableCell>
                     <TableCell className="text-sm font-bold">{o.price} ج.م</TableCell>
                     <TableCell className="text-sm">{o.delivery_price} ج.م</TableCell>
                     <TableCell className="text-xs text-muted-foreground">

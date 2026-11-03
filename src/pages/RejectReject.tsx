@@ -159,9 +159,9 @@ export default function RejectReject() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={8} className="text-center py-8"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="text-center py-8"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></TableCell></TableRow>
                 ) : orders.length === 0 ? (
-                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">لا توجد أوردرات بحالة «رفض ورفض»</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">لا توجد أوردرات بحالة «رفض ورفض»</TableCell></TableRow>
                 ) : orders.map(o => (
                   <TableRow key={o.id} className="border-border">
                     <TableCell className="font-mono font-bold text-sm">{o.barcode || o.tracking_id || '-'}</TableCell>

@@ -165,9 +165,10 @@ export default function RejectReject() {
                 ) : orders.map(o => (
                   <TableRow key={o.id} className="border-border">
                     <TableCell className="font-mono font-bold text-sm">{o.barcode || o.tracking_id || '-'}</TableCell>
+                    <TableCell className="text-sm">{o.offices?.name || o.office_name_snapshot || '-'}</TableCell>
+                    <TableCell className="font-mono text-xs">{o.customer_code || '-'}</TableCell>
                     <TableCell className="font-medium text-sm">{o.customer_name}</TableCell>
                     <TableCell dir="ltr" className="text-sm">{o.customer_phone}</TableCell>
-                    <TableCell className="text-sm">{o.product_name}</TableCell>
                     <TableCell className="text-sm font-bold">{o.price} ج.م</TableCell>
                     <TableCell className="text-sm">{o.delivery_price} ج.م</TableCell>
                     <TableCell className="text-xs text-muted-foreground">

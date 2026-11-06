@@ -1,73 +1,798 @@
-# Welcome to your Lovable project
+# sastem first 
 
-## Project info
+أريد إنشاء نظام إدارة شحن احترافي باسم:
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
 
-## How can I edit this code?
 
-There are several ways of editing your application.
+FIRST Shipping System
 
-**Use Lovable**
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
 
-Changes made via Lovable will be committed automatically to this repo.
+النظام Web App كامل مع Multi User System وصلاحيات مختلفة وحماية كاملة لكل الصفحات.
 
-**Use your preferred IDE**
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+1️⃣ نظام تسجيل الدخول (Authentication & Security)
 
-Follow these steps:
+
+
+أول صفحة Login فقط.
+
+
+
+لا يمكن الوصول لأي صفحة بدون تسجيل دخول.
+
+
+
+منع الوصول المباشر عبر URL مثل /orders بدون صلاحية.
+
+
+
+Role-Based Access Control.
+
+
+
+تخزين كلمات المرور مشفرة (Hash).
+
+
+
+Session Timeout.
+
+
+
+Middleware لحماية كل Route.
+
+
+
+المستخدم الأساسي (Owner)
+
+
+
+Username: 01278006248@01204486263
+
+
+
+صلاحيات كاملة:
+
+
+
+إضافة / حذف مستخدمين
+
+
+
+تعديل أي شيء
+
+
+
+حذف أوردر
+
+
+
+قفل أوردر
+
+
+
+رؤية الحسابات
+
+
+
+رؤية الأرباح
+
+
+
+رؤية Logs
+
+
+
+تغيير كلمة مروره
+
+
+
+أنواع المستخدمين:
+
+
+
+1- Owner (صلاحيات كاملة)
+
+
+
+2- Admin (إدارة تشغيل فقط)
+
+
+
+3- Courier (مندوب – يرى أوردراته فقط ويغير الحالة فقط)
+
+
+
+2️⃣ Dashboard (اللوحة الرئيسية)
+
+
+
+أول صفحة بعد الدخول تحتوي على:
+
+
+
+عدد أوردرات اليوم
+
+
+
+عدد تم التسليم
+
+
+
+عدد مرتجع
+
+
+
+عدد مع المندوب
+
+
+
+إجمالي التحصيل اليومي
+
+
+
+إجمالي مستحقات الشركات
+
+
+
+إجمالي أرباح النظام
+
+
+
+رسم بياني شهري للأوردرات
+
+
+
+3️⃣ قسم العملاء
+
+
+
+عند إدخال أوردر جديد يتم التحقق من رقم الهاتف.
+
+
+
+إذا كان موجود لا يتم إنشاء عميل جديد.
+
+
+
+رقم الهاتف Unique.
+
+
+
+بيانات العميل:
+
+
+
+Customer_ID
+
+
+
+الاسم
+
+
+
+رقم الهاتف (Unique)
+
+
+
+عدد الطلبات
+
+
+
+آخر طلب
+
+
+
+4️⃣ إدارة المكاتب
+
+
+
+Office_ID
+
+
+
+اسم المكتب
+
+
+
+تخصص المكتب
+
+
+
+تاريخ الإنشاء
+
+
+
+5️⃣ أوردرات المكاتب
+
+
+
+عند اختيار مكتب يمكن إضافة أوردر يحتوي على:
+
+
+
+Tracking_ID (يتولد تلقائي)
+
+
+
+Company_ID
+
+
+
+اسم العميل
+
+
+
+رقم الهاتف
+
+
+
+كود العميل
+
+
+
+باركود
+
+
+
+اسم المنتج
+
+
+
+المقاس
+
+
+
+اللون
+
+
+
+السعر
+
+
+
+سعر التوصيل
+
+
+
+المحافظة
+
+
+
+الحالة
+
+
+
+Assigned_Courier_ID
+
+
+
+Closed_Status (True / False)
+
+
+
+6️⃣ نظام Tracking تلقائي
+
+
+
+عند إنشاء أي أوردر يتم توليد رقم تلقائي بالشكل:
+
+
+
+FR-YYYY-00001
+
+
+
+FR-YYYY-00002
+
+
+
+يتزايد تلقائيًا.
+
+
+
+7️⃣ إدارة المندوبين
+
+
+
+Courier_ID
+
+
+
+الاسم
+
+
+
+رقم الهاتف
+
+
+
+كلمة المرور
+
+
+
+حالة نشط / غير نشط
+
+
+
+صلاحياته:
+
+
+
+يرى أوردراته فقط.
+
+
+
+يغير الحالة فقط.
+
+
+
+لا يستطيع تعديل السعر.
+
+
+
+لا يستطيع قفل الأوردر.
+
+
+
+لا يرى حسابات الشركات أو الأرباح.
+
+
+
+8️⃣ حالات الأوردر (قابلة للتعديل من الإعدادات)
+
+
+
+تم التسليم
+
+
+
+منفذ
+
+
+
+ملغي
+
+
+
+مرتجع دون شحن
+
+
+
+مرتجع بشحن
+
+
+
+قيد التوصيل
+
+
+
+مغلق
+
+
+
+9️⃣ تحصيل المندوبين
+
+
+
+عند تغيير الحالة إلى "تم التسليم":
+
+
+
+يسجل:
+
+
+
+مبلغ التحصيل
+
+
+
+يتم إنشاء نظام تحصيل:
+
+
+
+Courier_ID
+
+
+
+إجمالي التحصيل
+
+
+
+تاريخ التحصيل
+
+
+
+المستخدم الذي سجل العملية
+
+
+
+تقرير حساب مندوب:
+
+
+
+إجمالي تم التسليم
+
+
+
+إجمالي المرتجع
+
+
+
+إجمالي التحصيل
+
+
+
+المدفوع
+
+
+
+المتبقي عليه
+
+
+
+🔟 حسابات الشركات
+
+
+
+Company_ID
+
+
+
+اسم الشركة
+
+
+
+سعر الاتفاق
+
+
+
+عدد الأوردرات
+
+
+
+إجمالي الشغل
+
+
+
+المدفوع
+
+
+
+المتبقي
+
+
+
+كل أوردر مربوط بـ Company_ID.
+
+
+
+أي تغيير في حالة الأوردر يؤثر تلقائيًا في حساب الشركة.
+
+
+
+1️⃣1️⃣ الفاتورة
+
+
+
+إمكانية إنشاء فاتورة باختيار:
+
+
+
+المكتب
+
+
+
+الشركة
+
+
+
+مجموعة أوردرات
+
+
+
+الاسم في أعلى الفاتورة:
+
+
+
+FIRST
+
+
+
+اسم المكتب
+
+
+
+تحتوي على:
+
+
+
+قائمة الأوردرات
+
+
+
+عدد الشحنات
+
+
+
+الإجمالي
+
+
+
+التوقيع
+
+
+
+1️⃣2️⃣ Logs (سجل الحركة)
+
+
+
+تسجيل تلقائي عند:
+
+
+
+تعديل سعر
+
+
+
+تغيير حالة
+
+
+
+حذف أوردر
+
+
+
+تعيين مندوب
+
+
+
+تسجيل تحصيل
+
+
+
+مع:
+
+
+
+اسم المستخدم
+
+
+
+التاريخ
+
+
+
+الوقت
+
+
+
+1️⃣3️⃣ البحث والفلترة
+
+
+
+بحث متقدم بواسطة:
+
+
+
+رقم العميل
+
+
+
+Tracking_ID
+
+
+
+اسم الشركة
+
+
+
+المحافظة
+
+
+
+الحالة
+
+
+
+المندوب
+
+
+
+التاريخ
+
+
+
+1️⃣4️⃣ نظام الباركود
+
+
+
+دعم أي USB Barcode Scanner يعمل كـ Keyboard Input.
+
+
+
+1️⃣5️⃣ نظام الاحتفاظ بالبيانات (Data Retention Policy)
+
+
+
+النظام يحتفظ بالبيانات لمدة 4 شهور فقط.
+
+
+
+آلية العمل:
+
+
+
+عند بداية كل شهر يتم حذف أوردرات الشهر الخامس تلقائيًا.
+
+
+
+مثال: شهر 1 و 2 و 3 و 4 موجودين
+
+
+
+عند دخول شهر 5 يتم حذف شهر 1
+
+
+
+عند دخول شهر 6 يتم حذف شهر 2
+
+
+
+يتم تنفيذ ذلك عبر:
+
+
+
+Scheduled Cron Job شهري
+
+
+
+حذف آمن فقط للأوردرات القديمة
+
+
+
+عدم حذف المستخدمين أو الشركات
+
+
+
+1️⃣6️⃣ متطلبات إضافية
+
+
+
+Export Excel
+
+
+
+نظام نسخ احتياطي تلقائي
+
+
+
+تصميم احترافي داكن (Dark Mode)
+
+
+
+أداء سريع وقابل للتوسع
+
+
+
+✔ النظام يجب أن يكون Production Ready
+
+
+
+✔ قاعدة بيانات منظمة
+
+
+
+✔ حماية كاملة
+
+
+
+✔ قابل للتوسع مستقبلاً
+
+
+
+اولا خلي التسجيل بسورد فقط بدون بريد الكتروني 
+
+
+
+
+
+
+
+وهذا الاونر 
+
+
+
+
+
+
+
+01278006248@01204486263
+
+
+
+
+
+
+
+واريد في ملئ بينات الاوردرات في المكاتب خانه لعدد القطع  برضو 
+
+
+
+
+
+
+
++ عوز خانة منتجات اختار منها اختياري دا غير اني اكتب المنتج بنفسي 
+
+
+
+
+
+
+
+وعوز قسم اسمو المنتجات غي السيستم هيتحط فيها منتجات ب عداد القطع وكل محدد في الاوردرات ينقص في عدد القطع هنا علشان اشوف باقي كم قطعة في المخزن فهمتني
+
+
+
+اولا مش ده المطلوب نهائي  اي القرف ده 
+
+
+
+
+
+
+
+تاني حاجة التسجيل ببسورد فقط مش لزم يكتب اليوزر وخلي البسورد ده  01278006248@01204486263
+
+
+
+
+
+
+
+اونر اللي مسك كل حاجة
+
+
+
+
+
+
+
+وعوز الاونر يبقا شايف كل الاقسام  مش لزم يكتب /orders مثلا عشان يظهرلو 
+
+
+
+
+
+
+
+والمندوب لم يسجل ب اليوزر بتاعو بيشوف اوردرات المنديب بس وميقدرش يعمل حاجة غير يتحكم في حالة الاوردرات
+
+
+
+اهم حاجة الاونر يظهرلو جميع الاقسام
+
+This project was built with [Lovable](https://lovable.dev).
+
+**Live app**: https://first-route-logistics.lovable.app
+
+## Build with Lovable
+
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/e8becf16-ea1b-4cd4-b8c0-3d938039c71b).
+
+- **Ship faster**: describe what you want to build and Lovable handles the code.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+
+## Development
+
+Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
+git clone <this-repository-url>
+cd <repository-name>
 npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
